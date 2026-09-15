@@ -90,6 +90,7 @@ test('ready liturgy-takbeer maps to a real clip_path; remaining suites stay stub
   assert.equal(takbeerSuite.clipDir, LITURGY_CLIP_DIR);
   assert.equal(takbeerSuite.scoreLiturgy, true);
   assert.match(takbeer.notes, /edge-tts/);
+  assert.match(takbeer.notes, /-25%/);
   assert.equal(takbeer.license_status, 'unresolved');
   for (const name of LITURGY_SUITE_NAMES) {
     if (name === 'liturgy-takbeer') continue;

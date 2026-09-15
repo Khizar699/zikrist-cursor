@@ -47,7 +47,7 @@ test('liturgy TTS plan reads pack arabic_uthmani for takbeer and the ready clip_
   const phrase = spokenArabicForPhrase(pack, 'takbeer');
   const fromDisk = JSON.parse(
     fs.readFileSync(path.join(root, 'assets/content/salah-liturgy.json'), 'utf8'),
-  ) as { phrases: Array<{ id: string; arabic_uthmani: string }> };
+  ) as { phrases: { id: string; arabic_uthmani: string }[] };
   const row = fromDisk.phrases.find((item) => item.id === 'takbeer');
   assert.equal(row?.arabic_uthmani, 'اللَّهُ أَكْبَرُ');
   assert.equal(phrase.arabic_uthmani, row?.arabic_uthmani);
@@ -68,6 +68,7 @@ test('liturgy TTS parser defaults to liturgy-takbeer and refuses other stub suit
     dryRun: false,
     engine: 'auto',
     voice: undefined,
+    rate: undefined,
     suiteId: 'liturgy-takbeer',
   });
   assert.equal(parseLiturgyTtsArgs(['liturgy-takbeer', '--dry-run']).dryRun, true);
@@ -76,9 +77,11 @@ test('liturgy TTS parser defaults to liturgy-takbeer and refuses other stub suit
     dryRun: false,
     engine: 'say',
     voice: undefined,
+    rate: undefined,
     suiteId: 'liturgy-takbeer',
   });
   assert.equal(parseLiturgyTtsArgs(['--engine', 'edge-tts', '--voice', 'ar-SA-HamedNeural']).suiteId, 'liturgy-takbeer');
+  assert.equal(parseLiturgyTtsArgs(['--rate=-25%']).rate, '-25%');
   assert.throws(() => resolveLiturgyTtsPlan('liturgy-thana'), /still stub/);
 });
 

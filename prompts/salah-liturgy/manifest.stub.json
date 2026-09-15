@@ -11,7 +11,7 @@
       "clip_path": "liturgy-takbeer/liturgy-takbeer__edge-tts__ar-SA-HamedNeural.wav",
       "expect_phrase_ids": ["takbeer"],
       "expect_quran": [],
-      "notes": "takbeer only; no verse_match. Evaluation TTS clip (not committed/redistributed): preferred edge-tts voice ar-SA-HamedNeural; Mac fallback `say` + ffmpeg (Arabic voice e.g. Maged). Spoken text is pack arabic_uthmani for phrase id takbeer. Generate on Mac: npm run liturgy:tts -- liturgy-takbeer. Then npm run test:replay -- liturgy-takbeer (must PASS, not skip).",
+      "notes": "takbeer only; no verse_match. Evaluation TTS clip (not committed/redistributed): preferred edge-tts voice ar-SA-HamedNeural rate -25%; Mac fallback `say` + ffmpeg (Arabic voice e.g. Maged). Spoken text is pack arabic_uthmani for phrase id takbeer. Generate on Mac: npm run liturgy:tts -- liturgy-takbeer. Then npm run test:replay -- liturgy-takbeer (must PASS, not skip).",
       "license_status": "unresolved"
     },
     {

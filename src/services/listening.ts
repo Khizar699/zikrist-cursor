@@ -19,6 +19,7 @@ import liturgyPack from '../../assets/content/salah-liturgy.json';
 import { reduceListeningDisplay, type LiturgyDisplay } from '../core/salah-liturgy-display';
 import {
   filterQuranMessagesForLiturgy,
+  liturgyFollowContextBeforeFeed,
   matcherFromPack,
   packFromUnknown,
   type SalahLiturgyLockEvent,
@@ -112,6 +113,7 @@ class Listening {
       this.queue = new AudioQueue({
         maxSamples: 16000 * 6, maxBatchSamples: 16000,
         process: async (packet) => {
+          const prior = liturgyFollowContextBeforeFeed(this.follower!);
           const quran = await this.follower!.feed(packet.samples, {
             queueWaitMs: packet.queueWaitMs ?? 0,
             stallMs: packet.stallMs ?? 0,
@@ -119,9 +121,7 @@ class Listening {
           const liturgy = this.liturgy.observe({
             tokens: this.follower!.lastHeardTokens,
             atMs: packet.endMs,
-            quranPhase: this.follower!.phase,
-            quranLock: this.follower!.lockedRef,
-            ayahComplete: this.follower!.lockedAyahComplete,
+            ...prior,
             voiced: packet.voiced === true,
           });
           return { quran, liturgy };

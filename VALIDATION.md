@@ -199,10 +199,12 @@ This workspace (Linux/x64, no EveryAyah WAVs, no ONNX model): `npm test` **172/1
 
 ## Salah liturgy TTS fill (`liturgy-takbeer` ready, 2026-09-15)
 
-One suite only. Manifest `liturgy-takbeer` is `status: ready` with `clip_path` `liturgy-takbeer/liturgy-takbeer__edge-tts__ar-SA-HamedNeural.wav` (relative to `artifacts/recitation/liturgy`). Spoken text is pack `arabic_uthmani` for phrase id `takbeer` (`اللَّهُ أَكْبَرُ`). Other liturgy suites stay stubs. Matcher / follower / UI were not retuned. Imam clips were not touched. WAV/MP3 is gitignored and is not in this PR.
+One suite only. Manifest `liturgy-takbeer` is `status: ready` with `clip_path` `liturgy-takbeer/liturgy-takbeer__edge-tts__ar-SA-HamedNeural.wav` (relative to `artifacts/recitation/liturgy`). Spoken text is pack `arabic_uthmani` for phrase id `takbeer` (`اللَّهُ أَكْبَرُ`). Other liturgy suites stay stubs. Matcher / follower **thresholds** were not retuned. Imam clips were not touched. WAV/MP3 is gitignored and is not in this PR.
 
-Mac ready path: `python3 -m pip install --user edge-tts` then `npm run liturgy:tts -- liturgy-takbeer` (fallback `--engine say` + ffmpeg). Script refuses silent output. Then `npm run test:replay -- liturgy-takbeer` must **PASS (not skip)**. `npm run test:replay -- all` must stay **14/14**. Ready suites with a missing clip error `missing_clip` instead of skipping.
+Wiring (not a threshold retune): live listening and liturgy replay snapshot Quran follow state **before** `follower.feed()`, so a same-hop false Quran acquire cannot hide isolated takbeer. Mid-ayah follow still refuses short liturgy.
 
-This workspace (Linux/x64): units + typecheck + lint as recorded in Completed checks after this change. Acoustic `liturgy-takbeer` and Quran `all` were **not** scored here (no durable TTS WAV, no ONNX). **Mac Bot/Sim QA generates the WAV, then verifies both gates before merge.**
+Mac ready path: `python3 -m pip install --user edge-tts` then `npm run liturgy:tts -- liturgy-takbeer` (default edge-tts `ar-SA-HamedNeural` rate `-25%`; fallback `--engine say` + ffmpeg). Script refuses silent output. Then `npm run test:replay -- liturgy-takbeer` must **PASS (not skip)**. `npm run test:replay -- all` must stay **14/14**. Ready suites with a missing clip error `missing_clip` instead of skipping.
+
+This workspace (Linux/x64): `npm test` **176/176**; `npm run typecheck` pass; lint still reports the pre-existing unused `openingScore` warning. `npx tsx scripts/replay.ts all --list` shows the original 14 Quran names. After generating the gitignored WAV (`edge-tts` `ar-SA-HamedNeural` rate `-25%`), Linux ONNX `npm run test:replay -- liturgy-takbeer` locked `phraseId: takbeer` at 1.25 s with `failureMode: null` and no `verse_match`. That is not a Mac 14/14 substitute and not a mosque/device claim. **Mac Bot/Sim QA must regenerate the WAV and re-verify `liturgy-takbeer` PASS plus `all` = 14/14 before merge.**
 
 

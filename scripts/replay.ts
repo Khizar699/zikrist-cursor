@@ -31,6 +31,7 @@ import {
 import { LIVE_STREAMING_CONFIG } from '../src/core/streaming';
 import {
   filterQuranMessagesForLiturgy,
+  liturgyFollowContextBeforeFeed,
   matcherFromPack,
   packFromUnknown,
   type SalahLiturgyMatcher,
@@ -231,16 +232,15 @@ async function replaySuite(
     // Match live mic: do not feed unvoiced frames into the follower. Trailing
     // pad after the clip is still fed so a final flush / stall-after-lock can run.
     if (!voiced && index < audio.length) continue;
+    const prior = liturgyMatcher ? liturgyFollowContextBeforeFeed(follower) : null;
     const raw = await follower.feed(chunk);
     const audioSeconds = Math.round((Math.min(end, audio.length) / SAMPLE_RATE) * 1000) / 1000;
     let quran = raw;
-    if (liturgyMatcher) {
+    if (liturgyMatcher && prior) {
       const liturgy = liturgyMatcher.observe({
         tokens: follower.lastHeardTokens,
         atMs: audioSeconds * 1000,
-        quranPhase: follower.phase,
-        quranLock: follower.lockedRef,
-        ayahComplete: follower.lockedAyahComplete,
+        ...prior,
         voiced,
       });
       if (liturgy) {

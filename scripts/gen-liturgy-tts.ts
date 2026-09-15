@@ -33,6 +33,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PACK_PATH = path.join(root, 'assets/content/salah-liturgy.json');
 const DEFAULT_SUITE: LiturgySuiteName = 'liturgy-takbeer';
 const EDGE_TTS_VOICE = 'ar-SA-HamedNeural';
+const EDGE_TTS_RATE = '-25%';
 const SAY_VOICE_CANDIDATES = ['Maged', 'Majed', 'Laila', 'Tarik', 'Mona'];
 const MIN_DURATION_SECONDS = 0.25;
 const MIN_RMS = 0.01;
@@ -50,11 +51,11 @@ export type LiturgyTtsPlan = {
 };
 
 export type SalahLiturgyPackFile = {
-  phrases: Array<{
+  phrases: {
     id: string;
     arabic_uthmani: string;
     arabic_recognition_normalized: string;
-  }>;
+  }[];
 };
 
 export function parseLiturgyTtsArgs(argv: string[]): {
@@ -62,11 +63,13 @@ export function parseLiturgyTtsArgs(argv: string[]): {
   dryRun: boolean;
   engine: LiturgyTtsEngine;
   voice?: string;
+  rate?: string;
   suiteId: string;
 } {
   const consumed = new Set<number>();
   let engine: LiturgyTtsEngine = 'auto';
   let voice: string | undefined;
+  let rate: string | undefined;
   for (let index = 0; index < argv.length; index++) {
     const arg = argv[index]!;
     if (arg === '--engine') {
@@ -83,6 +86,14 @@ export function parseLiturgyTtsArgs(argv: string[]): {
       voice = value;
       consumed.add(index);
       consumed.add(index + 1);
+      continue;
+    }
+    if (arg === '--rate' || arg.startsWith('--rate=')) {
+      const value = arg.startsWith('--rate=') ? arg.slice('--rate='.length) : argv[index + 1];
+      if (!value || value.startsWith('--')) throw new Error('Missing --rate value (example: -25%)');
+      rate = value;
+      consumed.add(index);
+      if (!arg.startsWith('--rate=')) consumed.add(index + 1);
     }
   }
   const flags = argv.filter((arg, index) => !consumed.has(index) && arg.startsWith('--'));
@@ -92,6 +103,7 @@ export function parseLiturgyTtsArgs(argv: string[]): {
     dryRun: flags.includes('--dry-run'),
     engine,
     voice,
+    rate,
     suiteId: positional[0] ?? DEFAULT_SUITE,
   };
 }
@@ -241,7 +253,7 @@ function edgeTtsAvailable(): { bin: string; argsPrefix: string[] } | null {
   return null;
 }
 
-function synthesizeEdgeTts(text: string, voice: string, destWav: string) {
+function synthesizeEdgeTts(text: string, voice: string, destWav: string, rate = EDGE_TTS_RATE) {
   const edge = edgeTtsAvailable();
   if (!edge) {
     throw new Error(
@@ -251,7 +263,7 @@ function synthesizeEdgeTts(text: string, voice: string, destWav: string) {
   }
   const tmp = path.join(os.tmpdir(), `zikrist-liturgy-tts-${process.pid}.mp3`);
   try {
-    run(edge.bin, [...edge.argsPrefix, '--voice', voice, '--text', text, '--write-media', tmp]);
+    run(edge.bin, [...edge.argsPrefix, '--voice', voice, `--rate=${rate}`, '--text', text, '--write-media', tmp]);
     convertToWav(tmp, destWav);
   } finally {
     fs.rmSync(tmp, { force: true });
@@ -294,7 +306,7 @@ export function helpText(): string {
     'Usage:',
     '  npm run liturgy:tts -- liturgy-takbeer',
     '  npm run liturgy:tts -- liturgy-takbeer --dry-run',
-    '  npm run liturgy:tts -- liturgy-takbeer --engine edge-tts --voice ar-SA-HamedNeural',
+    '  npm run liturgy:tts -- liturgy-takbeer --engine edge-tts --voice ar-SA-HamedNeural --rate=-25%',
     '  npm run liturgy:tts -- liturgy-takbeer --engine say',
     '',
     'Reads pack arabic_uthmani (not a hardcoded English string). Writes 16 kHz mono PCM16',
@@ -306,8 +318,9 @@ export async function generateLiturgyTts(options: {
   suiteId: string;
   engine: LiturgyTtsEngine;
   voice?: string;
+  rate?: string;
   dryRun?: boolean;
-}): Promise<{ plan: LiturgyTtsPlan; engineUsed?: string; voiceUsed?: string; durationSeconds?: number; rms?: number }> {
+}): Promise<{ plan: LiturgyTtsPlan; engineUsed?: string; voiceUsed?: string; rateUsed?: string; durationSeconds?: number; rms?: number }> {
   const plan = resolveLiturgyTtsPlan(options.suiteId);
   if (options.dryRun) return { plan };
   fs.mkdirSync(path.dirname(plan.destAbsolute), { recursive: true });
@@ -315,10 +328,12 @@ export async function generateLiturgyTts(options: {
   try {
     let engineUsed: string;
     let voiceUsed: string;
+    let rateUsed: string | undefined;
     const edge = edgeTtsAvailable();
     if (options.engine === 'edge-tts' || (options.engine === 'auto' && edge)) {
       voiceUsed = options.voice ?? EDGE_TTS_VOICE;
-      synthesizeEdgeTts(plan.spokenArabic, voiceUsed, tmpOut);
+      rateUsed = options.rate ?? EDGE_TTS_RATE;
+      synthesizeEdgeTts(plan.spokenArabic, voiceUsed, tmpOut, rateUsed);
       engineUsed = 'edge-tts';
     } else if (options.engine === 'say' || (options.engine === 'auto' && which('say'))) {
       voiceUsed = pickSayVoice(options.voice);
@@ -334,7 +349,7 @@ export async function generateLiturgyTts(options: {
     const bytes = fs.readFileSync(tmpOut);
     const stats = assertSpokenClip(bytes);
     fs.renameSync(tmpOut, plan.destAbsolute);
-    return { plan, engineUsed, voiceUsed, durationSeconds: stats.durationSeconds, rms: stats.rms };
+    return { plan, engineUsed, voiceUsed, rateUsed, durationSeconds: stats.durationSeconds, rms: stats.rms };
   } finally {
     fs.rmSync(tmpOut, { force: true });
   }
@@ -350,6 +365,7 @@ async function main() {
     suiteId: args.suiteId,
     engine: args.engine,
     voice: args.voice,
+    rate: args.rate,
     dryRun: args.dryRun,
   });
   const payload = {
@@ -360,6 +376,7 @@ async function main() {
     dryRun: Boolean(args.dryRun),
     engineUsed: result.engineUsed ?? null,
     voiceUsed: result.voiceUsed ?? null,
+    rateUsed: result.rateUsed ?? null,
     durationSeconds: result.durationSeconds ?? null,
     rms: result.rms ?? null,
     next: args.dryRun

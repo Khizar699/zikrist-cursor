@@ -132,7 +132,7 @@ npm run test:replay -- cold-start-mid
 npm run test:replay -- stall-after-lock
 npm run test:replay -- --list
 npm run test:replay -- real-imam           # Prompt Smith stub suites; skip missing_fixture (not PASS)
-npm run liturgy:tts -- liturgy-takbeer     # Mac: 16 kHz mono PCM16 from pack Arabic (edge-tts or say+ffmpeg)
+npm run liturgy:tts -- liturgy-takbeer     # Mac: 16 kHz mono PCM16 from pack Arabic (edge-tts ar-SA-HamedNeural -25%, or say+ffmpeg)
 npm run test:replay -- liturgy-takbeer     # ready liturgy suite (generate WAV first; must PASS, not skip)
 npm run test:replay -- liturgy             # takbeer if WAV present; remaining stubs skip missing_fixture
 npm run test:replay -- salah-liturgy       # alias of liturgy
