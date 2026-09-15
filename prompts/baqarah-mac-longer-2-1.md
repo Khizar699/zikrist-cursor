@@ -6,13 +6,16 @@ Mac `npm run test:replay -- longer` first-locks **2:1**, then 2:2–5. Linux-onl
 
 ## Baseline
 
-PR tip `8bd9c35` on Mac: `sequence_break_at_0_got_2:2_expected_2:1`. Mac nas/fatiha/asr/kawthar/quraysh/ikhlas/falaq PASS; units 119/119. Linux longer 2:1@6s.
+PR tip `8bd9c35` on Mac: `sequence_break_at_0_got_2:2_expected_2:1`. First confirm **2:2@11s** (never 2:1), then 2:3…2:12. Mac nas/fatiha/asr/kawthar/quraysh/ikhlas/falaq PASS; units 119/119. Linux longer 2:1@6s.
 
-## Likely causes (Mac ONNX decode ≠ Linux)
+## Mac path (same PCM, different CTC)
 
-1. `lockFromTranscript` requires `compact(text).length >= 6`. Isolated `الم` is 3 letters; a 4 s window that has already dropped Basmala never locates.
-2. Mysterious-letter `canLock` requires exact compact `الم`, so ASR `المي` (Linux also emits this as a second word) fails when `الم` is absent.
-3. Close 3:1 rival + `match.score < 0.72` rejects ayah-1 (`verse.ayah > 1 && beatsRival`). `preferCanonicalDuplicate` runs after that.
+`ACQUIRE_MAX_SEC` is 4 s. EveryAyah `002001` is ~7.6 s Basmala then `الم`. After the window slides past `بسم`:
+
+- Linux CTC drops the Basmala tail and emits `الم المي` at the start of the window → `openingIsAtStart` true → 2:1@6s.
+- Mac CTC keeps `الرحمن الرحيم` (and may spell the letters as `الميم` / `الف لام ميم`). `hasVerseEvidence` treats a one-word ayah-1 body that is not `recognized[0]` and not immediately after a leading `بسم` as “inside Basmala” (the 55:1 guard). 2:1 never commits. At ~11 s the window is 2:2-only → first confirm 2:2.
+
+Do not insert 2:1 from coverage after a 2:2 lock (`cold-start-mid` must stay 2:2). Need acoustic body evidence: Basmala-**tail** + isolated `الم`, or letter-name spelling of that body. `المال` / `المصدر` stay rejected. `الرحمن` alone still must not name 55:1.
 
 ## Keep
 
