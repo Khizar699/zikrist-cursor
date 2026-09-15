@@ -776,9 +776,10 @@ export class RecitationFollower {
     // Reject locks that only hear a shared prefix (قل اعوذ برب / Basmala) with no unique body word.
     if (this.onlySharedOpening(recognized, verse)) return false;
     // Isolated mysterious-letter ayahs (e.g. 7:1 المص) need that token as a whole
-    // word — fuzzy/stem hits like المصدر / المدرس must not lock.
-    const body = displayBodyWords(verse);
-    if (body.length === 1 && body[0]!.length <= 5) {
+    // word. Use phoneme body tokens: Uthmani الٓمٓصٓ is longer than 5 because of
+    // maddahs, and substring hits like المصدر / المدرس must not lock.
+    const { words: body } = verseAlignWords(verse);
+    if (body.length === 1 && compact(body[0]!).length <= 5) {
       const token = compact(body[0]!);
       const heard = recognized.some((word) => compact(word) === token);
       if (!heard) return false;

@@ -29,7 +29,7 @@ const corpus = [
   verse(1, 7, ['sirata', 'alladhina', 'anamta', 'alayhim', 'ghayri', 'almaghdubi', 'alayhim', 'wala', 'alddallin'], 'Al-Fatihah'),
   verse(2, 1, ['bismi', 'allahi', 'alrahman', 'alrahim', 'alif', 'lam', 'meem'], 'Al-Baqarah'),
   verse(2, 126, ['rabbi', 'ijal', 'hadha', 'baladan'], 'Al-Baqarah'),
-  verse(7, 1, ['المص'], 'Al-Araf'),
+  verse(7, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'المص'], 'Al-Araf'),
   verse(14, 39, ['alhamdu', 'lillahi', 'alladhi', 'wahaba', 'li', 'ala', 'alkibar', 'ismail', 'waishaq'], 'Ibrahim'),
   verse(14, 40, ['rabbi', 'ijalni', 'muqima', 'alsalah', 'wamin', 'dhurriyyati', 'rabbana', 'wataqabbal', 'dua'], 'Ibrahim'),
   verse(14, 41, ['rabbana', 'ighfir', 'li', 'waliwalidayya'], 'Ibrahim'),
