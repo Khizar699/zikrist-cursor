@@ -68,11 +68,11 @@ Public distribution also requires model/content rights clearance and store priva
 - Nas last-ayah slice: grow the follow window for a short last ayah of the current surah; trim leftover penultimate audio to a 0.3 s seed before appending so a large first last-ayah batch is kept; require an exact phoneme mysterious-letter token so garbage cannot jump 114:5→7:1. See `prompts/nas-last-ayah-stall.md`.
 - Unit tests cover the short ayah-1 confirm, short next/final leftover tokens, a distant lookalike reject, last-ayah window accumulation, and a garbage-window mysterious-letter jump guard. Not a physical-device claim.
 
-Linux/x64 `onnxruntime-node` 1.24.3 replay after rebase onto `8f176d4` (includes PR #2 and `eacf963` Basmala-echo). Same EveryAyah Alafasy 16 kHz clips; not a phone measurement. `npm test` 111/111; typecheck pass; lint still reports the pre-existing unused `openingScore` warning.
+Linux/x64 `onnxruntime-node` 1.24.3 replay after rebase onto `8f176d4` (includes PR #2 and `eacf963` Basmala-echo) plus seed-trim-before-append. Same EveryAyah Alafasy 16 kHz clips; not a phone measurement. `npm test` 111/111; typecheck pass; lint still reports the pre-existing unused `openingScore` warning.
 
 | Suite | Result |
 | --- | --- |
-| `nas` | PASS 114:1@4 → 2@6.5 → 3@12 → 4@20 → 5@25.75 → 6@30.25; `failureMode` null; `wrongSurahRate` 0 (no 7:1) |
+| `nas` | PASS 114:1@4 → 2@6.5 → 3@12 → 4@20 → 5@25.75 → 6@33.75; `failureMode` null; `wrongSurahRate` 0 (no 7:1) |
 | `ikhlas` | PASS 112:1–4 |
 | `falaq` | PASS 113:1–5 |
 | `asr` | PASS 103:1–3 |
