@@ -21,8 +21,8 @@ After a heard opening Basmala with no lock, acquire keeps ~8 s (not 4 s) so `ا�
 
 ## Keep
 
-Nas last-ayah seed-trim, exact-enough 7:1 (no `المصدر`), Basmala-echo, Asr leftover `relatedStem`, back-to-back Asr→Quraysh leftover crumbs (`11759a9`).
+Nas last-ayah seed-trim, exact-enough 7:1 (no `المصدر`), Basmala-echo, Asr leftover `relatedStem`, jump Kawthar→Ikhlas, back-to-back Asr→Quraysh leftover crumbs (`11759a9`, both Mac-green on main).
 
 ## Acceptance
 
-Mac longer 2:1 first (Sim QA). Also Mac: nas, fatiha, asr, kawthar, quraysh GREEN. Linux-only ONNX is not that gate. Back-to-back 103:1–3 then 106:1–4 must stay green after rebase onto `11759a9`.
+Mac longer 2:1 first (Sim QA). Also Mac: nas, fatiha, asr, kawthar, quraysh GREEN. Jump and back-to-back are already Mac-green on `11759a9` — do not regress them. Linux-only ONNX is not the longer gate.
