@@ -8,4 +8,6 @@ WAV for `liturgy-ruku` locking `ruku_tasbih` (short form without وبحمده un
 
 ## Success
 
+Also bump `HANDOFF.md` in this same PR.
+
 Mac `test:replay -- liturgy-ruku` PASS; `all` 14/14; this suite only.

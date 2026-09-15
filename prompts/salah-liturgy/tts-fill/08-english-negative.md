@@ -13,4 +13,6 @@ Dedicated **non-Arabic / English conversation** clip for `liturgy-english-negati
 
 ## Success
 
+Also bump `HANDOFF.md` in this same PR.
+
 Mac `test:replay -- liturgy-english-negative` PASS; `all` 14/14; new clip under `artifacts/recitation/liturgy/liturgy-english-negative/`.

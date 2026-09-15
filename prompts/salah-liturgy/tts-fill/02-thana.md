@@ -12,6 +12,8 @@ WAV for `liturgy-thana` locking `thana` (full Hanafi istiftah from pack). No Qur
 
 ## Success
 
+Also bump `HANDOFF.md` in this same PR.
+
 Mac `test:replay -- liturgy-thana` PASS; `all` 14/14; no matcher retune.
 
 ## Mac

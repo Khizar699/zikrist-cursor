@@ -50,4 +50,6 @@ npm run test:replay -- all           # 14/14
 
 ## Deliverable
 
+Plus `HANDOFF.md` bump in the same PR.
+
 Suite id, clip basename, Mac JSON snippet (`first_lock` / failureMode), confirm WAV stayed gitignored.

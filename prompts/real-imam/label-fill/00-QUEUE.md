@@ -5,6 +5,10 @@
 
 **Hard gate every session:** Mac `npm run test:replay -- all` = **14/14**. **HANDOFF:** bump `HANDOFF.md` in the same PR (`prompts/_SHARED-HANDOFF.md`).
 
+## HANDOFF.md (required every PR)
+
+Founder rule: update root `HANDOFF.md` **in the same PR** — what landed, open tracks, gates, restore cmds. A session PR without a HANDOFF bump is **incomplete**.
+
 **Rules** — see `_SHARED.md`. One suite (or one new sibling suite id) per Cursor session. No matcher retune.
 
 ## Hold (algorithm first)

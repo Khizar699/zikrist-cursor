@@ -4,6 +4,10 @@
 
 **Hard gate every session:** Mac `npm run test:replay -- all` stays **14/14** (Quran synthetic fixtures). Soft optional: `prompts/nas-no-post-end-jump.md`. **HANDOFF:** bump `HANDOFF.md` in the same PR (`prompts/_SHARED-HANDOFF.md`).
 
+## HANDOFF.md (required every PR)
+
+Founder rule: update root `HANDOFF.md` **in the same PR** — what landed, open tracks, gates, restore cmds. A session PR without a HANDOFF bump is **incomplete**.
+
 **P0 elsewhere:** `prompts/salah-liturgy/` (01-corpus in flight). This pack is harness/docs prep only until clips exist.
 
 ## Label-fill (next)

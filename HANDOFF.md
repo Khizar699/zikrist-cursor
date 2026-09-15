@@ -8,7 +8,7 @@ Every PR that merges to `main` **must** update this file **in the same PR**: wha
 
 ## Tip state (update every PR)
 
-- **This PR:** #15 — founder labels in git; `npm run fixtures:imam`; Grok-bot briefing; this maintainer rule. Real-imam suites stay `stub`. No audio committed.
+- **This PR:** Prompt Smith — bake HANDOFF into session deliverables (tts-fill 01–08, label-fill 01–02, mid-surah algo prompt) + `AGENTS.md` pointer; align with `prompts/_SHARED-HANDOFF.md`. Prior tip: #15 founder labels + `fixtures:imam`. Real-imam suites stay `stub`.
 - **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate.
 - **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (tag `imam-fixtures-v1`, asset `zikrist-imam-fixtures-v1.zip`). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say` (Mac Majed).
 - **Known fails:** Subayyal want **4:129** currently **41:34**; Qiyam want **36:16** currently **78:4** — `prompts/imam-mid-surah-cold-false-lock.md`. Do not flip stub→ready until Mac-green.

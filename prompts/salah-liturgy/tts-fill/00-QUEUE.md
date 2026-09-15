@@ -4,6 +4,10 @@
 
 **Hard gate every session:** Mac `npm run test:replay -- all` = **14/14**. Soft optional only: `prompts/nas-no-post-end-jump.md`. **HANDOFF:** bump `HANDOFF.md` in the same PR (`prompts/_SHARED-HANDOFF.md`).
 
+## HANDOFF.md (required every PR)
+
+Founder rule: update root `HANDOFF.md` **in the same PR** — what landed, open tracks, gates, restore cmds. A session PR without a HANDOFF bump is **incomplete**.
+
 **Rules**
 - **One suite per Cursor session** — do not mega-fill all clips
 - **No** matcher / follower / UI retune — harness + audio + manifest `status: ready` only

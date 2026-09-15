@@ -8,4 +8,6 @@ WAV for `liturgy-sujood` locking `sujood_tasbih`. No Quran locks.
 
 ## Success
 
+Also bump `HANDOFF.md` in this same PR.
+
 Mac `test:replay -- liturgy-sujood` PASS; `all` 14/14.

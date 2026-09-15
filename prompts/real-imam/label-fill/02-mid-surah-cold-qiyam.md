@@ -75,4 +75,6 @@ Separate algorithm prompt; no retune in this PR.
 
 ## Deliverable
 
+Bump `HANDOFF.md` in this same PR.
+
 New suite id, clip path, Mac JSON snippet, PR link.

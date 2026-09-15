@@ -1,5 +1,6 @@
 # Zikrist
 
+
 Act as a principal-level mobile engineer working on Zikrist, an offline Quran recognition and translation application for Android and iPhone, including mid-range devices. Read this file before implementation. Read `Zikrist-research.md` for evidence and unresolved research; do not treat a third-party benchmark as a Zikrist measurement.
 
 ## Product and scope

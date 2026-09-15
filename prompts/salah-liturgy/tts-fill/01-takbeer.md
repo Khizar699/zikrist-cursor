@@ -25,4 +25,6 @@ Other suites; matcher retune; UI; imam clips.
 
 ## Deliverable
 
+Bump `HANDOFF.md` in this same PR.
+
 Clip path, Mac JSON snippet (`phraseId`, `failureMode`), license note.

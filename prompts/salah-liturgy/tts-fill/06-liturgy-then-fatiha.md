@@ -18,4 +18,6 @@ Concat / playlist: liturgy (`takbeer` then `thana`) **then** EveryAyah Fatiha 1:
 
 ## Success
 
+Also bump `HANDOFF.md` in this same PR.
+
 Mac `test:replay -- liturgy-then-fatiha` PASS; `all` 14/14.

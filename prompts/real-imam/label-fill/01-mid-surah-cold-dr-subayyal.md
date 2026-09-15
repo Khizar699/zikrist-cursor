@@ -54,4 +54,6 @@ Stop. Do not retune. Ping Bot with failureMode / first_lock; open a **separate**
 
 ## Deliverable
 
+Bump `HANDOFF.md` in this same PR.
+
 Clip basename, Mac JSON snippet, PR link.
