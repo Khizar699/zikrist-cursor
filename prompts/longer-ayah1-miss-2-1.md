@@ -25,3 +25,12 @@
 ## Deliverable
 
 Commands, JSON path, files changed, next slice.
+
+## Mac gate (required) — 2026-09-15 wrap
+
+Linux PASS on PR #4 was **not** enough. Mac on 8bd9c35 still `sequence_break_at_0_got_2:2_expected_2:1`.
+
+Before merge:
+1. On Apple Silicon: `npm run test:replay -- longer` → first lock **2:1**, then 2:2–5
+2. Also Mac: nas, fatiha, asr, kawthar, quraysh GREEN (Nas 114:6 must not regress)
+3. Do not claim green from Linux-only ONNX
