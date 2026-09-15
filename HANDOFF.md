@@ -1,6 +1,60 @@
-# Handoff — clone and restore evaluation audio
+# Handoff
 
-Friends cloning this repo do **not** get large recitation wav/mp3 from git (no Git LFS). Founder-verified imam **labels** are in git. Audio is restored locally.
+Friends and **new Grok / Cursor agents** (no chat history) start here. Large recitation wav/mp3 is **not** in git (no Git LFS). Founder-verified imam **labels** are in git. Audio is restored locally.
+
+## For assistants / Grok bots — read first
+
+You have no prior thread. Do not invent product history, ayah numbers, or Mac results.
+
+| | |
+|---|---|
+| Repo | https://github.com/Khizar699/zikrist-cursor |
+| Product | **Zikrist** — offline Expo ayah locator + salah liturgy (Android/iPhone, including mid-range). Algorithm and recognition correctness beat visual design this MVP. **No Figma** for the MVP. |
+| Hard gate | `npm run test:replay -- all` must stay **14/14** Quran. Linux ONNX is not that gate. |
+| Labels | Ground truth: `prompts/real-imam/LABELS.md` + `prompts/real-imam/labels.json` (Khizar, 2026-09-16). **Not** `probes/hypothesized-locks.txt`. Never invent ayah labels. |
+| Suites | `prompts/real-imam/manifest.stub.json` stays **`stub`**. Restoring wavs is not a `ready` flip. |
+
+**After clone**
+
+```sh
+npm i
+npm run fixtures:recitation    # EveryAyah Quran replay wavs
+npm run fixtures:imam          # Release tag imam-fixtures-v1 / zikrist-imam-fixtures-v1.zip
+```
+
+If `fixtures:imam` 404s, the zip is not published yet — see https://github.com/Khizar699/zikrist-cursor/releases. Do not commit audio.
+
+**Liturgy TTS** (gitignored under `artifacts/recitation/liturgy/`): put ffmpeg on `PATH`, then Mac `say` Majed:
+
+```sh
+export PATH="/tmp/ffmpeg-static:$PATH"
+npm run liturgy:tts -- <id> --engine say
+```
+
+Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that would PASS.
+
+**Known fails (do not flip stub→ready until Mac-green)**
+
+| Clip | Want | Current false lock | Prompt |
+|---|---|---|---|
+| Dr Subayyal | **4:129** | **41:34** | `prompts/imam-mid-surah-cold-false-lock.md` |
+| Qiyam Faisal | **36:16** | **78:4** | same |
+
+**Teammate lanes** (if someone recreates bots)
+
+- **Prompt Smith** — session prompts under `prompts/`
+- **Sim QA** — Mac acoustic replay / `test:replay`
+- **Chief Bot** — merges **only after Mac green**
+
+**Push / merge policy:** Mac verify before merge. Keep the 14 Quran suites green. Do not retune matcher/follower unless the open algorithm prompt says so. Do not flip real-imam suites to `ready` until that Mac-green false-lock work lands.
+
+**Current open tracks**
+
+- Liturgy TTS queue **after thana** — next `prompts/salah-liturgy/tts-fill/03-ruku.md` (`00-QUEUE.md`)
+- Mid-surah-cold algorithm — `prompts/imam-mid-surah-cold-false-lock.md`
+- Real-imam label-fill **held** — `prompts/real-imam/label-fill/00-QUEUE.md` (do not launch 01/02 until false-lock is Mac-green)
+
+Read `AGENTS.md` before implementing.
 
 ## Friend path
 
@@ -22,7 +76,7 @@ Re-download imam clips: `npm run fixtures:imam -- --force`.
 |-------|--------|
 | Ground truth labels (git) | `prompts/real-imam/LABELS.md`, `prompts/real-imam/labels.json` |
 | Staged audio (gitignored) | `artifacts/recitation/imam/` |
-| Restore script | `npm run fixtures:imam` |
+| Restore script | `npm run fixtures:imam` (`scripts/download-imam-fixtures.ts`) |
 | Default tag | `imam-fixtures-v1` (`ZIKRIST_IMAM_RELEASE_TAG` to override) |
 | Asset | `zikrist-imam-fixtures-v1.zip` (~557 MB) |
 | Public URL | `https://github.com/Khizar699/zikrist-cursor/releases/download/imam-fixtures-v1/zikrist-imam-fixtures-v1.zip` |
@@ -38,10 +92,11 @@ Real-imam replay suites stay `stub` until algorithm fixes land. Restoring wavs i
 Liturgy evaluation audio is generated on the machine, not restored from the imam zip:
 
 ```sh
+export PATH="/tmp/ffmpeg-static:$PATH"
 npm run liturgy:tts -- liturgy-takbeer --engine say
 ```
 
-Replace `liturgy-takbeer` with another suite id when that fill session exists. Needs `say` + ffmpeg on Mac (or `edge-tts` when it works). Wavs stay under `artifacts/recitation/liturgy/` and must not be committed.
+Replace the suite id (`liturgy-thana`, `liturgy-ruku`, …) when that fill session exists. Needs `say` + ffmpeg on Mac (Majed). Wavs stay under `artifacts/recitation/liturgy/` and must not be committed.
 
 ## Rights
 

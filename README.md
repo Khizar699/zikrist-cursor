@@ -2,6 +2,8 @@
 
 An offline Quran recognition and translation MVP for iOS and Android. This is a technical evaluation build, not a finished production application.
 
+**Assistants / Grok bots with no chat history:** read [HANDOFF.md](HANDOFF.md) first (14/14 Quran gate, fixture restore, founder labels, teammate lanes).
+
 The app is a single live-translation screen: microphone capture, on-device Tilawa / ONNX recognition, and a dual-pane Arabic + English (or previously installed Urdu) passage. After the first lock, surrounding ayahs are already on screen; the focused ayah is full opacity and neighbors stay dim. It does not include session history, accounts, cloud sync, analytics, training uploads, stories, chat, in-app settings, or local audio saving.
 
 An offline **salah liturgy phrase pack** (`assets/content/salah-liturgy.json`) ships Arabic + English glosses, IDs, categories, and SHA-256 row hashes for Phase 1 formulas (takbeer, thana, istiʿadha, ruku/sujood tasbih, rising from ruku, tashahhud, darood Ibrahimiyyah, amin, tasleem). English is labeled a liturgy/prayer gloss, not a Quran translation. A separate matcher (`src/core/salah-liturgy-matcher.ts`) scores Tilawa transcript tokens against that pack and emits `kind: 'salah_liturgy'` locks. The listening screen then looks up that pack row and shows **Arabic + the pack English gloss**, labeled Prayer / liturgy so it is not presented as a Quran ayah. Quran dual-pane passage follow still takes over on the next `verse_match`. This v1 set is a common mosque subset, not every madhhab variant, and is not claimed imam-ready. Qunoot and a separate liturgy Basmala row stay deferred. Verify the pack with `npm run liturgy:verify` (also hooked from `npm run assets:verify`). Headless liturgy replay is registered (`npm run test:replay -- liturgy`); `liturgy-takbeer` and `liturgy-thana` are `status: ready` after generating their gitignored WAVs (`npm run liturgy:tts -- liturgy-takbeer` / `liturgy-thana`) and remaining suites skip with `missing_fixture` (not a PASS). Quran replay `npm run test:replay -- all` remains the 14-suite regression gate. Matcher thresholds were not retuned for this harness pass.
@@ -34,7 +36,7 @@ npm run assets:verify
 npm run ios
 ```
 
-Friends restoring **evaluation audio** (gitignored, not git LFS) should follow [HANDOFF.md](HANDOFF.md): `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam`. Liturgy TTS wavs are regenerated with `npm run liturgy:tts -- <id> --engine say`.
+Friends restoring **evaluation audio** (gitignored, not git LFS) should follow [HANDOFF.md](HANDOFF.md): `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam`. Liturgy TTS wavs are regenerated with ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say` (Mac Majed). New agents: the top of `HANDOFF.md` is the no-history briefing.
 
 The model and recognition tables are approximately 104 MB on disk, before native runtime and application overhead. They are excluded from Git and restored from pinned URLs with SHA-256 verification. The application bundles these assets. This UI pass auto-prepares the English translation (about 1.2 MB) on first launch; a previously installed Urdu pack is still used if that is the saved language. At most two language packs are retained. Internet is needed for initial language installation and development-server loading; a release build with an installed pack performs recognition without a server.
 
