@@ -1,4 +1,4 @@
-/** Offline salah liturgy pack schema. Data only — not a matcher. */
+/** Offline salah liturgy pack schema. Matching lives in salah-liturgy-matcher.ts. */
 
 export const SALAH_LITURGY_KIND = 'salah_liturgy';
 export const SALAH_LITURGY_ENGLISH_KIND = 'liturgy_gloss';

@@ -53,15 +53,21 @@ Test at least a mid-range Android, a lower-memory supported iPhone, and a recent
 
 Public distribution also requires model/content rights clearance and store privacy declarations. Stories, accounts, chat, session history and dataset contribution are not implemented in this MVP.
 
-## Salah liturgy corpus (Phase 1 data only)
+## Salah liturgy matcher (token detector, no UI)
 
-Offline pack: `assets/content/salah-liturgy.json` (v1, 18 phrases). Schema/hash helper: `src/core/salah-liturgy.ts`. Verify: `npm run liturgy:verify` (also the first step of `npm run assets:verify`).
+Pack remains `assets/content/salah-liturgy.json` (v1, 18 phrases) + `src/core/salah-liturgy.ts`. Detector: `src/core/salah-liturgy-matcher.ts`, hooked from `src/services/listening.ts` on `RecitationFollower.lastHeardTokens`. `npm run liturgy:verify` still 18/18. Units: `tests/salah-liturgy-matcher.test.ts`.
 
-Shipped: takbeer, Hanafi thana, istiʿadha, ruku/sujood tasbih (± وبحمده), jamiʿ bayn (سمع الله لمن حمده / ربنا ولك الحمد and two short variants), Ibn Masʿūd/Hanafi tashahhud, Ibrahimiyyah darood (ṣalli, bārik, and combined), amin, tasleem (± وَبَرَكَاتُهُ). English fields are **liturgy glosses**, not a Quran translation edition. Commercial redistribution of the glosses is unreviewed (`release_blocker_until_rights_review`).
+Event API (not a Quran `verse_match`; English gloss stays on the pack row, matcher does not invent text):
 
-Deferred: `dua_qunoot` (contested Witr vs Fajr wordings), `basmala_liturgy` (reuse Quran Basmala hold), sitting between sujood (`رب اغفر لي`), Shafiʿi wajjahtu istiftah, darood `في العالمين`, longer istiʿadha.
+```ts
+{ kind: 'salah_liturgy'; phraseId: string; category: string; atMs: number; confidence?: number }
+```
 
-**This pack does not change `RecitationFollower`.** Quran `npm run test:replay -- all` (14 suites) remains the recognition regression gate. Matcher, on-screen liturgy display, and liturgy replay fixtures are later sessions (`prompts/salah-liturgy/02-matcher.md` onward).
+`confidence` is a token-similarity score in 0–1, not calibrated probability and not shown as percent certainty. Basmala stays on the Quran hold path. Short takbeer / amin / jamiʿ bayn need an isolated window and are refused while a Quran ayah is mid-follow. When liturgy locks, listening drops that hop’s `verse_match` / `word_progress` / `heard_words` and resets follower+gate so liturgy cannot become a displayed ayah. `scripts/replay.ts` still runs follower+gate only (Quran 14/14 gate). No on-screen liturgy (`03-display`). No liturgy WAV fixtures (`04-replay-suites`).
+
+Open risks: takbeer is two tokens — mosque/ASR `الله أكبر` inside Quran 29:45 or a noisy mid-ayah decode could still false-lock on-device despite isolation rules (unmeasured). Amin is one token. Romanized long-phrase ASR is untested; units use corpus Arabic. Follower locate thresholds were not retuned.
+
+Shipped phrases and deferred rows are unchanged from the corpus pack. Quran `npm run test:replay -- all` (14 suites) remains the recognition regression gate (Mac verification).
 
 ## Headless replay harness (2026-09-15)
 

@@ -460,6 +460,8 @@ function engineFromSession(session: TilawaSession): TranscribeFn {
 /** Live acquire / follow / reacquire. Uses Tilawa only as transcribe + Quran index. */
 export class RecitationFollower {
   phase: FollowerPhase = 'acquiring';
+  /** Latest Tilawa transcript tokens. Liturgy scores these; lock rules stay in this class. */
+  lastHeardTokens: string[] = [];
   private window: Float32Array<ArrayBufferLike> = new Float32Array(0);
   private fresh = 0;
   private mismatches = 0;
@@ -489,6 +491,19 @@ export class RecitationFollower {
     this.queueTimings = {};
     this.trimmedForShortLast = false;
     this.heardMuqattaatTokens = [];
+    this.lastHeardTokens = [];
+  }
+
+  get lockedRef(): VerseRef | null {
+    return this.lock ? { surah: this.lock.surah, ayah: this.lock.ayah } : null;
+  }
+
+  get lockedAyahComplete(): boolean {
+    return this.lock !== null && this.ayahComplete(this.lock);
+  }
+
+  private noteHeardTokens(text: string): void {
+    this.lastHeardTokens = text.trim().split(/\s+/).filter(Boolean);
   }
 
   async feed(samples: Float32Array, timings: FeedTimings = {}): Promise<RecognitionMessage[]> {
@@ -542,6 +557,7 @@ export class RecitationFollower {
     this.fresh = 0;
     const result = await this.transcribe(this.window, true);
     this.noteCycle(result, true);
+    this.noteHeardTokens(result.text);
     const recovered = await this.recoverOpeningMuqattaat(result);
     if (recovered) return recovered;
     return this.lockFromTranscript(result, false);
@@ -740,6 +756,7 @@ export class RecitationFollower {
     this.noteCycle(result, locate);
     const text = result.text.trim();
     const recognized = text.split(/\s+/).filter(Boolean);
+    this.noteHeardTokens(text);
     const previous = this.previousVerse(current);
     const currentScore = explainScore(text, current);
     const nextScore = explainScore(text, next);
