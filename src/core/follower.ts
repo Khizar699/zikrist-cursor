@@ -113,8 +113,10 @@ function openingWordMatch(left: string, right: string): boolean {
  * verse word may not, so قُلْ … ٱللَّهُ cannot stand in for قُل لَّوْ شَاءَ. */
 function contiguousAlignFromOpening(recognized: string[], verseWords: string[]): number[] {
   if (!verseWords.length) return [];
+  // Shared opening Basmala is not ayah-1 body evidence (الرحمن in 55:1 vs 001001).
+  const from = leadingBasmalaWords(recognized);
   let start = -1;
-  for (let index = 0; index < recognized.length; index++) {
+  for (let index = from; index < recognized.length; index++) {
     if (openingWordMatch(recognized[index]!, verseWords[0]!)) {
       start = index;
       break;
@@ -851,7 +853,8 @@ export class RecitationFollower {
     if (this.onlySharedOpening(recognized, verse)) return false;
     // Isolated mysterious-letter ayahs (e.g. 7:1 المص) need that token as a whole
     // word. Use phoneme body tokens: Uthmani الٓمٓصٓ is longer than 5 because of
-    // maddahs, and substring hits like المصدر / المدرس must not lock.
+    // maddahs, and substring hits like المصدر / المدرس must not lock. The same
+    // phoneme body is how 2:1 الم locks (not Uthmani الٓمٓ).
     const { words: body } = verseAlignWords(verse);
     if (body.length === 1 && compact(body[0]!).length <= 5) {
       const token = compact(body[0]!);
@@ -889,7 +892,10 @@ export class RecitationFollower {
     };
     if (matched.length && matched[0] === 0) {
       if (!(bodySkip > 0 && words.length > bodySkip && !matched.includes(bodySkip))) {
-        if (!openingIsAtStart(recognized, words) && matched.length < Math.min(2, words.length)) return false;
+        if (!openingIsAtStart(recognized, words)) {
+          // One-word ayah-1 bodies found inside Basmala are not verse evidence.
+          if (words.length <= 1 || matched.length < Math.min(2, words.length)) return false;
+        }
         return openingScore();
       }
     }

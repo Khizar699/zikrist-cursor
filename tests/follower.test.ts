@@ -1013,10 +1013,14 @@ test('Ikhlas audio locks 112:1 even when the engine names Yunus 10:16', async ()
 
 const muqattaat = [
   verse(1, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم'], 'Al-Fatihah'),
-  verse(2, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'الم'], 'Al-Baqarah'),
+  {
+    ...verse(2, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'الم'], 'Al-Baqarah'),
+    text_uthmani: 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ الٓمٓ',
+  },
   verse(2, 2, ['ذلك', 'الكتب', 'لا', 'ريب', 'فيه', 'هدي', 'للمتقين'], 'Al-Baqarah'),
   verse(3, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'الم'], 'Al-Imran'),
   verse(18, 46, ['المال', 'والبنون', 'زينه', 'الحيوه', 'الدنيا'], 'Al-Kahf'),
+  verse(55, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'الرحمن'], 'Ar-Rahman'),
 ];
 
 function muqattaatChampion(surah: number, ayah: number, score: number, extra: Partial<QuranChampionMatch> = {}): QuranChampionMatch {
@@ -1066,6 +1070,16 @@ test('Basmala alone does not lock 2:1', async () => {
     text: 'بسم الله الرحمن الرحيم',
     rawPhonemes: 'بسم الله الرحمن الرحيم',
     championMatch: muqattaatChampion(2, 1, 0.9),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), []);
+  assert.equal(engine.phase, 'acquiring');
+});
+
+test('Basmala alone does not lock 55:1 from the shared الرحمن word', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'بسم الله الرحمن الرحيم',
+    rawPhonemes: 'بسم الله الرحمن الرحيم',
+    championMatch: muqattaatChampion(55, 1, 0.9),
   }]));
   assert.deepEqual(refs(await engine.feed(audio(1))), []);
   assert.equal(engine.phase, 'acquiring');

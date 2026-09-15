@@ -21,7 +21,9 @@ Mandatory regression gates: fatiha, ikhlas, falaq, english-negative, basmala-hol
 
 1. `relatedStem` treats `الم` as a prefix of `المال`, so acquire can commit 18:46.
 2. `ayahInSpan` starts at the engine champion (`2:2` / `18:46`) and never looks back to ayah 1 even when `الم` is still in the window.
-3. `ContinuationGate` requires `matched_indices > 4` after Basmala. 2:1’s only body word is index 4, so a real 2:1 commit stays pending and 2:2 (ayah ≠ 1) displays as the first unique match.
+3. `canLock` scored the whole window against the 3-letter no-Basmala body (`fragmentScore(transcript, الم)` ≈ 0.15). The mysterious-letter whole-word check compared Uthmani `الٓمٓ` to ASR `الم`.
+4. `ContinuationGate` requires `matched_indices > 4` after Basmala. 2:1’s only body word is index 4, so a real 2:1 commit stays pending and 2:2 displays as the first unique match.
+5. Aligning ayah-1 body against Basmala-internal `الرحمن` can false-lock 55:1 from `001001`.
 
 ## Principle
 

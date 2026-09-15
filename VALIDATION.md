@@ -127,3 +127,20 @@ Gate contracts are covered by `tests/replay-suites.test.ts` (`npm test` 99/99). 
 | `kawthar` | `failureMode` `stall_missing_108:3_after_2_matches` (108:1 then 108:2; `wrongSurahRate` 0) |
 
 Remaining suites were not scored here. Overnight locate+follow scoring is still for Sim QA on Mac (or any machine with the model + WAVs). Honest `failureMode` is a valid harness result, not a reason to retune the follower in this change.
+
+## Ayah-1 body evidence (Al-Baqarah start)
+
+Acquire now treats post-Basmala ayah-1 **body** as lock evidence (not Basmala, not a longer prefix lookalike such as `المال` for `الم`). `ContinuationGate` confirms a one-word ayah-1 body on that phoneme token (`الم`, not Uthmani `الٓمٓ`). Linux/x64 `onnxruntime-node` 1.24.3 headless replay on this workspace (not a phone):
+
+| Suite | Result |
+| --- | --- |
+| `longer` | PASS — 2:1@6s → 2:2@8.5 → 2:3@17.5 → 2:4@29 → 2:5@30.5; `failureMode` null. A later 2:6@51.5 also committed after the gated prefix (same extra match when 2:1 was skipped). |
+| `fatiha` | PASS — 1:2–1:7 |
+| `ikhlas` | PASS — 112:1–4 |
+| `falaq` | PASS — 113:1–5 |
+| `english-negative` | PASS — no verse locks |
+| `basmala-hold` | PASS — `001001` alone locked nothing |
+| `cold-start-mid` | PASS — 2:2 |
+| `stall-after-lock` | PASS — 112:2, no silence jump |
+
+`npm test` 108/108. Not a physical-device accuracy claim. Nas 114:6 and Asr/Kawthar/Quraysh were not retuned in this slice.
