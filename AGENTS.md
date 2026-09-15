@@ -25,6 +25,7 @@ Hafs ‘an ‘Asim is the initial corpus assumption, not a claim to support ever
 
 ## Workflow and implementation prompts
 
+0. Read `HANDOFF.md` **Tip state** (and **Dictation for successor bots**) before implementing. Local Cursor Agent/Composer also loads `.cursor/rules/zikrist-continuity.mdc` (`alwaysApply`).
 1. Read this file and inspect relevant code and the current user request.
 2. Use applicable skills available in the session. Do not invent or require missing skills from the reference project.
 3. Verify version-sensitive APIs in installed package types/source and official documentation.

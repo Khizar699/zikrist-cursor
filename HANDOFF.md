@@ -29,7 +29,7 @@ Cheap read order (do not load every `prompts/**` file up front):
 3. Then the **single** open-track prompt named in Tip.
 4. Restore fixtures if missing: `npm run fixtures:recitation` then `npm run fixtures:imam`.
 
-Skip overnight queues unless picking next work. Dictation above is what to **write** in the PR.
+Skip overnight queues unless picking next work. Dictation above is what to **write** in the PR. Local Cursor Agent/Composer: `.cursor/rules/zikrist-continuity.mdc` (`alwaysApply`) — same read order; do not duplicate dictation here.
 
 ## Tip state (update every PR)
 
