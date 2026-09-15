@@ -6,6 +6,8 @@ import {
   FOLLOW_TRIGGER_SEC,
   FOLLOW_WINDOW_SEC,
   FOLLOW_LAST_AYAH_ACCUMULATE_SEC,
+  ACQUIRE_MAX_SEC,
+  ACQUIRE_AFTER_BASMALA_SEC,
   type TranscribeFn,
 } from '../src/core/follower';
 import type { RecognitionMessage } from '../src/core/types';
@@ -1215,5 +1217,50 @@ test('المصدر still does not lock 7:1 from a substring', async () => {
   }]));
   assert.deepEqual(refs(await engine.feed(audio(1))), []);
   assert.equal(engine.phase, 'acquiring');
+});
+
+test('acquire keeps audio after an opening Basmala so a trailing ayah-1 body is not slid off', async () => {
+  const basmala = {
+    text: 'بسم الله الرحمن الرحيم',
+    rawPhonemes: 'بسم الله الرحمن الرحيم',
+    championMatch: muqattaatChampion(2, 1, 0.9),
+  };
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([basmala, basmala]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), []);
+  resetRecognitionCycles();
+  await engine.feed(audio(5));
+  const cycle = lastRecognitionCycle();
+  assert.ok(cycle);
+  assert.ok(
+    cycle.windowSec > ACQUIRE_MAX_SEC,
+    `expected Basmala-hold window > ${ACQUIRE_MAX_SEC}s, got ${cycle.windowSec}`,
+  );
+  assert.ok(cycle.windowSec <= ACQUIRE_AFTER_BASMALA_SEC + 0.05);
+  assert.equal(engine.phase, 'acquiring');
+});
+
+test('acquire without Basmala stays at the 4s cap', async () => {
+  const noise = { text: 'zzzz yyyy xxxx', rawPhonemes: 'zzzz yyyy xxxx' };
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([noise, noise]));
+  await engine.feed(audio(1));
+  resetRecognitionCycles();
+  await engine.feed(audio(5));
+  const cycle = lastRecognitionCycle();
+  assert.ok(cycle);
+  assert.ok(
+    cycle.windowSec <= ACQUIRE_MAX_SEC + 0.05,
+    `acquire window grew to ${cycle.windowSec} without Basmala`,
+  );
+});
+
+test('a Mac-length mixed window with 2:2 champion still first-locks 2:1', async () => {
+  const spoken = 'الرحمن الرحيم الم ذلك الكتب لا ريب فيه';
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: muqattaatChampion(2, 2, 0.88),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
 });
 

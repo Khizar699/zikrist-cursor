@@ -17,6 +17,8 @@ PR tip `8bd9c35` on Mac: `sequence_break_at_0_got_2:2_expected_2:1`. First confi
 
 Do not insert 2:1 from coverage after a 2:2 lock (`cold-start-mid` must stay 2:2). Need acoustic body evidence: Basmala-**tail** + isolated `الم`, or letter-name spelling of that body. `المال` / `المصدر` stay rejected. `الرحمن` alone still must not name 55:1.
 
+After a heard opening Basmala with no lock, acquire keeps ~8 s (not 4 s) so `الم` at the end of 002001 is still in the window at the Mac 2:2@11s timestamp. Nas/Ikhlas/Asr clips do not start with Basmala, so they stay at 4 s.
+
 ## Keep
 
 Nas last-ayah seed-trim, exact-enough 7:1 (no `المصدر`), Basmala-echo, Asr leftover `relatedStem`.

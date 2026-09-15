@@ -12,7 +12,11 @@ export type FeedTimings = { queueWaitMs?: number; stallMs?: number };
 
 const SAMPLE_RATE = 16000;
 const ACQUIRE_MIN_SEC = 0.9;
-const ACQUIRE_MAX_SEC = 4;
+export const ACQUIRE_MAX_SEC = 4;
+/** After an opening Basmala with no lock yet, keep enough audio that a trailing
+ * one-word ayah-1 body (الم at the end of a 7.6 s 002001) is not slid off
+ * before 2:2 begins. Nas/Ikhlas clips do not start with Basmala. */
+export const ACQUIRE_AFTER_BASMALA_SEC = 8;
 export const FOLLOW_WINDOW_SEC = 1.2;
 export const FOLLOW_TRIGGER_SEC = 0.4;
 /** Grow the follow window only for a short last ayah of the current surah. */
@@ -448,6 +452,7 @@ export class RecitationFollower {
   private queueTimings: FeedTimings = {};
   private bodyPrefixCounts: Map<string, number> | null = null;
   private trimmedForShortLast = false;
+  private heldOpeningBasmala = false;
   private readonly transcribe: TranscribeFn;
 
   constructor(private readonly db: QuranDB, transcribe: TranscribeFn | TilawaSession) {
@@ -464,6 +469,7 @@ export class RecitationFollower {
     this.wordIndex = -1;
     this.queueTimings = {};
     this.trimmedForShortLast = false;
+    this.heldOpeningBasmala = false;
   }
 
   async feed(samples: Float32Array, timings: FeedTimings = {}): Promise<RecognitionMessage[]> {
@@ -528,6 +534,7 @@ export class RecitationFollower {
     const text = result.text.trim();
     const recognized = text.split(/\s+/).filter(Boolean);
     if (!recognized.length) return [];
+    if (!this.lock) this.noteOpeningBasmala(recognized);
     const raw = this.rawMatch(result, allowSearch);
     if (!raw) return [];
     const ranked = rerankChampion(raw, this.priorSurah);
@@ -579,8 +586,16 @@ export class RecitationFollower {
   }
 
   private followMaxSec(): number {
-    if (this.phase !== 'following' || !this.lock) return ACQUIRE_MAX_SEC;
+    if (this.phase !== 'following' || !this.lock) {
+      return this.heldOpeningBasmala ? ACQUIRE_AFTER_BASMALA_SEC : ACQUIRE_MAX_SEC;
+    }
     return this.shortLastAyahFollow(this.lock) ? FOLLOW_LAST_AYAH_ACCUMULATE_SEC : FOLLOW_WINDOW_SEC;
+  }
+
+  private noteOpeningBasmala(recognized: string[]): void {
+    if (leadingBasmalaWords(recognized) > 0 || countLeadingBasmalaTail(recognized) > 0) {
+      this.heldOpeningBasmala = true;
+    }
   }
 
   /** Next ayah is the last of this surah and short enough that a 1.2 s
@@ -805,6 +820,7 @@ export class RecitationFollower {
     this.mismatches = 0;
     this.wordIndex = matched.length ? matched[matched.length - 1]! : -1;
     this.trimmedForShortLast = false;
+    this.heldOpeningBasmala = false;
     this.window = keepLast(this.window, KEEP_AFTER_COMMIT_SEC);
     this.fresh = 0;
     const prefix = displayBodyWords(verse).slice(0, matched.length);
@@ -859,6 +875,7 @@ export class RecitationFollower {
     this.lock = null;
     this.wordIndex = -1;
     this.mismatches = 0;
+    this.heldOpeningBasmala = false;
     if (clearWindow) {
       this.window = new Float32Array(0);
       this.fresh = 0;

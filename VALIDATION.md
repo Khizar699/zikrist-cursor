@@ -130,7 +130,7 @@ Remaining suites were not scored here. Overnight locate+follow scoring is still 
 
 ## Ayah-1 body evidence (Al-Baqarah start)
 
-Rebased onto main `802bc66`. Acquire treats post-Basmala ayah-1 **body** as lock evidence. Opening align uses a tight stem so `الم` cannot lock `المال`; follow leftover matching still allows ASR `الا` to hit `الانسن`. Mysterious-letter tokens accept a one-letter elongation (`المي`) or recited letter names (`الف لام ميم` / `الميم`) but not `المصدر` / `المال`. Isolated `الم` (compact length 3) can locate; equivalent muqattaʿāt such as 3:1 are not a close-rival veto of 2:1. A 4 s Mac window that has slid past `بسم` but still has `الرحمن الرحيم الم` is ayah-1 evidence, not the 55:1-inside-Basmala false lock. Keep Nas last-ayah seed-trim and Basmala-echo 55:1. Linux/x64 `onnxruntime-node` 1.24.3 headless replay (not a phone). **Mac `npm run test:replay -- longer` is the acceptance bar** — tip `8bd9c35` first-confirmed **2:2@11s** (never 2:1).
+Rebased onto main `802bc66`. Acquire treats post-Basmala ayah-1 **body** as lock evidence. Opening align uses a tight stem so `الم` cannot lock `المال`; follow leftover matching still allows ASR `الا` to hit `الانسن`. Mysterious-letter tokens accept a one-letter elongation (`المي`) or recited letter names (`الف لام ميم` / `الميم`) but not `المصدر` / `المال`. Isolated `الم` (compact length 3) can locate; equivalent muqattaʿāt such as 3:1 are not a close-rival veto of 2:1. A 4 s Mac window that has slid past `بسم` but still has `الرحمن الرحيم الم` is ayah-1 evidence, not the 55:1-inside-Basmala false lock. After a heard opening Basmala with no lock, acquire keeps ~8 s so `الم` is still in the window at the observed Mac 2:2@11s timestamp. Keep Nas last-ayah seed-trim and Basmala-echo 55:1. Linux/x64 `onnxruntime-node` 1.24.3 headless replay (not a phone). **Mac `npm run test:replay -- longer` is the acceptance bar** — tip `8bd9c35` first-confirmed **2:2@11s** (never 2:1).
 
 | Suite | Result |
 | --- | --- |
@@ -147,5 +147,5 @@ Rebased onto main `802bc66`. Acquire treats post-Basmala ayah-1 **body** as lock
 | `kawthar` | PASS — 108:1@7.75 → 108:2@8.75 → 108:3@10.25 |
 | `quraysh` | PASS — 106:1@2 → 106:2@7.5 → 106:3@11 → 106:4@20.5 |
 
-`npm test` 128/128. Linux longer still 2:1 first on the previous tip; this follow-up was not re-run here (no ONNX/WAV fixtures in this workspace). nas/fatiha/asr/kawthar/quraysh/ikhlas/falaq Linux results above are from the prior tip. Not a physical-device accuracy claim. **Do not merge until Mac `test:replay -- longer` first-locks 2:1.**
+`npm test` 131/131. Linux longer still 2:1 first on the previous tip; this follow-up was not re-run here (no ONNX/WAV fixtures in this workspace). nas/fatiha/asr/kawthar/quraysh/ikhlas/falaq Linux results above are from the prior tip. Not a physical-device accuracy claim. **Do not merge until Mac `test:replay -- longer` first-locks 2:1.**
 
