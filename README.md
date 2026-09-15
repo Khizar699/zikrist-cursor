@@ -34,6 +34,8 @@ npm run assets:verify
 npm run ios
 ```
 
+Friends restoring **evaluation audio** (gitignored, not git LFS) should follow [HANDOFF.md](HANDOFF.md): `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam`. Liturgy TTS wavs are regenerated with `npm run liturgy:tts -- <id> --engine say`.
+
 The model and recognition tables are approximately 104 MB on disk, before native runtime and application overhead. They are excluded from Git and restored from pinned URLs with SHA-256 verification. The application bundles these assets. This UI pass auto-prepares the English translation (about 1.2 MB) on first launch; a previously installed Urdu pack is still used if that is the saved language. At most two language packs are retained. Internet is needed for initial language installation and development-server loading; a release build with an installed pack performs recognition without a server.
 
 To test without Metro, build a release configuration, install the language while online, then disconnect networking:
@@ -107,6 +109,7 @@ Restore EveryAyah/Alafasy 16 kHz mono WAV fixtures (gitignored under `artifacts/
 
 ```bash
 npm run fixtures:recitation
+npm run fixtures:imam              # GitHub Release zip → artifacts/recitation/imam/ (see HANDOFF.md)
 npm run test:replay -- --check-fixtures
 ```
 
@@ -143,7 +146,7 @@ npm run test:replay -- --include-pending   # 14 + real-imam + liturgy (stubs ski
 
 Each suite writes `artifacts/qa-runs/replay-<suite>.json` with `matches[{surah,ayah,audioSeconds,score}]`, `firstLockSeconds`, `clocks`, `failureMode`, `wrongSurahRate`, `wrongSurahCount`, and `firstLockWrongSurah`. `english-negative` PASSes only when no verse commits. `basmala-hold` PASSes only when `001001` alone locks neither 1:1 nor any other verse. Honest `failureMode` strings are expected when the current follower misses a suite — this harness does not retune acquire/follow.
 
-Default `npm run test:replay -- all` is the original **14** EveryAyah suites and remains the Quran regression gate. The real-imam pack is a **scaffold** using Prompt Smith docs in `prompts/real-imam/` (queue, FIXTURES, LIVE-FEEL, suite prompts, `manifest.stub.json`). Founder-verified ayah + timestamp labels are in `prompts/real-imam/LABELS.md` and `labels.json` (ground truth; ignore hypothesized probe locks). Suites stay `stub` — Mac 2026-09-16 probes lock Fatir 35:1–8 and miss Subayyal (expected 4:129 → 41:34) and Qiyam (expected 36:16 → 78:4). Founder drop path: `~/Desktop/zikrist-imam-clips/`. Staging (gitignored): `artifacts/recitation/imam/<suite-id>/<qari-or-source>/`. `npm run test:replay -- real-imam` **skips** stub suites with `missing_fixture` — it does not PASS.
+Default `npm run test:replay -- all` is the original **14** EveryAyah suites and remains the Quran regression gate. The real-imam pack is a **scaffold** using Prompt Smith docs in `prompts/real-imam/` (queue, FIXTURES, LIVE-FEEL, suite prompts, `manifest.stub.json`). Founder-verified ayah + timestamp labels are in `prompts/real-imam/LABELS.md` and `labels.json` (ground truth; ignore hypothesized probe locks). Suites stay `stub` — Mac 2026-09-16 probes lock Fatir 35:1–8 and miss Subayyal (expected 4:129 → 41:34) and Qiyam (expected 36:16 → 78:4). Friends restore clips with `npm run fixtures:imam` from GitHub Release tag `imam-fixtures-v1` (not git LFS; see [HANDOFF.md](HANDOFF.md)). Founder drop path: `~/Desktop/zikrist-imam-clips/`. Staging (gitignored): `artifacts/recitation/imam/<suite-id>/<qari-or-source>/`. `npm run test:replay -- real-imam` **skips** stub suites with `missing_fixture` — it does not PASS.
 
 Salah liturgy replay (`prompts/salah-liturgy/manifest.stub.json`): staging (gitignored) `artifacts/recitation/liturgy/<suite-id>/`. **`liturgy-takbeer` and `liturgy-thana` are `status: ready`** with clips `liturgy-takbeer/liturgy-takbeer__edge-tts__ar-SA-HamedNeural.wav` and `liturgy-thana/liturgy-thana__edge-tts__ar-SA-HamedNeural.wav`. Mac generates those 16 kHz mono PCM16 WAVs from pack `arabic_uthmani`. Founder Mac: edge-tts HTTP 403; working thana command is `export PATH="/tmp/ffmpeg-static:$PATH"` then `npm run liturgy:tts -- liturgy-thana --engine say` (`say` Majed `ar_001`, same dest as clip_path). Then `npm run test:replay -- liturgy-takbeer` and `liturgy-thana` must PASS (not skip). Default `all` stays the original **14** Quran names. Other liturgy suites remain stubs and **skip** with `missing_fixture` — not PASS. No liturgy evaluation audio is committed; do not drop silent fake WAVs. Mixed suites may reuse EveryAyah Fatiha WAVs only for the Quran half after `npm run fixtures:recitation`. Scoring uses PCM through `RecitationFollower.lastHeardTokens` + `SalahLiturgyMatcher` (same as live listening). Sample skip JSON (still-stub ruku): `fixtures/salah-liturgy/sample-skip.json`.
 
@@ -156,5 +159,5 @@ Phrases still lacking audio (no ready WAV under `artifacts/recitation/liturgy/`)
 
 This is not a mosque/device liturgy accuracy claim. Shared replay helpers changed; Mac must re-verify `npm run test:replay -- all` = 14/14. Linux ONNX is not that gate.
 
-Requires `onnxruntime-node` (devDependency), pinned model assets (`npm run assets:download`), and the WAV fixtures. Cloud/Linux agents can unit-test gates without ONNX; acoustic scoring is for a machine that already has the model + clips (typically Sim QA on Mac). Quran `all` scoring still needs EveryAyah restore via `npm run fixtures:recitation`. Real-imam scoring needs founder clips and does not use that download script. Liturgy-thana scoring on founder Mac: `export PATH="/tmp/ffmpeg-static:$PATH"` then `npm run liturgy:tts -- liturgy-thana --engine say` (Majed `ar_001`; WAV gitignored) and does not use the EveryAyah download script.
+Requires `onnxruntime-node` (devDependency), pinned model assets (`npm run assets:download`), and the WAV fixtures. Cloud/Linux agents can unit-test gates without ONNX; acoustic scoring is for a machine that already has the model + clips (typically Sim QA on Mac). Quran `all` scoring still needs EveryAyah restore via `npm run fixtures:recitation`. Real-imam clips restore via `npm run fixtures:imam` (GitHub Release zip; missing release is a clear 404 until the maintainer uploads it). Liturgy wavs are regenerated with `npm run liturgy:tts -- <id> --engine say` (gitignored) and are not in the imam zip. Liturgy-thana on founder Mac: `export PATH="/tmp/ffmpeg-static:$PATH"` then `npm run liturgy:tts -- liturgy-thana --engine say` (Majed `ar_001`).
 

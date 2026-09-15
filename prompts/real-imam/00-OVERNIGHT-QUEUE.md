@@ -24,9 +24,10 @@ Do not mega-merge algorithm retunes with harness scaffolding.
 
 ## Harness registration (do not duplicate these prompts)
 
-Suite ids, naming, and `~/Desktop/zikrist-imam-clips/` are defined above and in `01-fixture-scaffold.md` / `FIXTURES.md`. Founder-verified labels (`LABELS.md`, `labels.json`) are ground truth; ignore hypothesized probe locks. The replay runner reads `prompts/real-imam/manifest.stub.json` — suites stay `stub` (see `MANIFEST-NOTE.md`).
+Suite ids, naming, and `~/Desktop/zikrist-imam-clips/` are defined above and in `01-fixture-scaffold.md` / `FIXTURES.md`. Founder-verified labels (`LABELS.md`, `labels.json`) are ground truth; ignore hypothesized probe locks. Friends restore audio with `npm run fixtures:imam` (GitHub Release zip; see `HANDOFF.md`). The replay runner reads `prompts/real-imam/manifest.stub.json` — suites stay `stub` (see `MANIFEST-NOTE.md`).
 
 ```bash
+npm run fixtures:imam                # GitHub Release zip → artifacts/recitation/imam/
 npm run test:replay -- all           # hard gate: original 14 only
 npm run test:replay -- real-imam     # stub suites SKIP with missing_fixture (not PASS)
 ```

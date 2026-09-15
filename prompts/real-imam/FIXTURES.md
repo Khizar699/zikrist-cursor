@@ -1,17 +1,34 @@
 # Real-imam / live-tilawah fixtures
 
-Large audio is gitignored. Founder drops source media in `~/Desktop/zikrist-imam-clips/`.
+Large audio is gitignored (no git LFS). Founder-verified **labels** stay in git. Friends restore clips from a GitHub Release zip. Founder can also drop source media in `~/Desktop/zikrist-imam-clips/`.
+
+## Friend restore
+
+See `HANDOFF.md`. After clone:
+
+```sh
+npm i
+npm run fixtures:recitation
+npm run fixtures:imam
+```
+
+`npm run fixtures:imam` downloads public `zikrist-imam-fixtures-v1.zip` from tag `imam-fixtures-v1` (override with `ZIKRIST_IMAM_RELEASE_TAG`) and unpacks into `artifacts/recitation/imam/`, merging `LABELS.md`, `labels.json`, suite folders, `_inbox/`, and `sources/`. It skips when that `LABELS.md` and at least one suite wav already exist (`--force` to re-download). If the Release is missing, the script prints HTTP 404 and the Releases page URL.
+
+Liturgy TTS wavs are **not** in that zip. Regenerate with `npm run liturgy:tts -- <id> --engine say` (gitignored).
 
 ## Ground truth
 
-Founder-verified ayah + timestamp labels live in git at `prompts/real-imam/LABELS.md` and `prompts/real-imam/labels.json` (Khizar Javed, 2026-09-16). Those files are **ground truth**. Ignore hypothesized probe locks (including `probes/hypothesized-locks.txt` if present). Do not invent ayah numbers beyond the attached labels. A copy may also exist under `artifacts/recitation/imam/` after clips are staged.
+Founder-verified ayah + timestamp labels live in git at `prompts/real-imam/LABELS.md` and `prompts/real-imam/labels.json` (Khizar Javed, 2026-09-16). Those files are **ground truth**. Ignore hypothesized probe locks (including `probes/hypothesized-locks.txt` if present). Do not invent ayah numbers beyond the attached labels. A copy may also unpack into `artifacts/recitation/imam/LABELS.md` from the zip.
 
 ## Layout
 
 ```
 artifacts/recitation/imam/
-  manifest.json
+  LABELS.md
+  labels.json
   <suite-id>/<qari-or-source>/<files>.wav
+  _inbox/
+  sources/
   _stubs/   # placeholder entries until clips arrive
 ```
 
@@ -33,7 +50,7 @@ See `prompts/real-imam/00-OVERNIGHT-QUEUE.md` and `01-fixture-scaffold.md`.
 - `stub` — no ready evaluation yet; automated suite must **skip**, not PASS
 - `ready` — clip present + Mac-verified notes **and** algorithm good enough to flip
 
-All suites in `manifest.stub.json` stay `stub` until algorithm fixes land. See `MANIFEST-NOTE.md`.
+All suites in `manifest.stub.json` stay `stub` until algorithm fixes land. Restoring the zip is not a readiness flip. See `MANIFEST-NOTE.md`.
 
 ## Label-fill (founder labels landed 2026-09-16)
 

@@ -190,6 +190,12 @@ Docs only. `LABELS.md` + `labels.json` committed as ground truth. `manifest.stub
 
 This workspace: `npm run typecheck` pass; `npx tsx --test tests/real-imam-pack.test.ts` 3/3; `npx tsx scripts/replay.ts real-imam` five skipped `missing_fixture` (not PASS). Full `npm test` 174/176 — two ENOENT on missing `assets/model/quran.json` (pre-existing, not this change). Lint still reports unused `openingScore`. Acoustic Quran `all` and physical-device probes were not scored here.
 
+## Imam fixture handoff restore (GitHub Release zip)
+
+Friends clone without git LFS. Labels stay in git. Audio comes from public Release asset `zikrist-imam-fixtures-v1.zip` on tag `imam-fixtures-v1` via `npm run fixtures:imam`. Suites remain `stub`. Matcher/follower were not retuned. No wav/mp3 committed. Liturgy TTS remains `npm run liturgy:tts -- <id> --engine say`. See `HANDOFF.md`.
+
+This workspace: `npm run typecheck` pass; `npx tsx --test tests/download-imam-fixtures.test.ts tests/real-imam-pack.test.ts` 8/8; missing-tag run prints HTTP 404 + Releases page (exit 1). `npx eslint` on the new script/test is clean. No wav/mp3 tracked.
+
 ## Salah liturgy replay suites (stub-first, 2026-09-15)
 
 Harness only. Registers the eight suite ids from `prompts/salah-liturgy/04-replay-suites.md` + `manifest.stub.json`. **No liturgy WAV or MP3 is committed.** Silent STUB audio was not invented. Follower and liturgy matcher thresholds were not retuned. Default 14 Quran suites still do not run the liturgy matcher.
