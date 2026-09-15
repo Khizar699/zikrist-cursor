@@ -42,3 +42,11 @@
 ## Checks / device
 
 Headless ONNX replay and unit tests. Not a physical-device, mosque, or battery claim.
+
+## Result
+
+Linux/x64 ONNX after rebase onto Nas #3 (`802bc66`):
+
+- `npm test` 115/115; `npm run typecheck` pass. Lint still reports the pre-existing unused `openingScore` warning.
+- `back-to-back` PASS: 103:1@1s, 103:2@8.75s, 103:3@9.25s, 106:1@23s, 106:2@27s, 106:3@31s, 106:4@40.25s; `failureMode` null; `wrongSurahRate` 0.
+- Standalone `asr`, `quraysh`, `fatiha`, `nas` PASS (Nas 114:1–6 including 114:6@33.75). Not a physical-device claim.

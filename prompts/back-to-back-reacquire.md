@@ -43,8 +43,8 @@ Headless ONNX replay and unit tests. Not a physical-device, mosque, or battery c
 
 ## Result
 
-Linux/x64 ONNX replay after leftover-unexplained last-ayah cold-start:
+Linux/x64 ONNX after leftover-unexplained last-ayah cold-start, rebased onto Nas #3:
 
 - `back-to-back` PASS: 103:1@1s, 103:2@8.75s, 103:3@9.25s, 106:1@23s, 106:2@27s, 106:3@31s, 106:4@40.25s; `failureMode` null; `wrongSurahRate` 0.
-- `asr`, `quraysh`, `fatiha`, `kawthar`, `ikhlas`, `falaq`, `basmala-hold`, `stall-after-lock` PASS.
-- `npm test` 110/110; typecheck pass. Not a physical-device claim.
+- `asr`, `quraysh`, `fatiha`, `nas` PASS (Nas 114:1–6 including 114:6@33.75).
+- `npm test` 115/115; typecheck pass. Not a physical-device claim.
