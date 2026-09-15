@@ -64,5 +64,5 @@ Public distribution also requires model/content rights clearance and store priva
 
 - Ikhlas (`npm run test:replay -- ikhlas`) gated **PASS**: 112:1→4 in order.
 - Fatiha 1:2–7 and Falaq 113:1–5 are later regression gates (green on `d1ba1c9`).
-- Short-surah start/tail: ContinuationGate confirms a one-word ayah-1 body after Basmala; follow advances on unused distinctive tokens of the expected next ayah (including a unique opening or a tail such as الابتر) without re-scoring that tail against the opening. `unused` is stem/word-strict so a current-ayah token cannot consume the next ayah via 0.72 fuzzy after prefix stripping. Nas 114:6 is owned elsewhere.
+- Short-surah start/tail: ContinuationGate confirms a distinctive one-word ayah-1 body after Basmala; a one-word body that is only a Basmala token (الرحمن) cannot first-lock. Follow advances on unused distinctive tokens of the expected next ayah (including a unique opening or a tail such as الابتر) without re-scoring that tail against the opening. `unused` is stem/word-strict so a current-ayah token cannot consume the next ayah via 0.72 fuzzy after prefix stripping. Nas 114:6 is owned elsewhere.
 - Unit tests cover the short ayah-1 confirm, short next/final leftover tokens, and a distant lookalike reject. Not a physical-device claim.

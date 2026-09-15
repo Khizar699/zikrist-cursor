@@ -242,7 +242,19 @@ function heardDistinct(recognized: string[], verse: QuranVerse, skip: number): b
 }
 
 function skipUnusableLock(verse: QuranVerse): boolean {
-  return isFatihaBasmala(verse) || isFatihaBasmalaTail(verse);
+  return isFatihaBasmala(verse) || isFatihaBasmalaTail(verse) || isBasmalaEchoBody(verse);
+}
+
+/** Ayah-1 whose only body word is a Basmala token (55:1 الرحمن). Shared
+ * Basmala audio must not name that surah; a distinctive one-word body
+ * such as والعصر is still lockable. */
+function isBasmalaEchoBody(verse: QuranVerse): boolean {
+  const { words, basmala } = verseAlignWords(verse);
+  if (basmala <= 0 || words.length !== 1) return false;
+  const token = words[0]!;
+  const formula = new Set(['بسم', 'الله', 'الرحمن', 'الرحيم', 'bismi', 'allahi', 'alrahman', 'alrahim']);
+  if (formula.has(token)) return true;
+  return [...formula].some((word) => relatedStem(word, token));
 }
 
 function engineFromSession(session: TilawaSession): TranscribeFn {
