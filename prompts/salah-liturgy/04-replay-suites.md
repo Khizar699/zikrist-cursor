@@ -1,38 +1,61 @@
-# Salah liturgy replay suites (Sim QA)
+# Salah liturgy replay suites (Sim QA harness)
 
 ## Goal
 
-Add headless fixtures + `npm run test:replay` (or `test:replay-liturgy`) suites so Sim QA can overnight-score liturgy without founder mic / before real-imam packs.
+Register **headless liturgy replay suites** (stub-first, like real-imam) so Sim QA can score phrase locks overnight without founder mic. Stubs **skip** with `missing_fixture` — never fake PASS. Default `npm run test:replay -- all` stays the original **14** Quran suites.
 
-## Depends on
+## Depends on (landed / landing)
 
-Corpus + matcher (+ display optional).
+- Corpus + matcher on main (`924e175` lineage): `SalahLiturgyLockEvent`, pack 18 phrases
+- Display PR #11 (Mac-verifying): UI not required for harness gates, but event kind is stable
+- Pattern to mirror: real-imam pack — `prompts/real-imam/manifest.stub.json` + `artifacts/recitation/imam/` + skip-not-PASS
 
-## Suites (minimum)
+## Hard gate
 
-1. `liturgy-takbeer` — lock takbeer; no Quran ayah  
-2. `liturgy-thana` — full thana  
-3. `liturgy-ruku` / `liturgy-sujood`  
-4. `liturgy-tashahhud` (may be long — allow partial milestones)  
-5. `liturgy-then-fatiha` — takbeer/thana then Al-Fatihah still 1:2–7 (regression)  
-6. `fatiha-then-takbeer` — after 1:7, takbeer does not become a wrong ayah  
-7. Negative: English conversation still no Quran + no liturgy (or liturgy none)
+- Mac: `npm run test:replay -- all` = **14/14**
+- Soft nas wsr may remain — do not worsen
+- Do **not** retune Quran follower or liturgy matcher thresholds this session
 
-Audio: TTS or recited fixtures under `artifacts/recitation/liturgy/` — document source/license; gitignore large audio like Quran fixtures.
+## Suite ids (stable)
 
-## Constraints
+| suite_id | expect |
+|----------|--------|
+| `liturgy-takbeer` | lock `takbeer`; no Quran verse_match |
+| `liturgy-thana` | lock `thana` |
+| `liturgy-ruku` | lock `ruku_tasbih` |
+| `liturgy-sujood` | lock `sujood_tasbih` |
+| `liturgy-tashahhud` | lock `tashahhud` (allow partial milestones / multi-window) |
+| `liturgy-then-fatiha` | liturgy then Fatiha still 1:2–7 |
+| `fatiha-then-takbeer` | after 1:7, takbeer → liturgy lock, **not** wrong ayah |
+| `liturgy-english-negative` | English / non-Arabic → no Quran + no liturgy (or document if liturgy none-only) |
 
-- One concern: **fixtures + harness gates**  
-- Do not retune Quran algorithm except fixture expectations  
-- Mac verification for any claim  
-- Keep 14/14 Quran all-suites  
+## Layout
+
+- Manifest (committed): `prompts/salah-liturgy/manifest.stub.json` (or extend overnight queue with same schema as real-imam: `status: stub|ready`, `phrase_id` / expected liturgy sequence, `clip_path`, `license_status`)
+- Audio staging (gitignored): `artifacts/recitation/liturgy/<suite-id>/…wav`
+- Founder/TTS drop notes in README — **do not commit** evaluation audio; no silent fake WAV that would PASS
+- CLI: `npm run test:replay -- liturgy` (or `salah-liturgy`) lists/runs these; stubs skip exit 0 with `missing_fixture`
+
+## Harness notes
+
+- Replay path today is follower-only for Quran; liturgy scoring needs the matcher on the replay/listening path (token or acoustic). Prefer **token-fixture** or PCM→same pipeline as live if already wired — document what was chosen
+- JSON report fields: `phraseId`, `audioSeconds`, `failureMode`, plus existing clocks where useful
+- Reuse EveryAyah WAVs only for mixed suites (`liturgy-then-fatiha`, `fatiha-then-takbeer`)
+
+## Out of scope
+
+- Matcher threshold retunes  
+- UI polish  
+- Real-imam clip fills  
+- Claiming mosque/device liturgy accuracy  
 
 ## Success criteria
 
-1. Named liturgy suites write JSON with phrase id, audioSeconds, failureMode  
-2. Sim QA can run overnight without live mic  
-3. Document commands in README/VALIDATION  
+1. Suite registry + stub manifest committed; `test:replay -- all` still 14 names  
+2. `test:replay -- liturgy` skips stubs (`missing_fixture`, not PASS) when audio absent  
+3. Units cover selection/skip; docs in README/VALIDATION  
+4. Mac 14/14 confirmed if any shared code touched  
 
 ## Deliverable
 
-Suite list, commands, sample JSON, which phrases still lack audio.
+PR: commands, suite list, stub manifest, which phrases still lack audio, sample skip JSON.

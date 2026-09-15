@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "kind": "salah_liturgy_replay",
+  "audio_root": "artifacts/recitation/liturgy",
+  "clip_drop_notes": "TTS or recited WAV; do not commit evaluation audio. Stubs skip with missing_fixture.",
+  "suites": [
+    { "suite_id": "liturgy-takbeer", "status": "stub", "expect_phrase_ids": ["takbeer"], "expect_quran": [], "notes": "takbeer only; no verse_match", "license_status": "unresolved" },
+    { "suite_id": "liturgy-thana", "status": "stub", "expect_phrase_ids": ["thana"], "expect_quran": [], "notes": "full thana", "license_status": "unresolved" },
+    { "suite_id": "liturgy-ruku", "status": "stub", "expect_phrase_ids": ["ruku_tasbih"], "expect_quran": [], "notes": "ruku tasbih", "license_status": "unresolved" },
+    { "suite_id": "liturgy-sujood", "status": "stub", "expect_phrase_ids": ["sujood_tasbih"], "expect_quran": [], "notes": "sujood tasbih", "license_status": "unresolved" },
+    { "suite_id": "liturgy-tashahhud", "status": "stub", "expect_phrase_ids": ["tashahhud"], "expect_quran": [], "notes": "allow partial milestones", "license_status": "unresolved" },
+    { "suite_id": "liturgy-then-fatiha", "status": "stub", "expect_phrase_ids": ["takbeer", "thana"], "expect_quran": [{"surah":1,"ayah":2},{"surah":1,"ayah":3},{"surah":1,"ayah":4},{"surah":1,"ayah":5},{"surah":1,"ayah":6},{"surah":1,"ayah":7}], "notes": "liturgy then Fatiha 1:2-7", "license_status": "unresolved" },
+    { "suite_id": "fatiha-then-takbeer", "status": "stub", "expect_phrase_ids": ["takbeer"], "expect_quran": [{"surah":1,"ayah":2},{"surah":1,"ayah":3},{"surah":1,"ayah":4},{"surah":1,"ayah":5},{"surah":1,"ayah":6},{"surah":1,"ayah":7}], "notes": "after 1:7 takbeer is liturgy not wrong ayah", "license_status": "unresolved" },
+    { "suite_id": "liturgy-english-negative", "status": "stub", "expect_phrase_ids": [], "expect_quran": [], "notes": "no Quran no liturgy", "license_status": "unresolved" }
+  ]
+}

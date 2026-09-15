@@ -12,3 +12,7 @@ Launch **one session at a time**:
 4. `04-replay-suites.md` — headless fixtures + Sim QA gates
 
 Do not mega-merge corpus + matcher + UI in one Cursor session.
+
+
+## After 03-display
+`04-replay-suites.md` + `manifest.stub.json` — stub liturgy replay pack (skip not PASS); Quran all stays 14.
