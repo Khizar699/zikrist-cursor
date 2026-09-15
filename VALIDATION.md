@@ -130,17 +130,20 @@ Remaining suites were not scored here. Overnight locate+follow scoring is still 
 
 ## Ayah-1 body evidence (Al-Baqarah start)
 
-Acquire now treats post-Basmala ayah-1 **body** as lock evidence (not Basmala, not a longer prefix lookalike such as `المال` for `الم`). `ContinuationGate` confirms a one-word ayah-1 body on that phoneme token (`الم`, not Uthmani `الٓمٓ`). Linux/x64 `onnxruntime-node` 1.24.3 headless replay on this workspace (not a phone):
+Rebased onto main `eacf963` (Basmala-echo guard so `001001` cannot first-lock 55:1) / `8f176d4`. Acquire treats post-Basmala ayah-1 **body** as lock evidence (not Basmala, not a longer prefix lookalike such as `المال` for `الم`). Opening align uses a tight stem so `الم` cannot lock `المال`; follow leftover matching still allows ASR `الا` to hit `الانسن` (Asr 103:2). `ContinuationGate` confirms a one-word ayah-1 body on that phoneme token (`الم`, not Uthmani `الٓمٓ`). Linux/x64 `onnxruntime-node` 1.24.3 headless replay on this workspace (not a phone):
 
 | Suite | Result |
 | --- | --- |
-| `longer` | PASS — 2:1@6s → 2:2@8.5 → 2:3@17.5 → 2:4@29 → 2:5@30.5; `failureMode` null. A later 2:6@51.5 also committed after the gated prefix (same extra match when 2:1 was skipped). |
-| `fatiha` | PASS — 1:2–1:7 |
+| `longer` | PASS — 2:1@6s → 2:2@8.5 → 2:3@17.5 → 2:4@29 → 2:5@30.5; `failureMode` null. Extra 2:6–2:11 after the gated prefix (follow overshoot, out of this start-slice). |
+| `fatiha` | PASS — 1:2@9 → 1:7@35 |
 | `ikhlas` | PASS — 112:1–4 |
 | `falaq` | PASS — 113:1–5 |
 | `english-negative` | PASS — no verse locks |
 | `basmala-hold` | PASS — `001001` alone locked nothing |
 | `cold-start-mid` | PASS — 2:2 |
 | `stall-after-lock` | PASS — 112:2, no silence jump |
+| `asr` | PASS — 103:1@1 → 103:2@8.75 → 103:3@9.25 |
+| `kawthar` | PASS — 108:1@7.75 → 108:2@8.75 → 108:3@10.25 |
+| `quraysh` | PASS — 106:1@2 → 106:2@7.5 → 106:3@11 → 106:4@20.5 |
 
-Rebased onto main `eacf963` (Basmala-echo guard for 55:1) / `8f176d4`. Fatiha and short-surah `asr` / `kawthar` / `quraysh` must stay green; this slice does not retune those followers. Nas 114:6 is owned elsewhere. Not a physical-device accuracy claim. Post-rebase Linux replay numbers are recorded after the verification run.
+`npm test` 114/114. Not a physical-device accuracy claim. Nas 114:6 is owned elsewhere.
