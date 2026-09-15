@@ -13,10 +13,12 @@ export type FeedTimings = { queueWaitMs?: number; stallMs?: number };
 const SAMPLE_RATE = 16000;
 const ACQUIRE_MIN_SEC = 0.9;
 export const ACQUIRE_MAX_SEC = 4;
-/** After an opening Basmala with no lock yet, keep enough audio that a trailing
- * one-word ayah-1 body (الم at the end of a 7.6 s 002001) is not slid off
- * before 2:2 begins. Nas/Ikhlas clips do not start with Basmala. */
+/** First-lock acquire window. 002001 is ~7.6 s Basmala+الم; a 4 s cap slides
+ * الم off before the observed Mac 2:2@11s lock. Reacquire stays at
+ * ACQUIRE_MAX_SEC so jump / back-to-back keepLast(4 s) is unchanged. */
 export const ACQUIRE_AFTER_BASMALA_SEC = 8;
+/** Drop this much newest audio when recovering muqattaʿāt from a mixed window. */
+const LOOKBACK_DROP_SEC = 3;
 export const FOLLOW_WINDOW_SEC = 1.2;
 export const FOLLOW_TRIGGER_SEC = 0.4;
 /** Grow the follow window only for a short last ayah of the current surah. */
@@ -50,6 +52,12 @@ function keepLast(audio: Float32Array, seconds: number): Float32Array {
   const trimmed = new Float32Array(keep);
   trimmed.set(audio.subarray(audio.length - keep));
   return trimmed;
+}
+
+function keepFirst(audio: Float32Array, seconds: number): Float32Array {
+  const keep = samplesFor(seconds);
+  if (audio.length <= keep) return audio;
+  return audio.subarray(0, keep);
 }
 
 function compact(text: string): string {
@@ -224,6 +232,15 @@ function heardIsolatedBodyToken(recognized: string[], token: string): boolean {
     return heard === body || openingStem(heard, body) || heardAttachedLetterName(heard, body);
   })) return true;
   return heardMuqattaatSpelling(recognized, body);
+}
+
+/** One-word ayah-1 muqattaʿāt (الم, المص). Not Basmala-echo الرحمن. */
+function isExactMuqattaatAyah1(verse: QuranVerse): boolean {
+  if (verse.ayah !== 1 || skipUnusableLock(verse)) return false;
+  const { words } = verseAlignWords(verse);
+  if (words.length !== 1) return false;
+  const token = compact(words[0]!);
+  return shortAyah1Body(token) && !isSharedBasmalaToken(token);
 }
 
 /** Opening words in order. Extra spoken words may be skipped; a distinctive
@@ -452,7 +469,9 @@ export class RecitationFollower {
   private queueTimings: FeedTimings = {};
   private bodyPrefixCounts: Map<string, number> | null = null;
   private trimmedForShortLast = false;
-  private heldOpeningBasmala = false;
+  /** Exact muqattaʿāt tokens heard during this acquire (الم / letter names).
+   * A later 2:2-dominated CTC decode must not erase them. */
+  private heardMuqattaatTokens: string[] = [];
   private readonly transcribe: TranscribeFn;
 
   constructor(private readonly db: QuranDB, transcribe: TranscribeFn | TilawaSession) {
@@ -469,7 +488,7 @@ export class RecitationFollower {
     this.wordIndex = -1;
     this.queueTimings = {};
     this.trimmedForShortLast = false;
-    this.heldOpeningBasmala = false;
+    this.heardMuqattaatTokens = [];
   }
 
   async feed(samples: Float32Array, timings: FeedTimings = {}): Promise<RecognitionMessage[]> {
@@ -523,7 +542,30 @@ export class RecitationFollower {
     this.fresh = 0;
     const result = await this.transcribe(this.window, true);
     this.noteCycle(result, true);
+    const recovered = await this.recoverOpeningMuqattaat(result);
+    if (recovered) return recovered;
     return this.lockFromTranscript(result, false);
+  }
+
+  /** When a long first-lock window’s CTC names ayah 2+, the older half may
+   * still contain الم that the mixed decode dropped. Look back before
+   * committing 2:2. Reacquire stays 4 s and does not look back. */
+  private async recoverOpeningMuqattaat(result: TranscribeResult): Promise<RecognitionMessage[] | undefined> {
+    if (this.phase !== 'acquiring') return undefined;
+    if (this.window.length <= samplesFor(ACQUIRE_MAX_SEC) + samplesFor(0.5)) return undefined;
+    const raw = result.championMatch;
+    if (!raw || raw.ayah <= 1) return undefined;
+    const current = result.text.trim().split(/\s+/).filter(Boolean);
+    if (this.heardExactMuqattaat(this.acquireEvidence(current))) return undefined;
+    const olderSec = (this.window.length / SAMPLE_RATE) - LOOKBACK_DROP_SEC;
+    if (olderSec < ACQUIRE_MIN_SEC) return undefined;
+    const lookback = await this.transcribe(keepFirst(this.window, olderSec), true);
+    const recovered = this.lockFromTranscript(lookback, false);
+    const match = recovered.find((message) => message.type === 'verse_match');
+    if (!match || match.type !== 'verse_match' || match.ayah !== 1) return undefined;
+    const verse = this.db.getVerse(match.surah, match.ayah);
+    if (!verse || !isExactMuqattaatAyah1(verse)) return undefined;
+    return recovered;
   }
 
   private lockFromTranscript(
@@ -533,20 +575,34 @@ export class RecitationFollower {
   ): RecognitionMessage[] {
     const text = result.text.trim();
     const recognized = text.split(/\s+/).filter(Boolean);
+    const rawEarly = recognized.length ? this.rawMatch(result, allowSearch) : null;
+    if (process.env.ZIKRIST_TRACE === '1') {
+      console.log(JSON.stringify({
+        kind: 'acquire_asr',
+        phase: this.phase,
+        windowSec: Math.round((this.window.length / SAMPLE_RATE) * 100) / 100,
+        text,
+        champion: rawEarly ? `${rawEarly.surah}:${rawEarly.ayah}@${Math.round(rawEarly.score * 100) / 100}` : null,
+      }));
+    }
     if (!recognized.length) return [];
-    if (!this.lock) this.noteOpeningBasmala(recognized);
-    const raw = this.rawMatch(result, allowSearch);
-    if (!raw) return [];
+    if (!this.lock) this.noteHeardMuqattaat(recognized);
+    const evidence = this.acquireEvidence(recognized);
+    const raw = rawEarly;
+    if (!raw) {
+      const isolated = this.lockExactMuqattaatAyah1(text, evidence, ignore);
+      return isolated ?? [];
+    }
     const ranked = rerankChampion(raw, this.priorSurah);
     const acoustic = acousticChampion(raw);
     const attempts = [ranked];
     if (ranked.surah !== acoustic.surah || ranked.ayah !== acoustic.ayah) attempts.push(acoustic);
     let candidates: RecognitionMessage[] | undefined;
-    if (this.locateTextEnough(text, recognized)) {
+    if (this.locateTextEnough(text, evidence)) {
       for (const match of attempts) {
-        const located = this.locateAyah(match, text, recognized);
+        const located = this.locateAyah(match, text, evidence);
         const verse = located ? this.preferCanonicalDuplicate(located, text) : undefined;
-        if (!verse || this.sameRef(verse, ignore) || this.ambiguousSurah(match, verse, text, recognized)) {
+        if (!verse || this.sameRef(verse, ignore) || this.ambiguousSurah(match, verse, text, evidence)) {
           candidates ??= [{
             type: 'verse_candidate',
             candidates: this.candidateList(match),
@@ -555,20 +611,55 @@ export class RecitationFollower {
           }];
           continue;
         }
-        if (!this.canLock(match, verse, text, recognized)) continue;
+        if (!this.canLock(match, verse, text, evidence)) continue;
         const chosen = this.preferCanonicalDuplicate(verse, text);
         if (this.sameRef(chosen, ignore)) continue;
-        return this.commit(chosen, match.score, this.alignForCommit(recognized, chosen));
+        return this.commit(chosen, match.score, this.alignForCommit(evidence, chosen));
       }
-      const alternative = this.alternativeHeardVerse(recognized, text, ranked);
+      const alternative = this.alternativeHeardVerse(evidence, text, ranked);
       if (alternative && !this.sameRef(alternative, ignore)) {
         const chosen = this.preferCanonicalDuplicate(alternative, text);
         if (!this.sameRef(chosen, ignore)) {
-          return this.commit(chosen, this.locationScore(text, chosen), this.alignForCommit(recognized, chosen));
+          return this.commit(chosen, this.locationScore(text, chosen), this.alignForCommit(evidence, chosen));
         }
       }
     }
+    const isolated = this.lockExactMuqattaatAyah1(text, evidence, ignore);
+    if (isolated) return isolated;
     return this.unconfirmedMessages(recognized, ranked, candidates);
+  }
+
+  private lockExactMuqattaatAyah1(
+    text: string,
+    recognized: string[],
+    ignore?: VerseRef,
+  ): RecognitionMessage[] | undefined {
+    let best: QuranVerse | undefined;
+    let bestScore = -1;
+    for (const verse of this.db.verses) {
+      if (!isExactMuqattaatAyah1(verse) || this.sameRef(verse, ignore)) continue;
+      const token = verseAlignWords(verse).words[0]!;
+      if (!heardIsolatedBodyToken(recognized, token)) continue;
+      if (!this.hasVerseEvidence(text, verse, recognized)) continue;
+      const score = this.locationScore(token, verse);
+      if (!best || score > bestScore + 0.03) {
+        best = verse;
+        bestScore = score;
+      }
+    }
+    if (!best) return undefined;
+    const chosen = this.preferCanonicalDuplicate(best, text);
+    const match: QuranChampionMatch = {
+      surah: chosen.surah,
+      ayah: chosen.ayah,
+      text: chosen.text_uthmani,
+      phonemes_joined: chosen.phonemes_joined,
+      score: Math.max(LOCK_CLEAR_SCORE, bestScore),
+      raw_score: Math.max(LOCK_CLEAR_SCORE, bestScore),
+      bonus: 0,
+    };
+    if (!this.canLock(match, chosen, text, recognized)) return undefined;
+    return this.commit(chosen, match.score, this.alignForCommit(recognized, chosen));
   }
 
   /** Isolated الم is enough to locate; a 5-letter garbled Kawthar opening is not. */
@@ -586,16 +677,42 @@ export class RecitationFollower {
   }
 
   private followMaxSec(): number {
-    if (this.phase !== 'following' || !this.lock) {
-      return this.heldOpeningBasmala ? ACQUIRE_AFTER_BASMALA_SEC : ACQUIRE_MAX_SEC;
-    }
+    if (this.phase === 'acquiring') return ACQUIRE_AFTER_BASMALA_SEC;
+    if (this.phase !== 'following' || !this.lock) return ACQUIRE_MAX_SEC;
     return this.shortLastAyahFollow(this.lock) ? FOLLOW_LAST_AYAH_ACCUMULATE_SEC : FOLLOW_WINDOW_SEC;
   }
 
-  private noteOpeningBasmala(recognized: string[]): void {
-    if (leadingBasmalaWords(recognized) > 0 || countLeadingBasmalaTail(recognized) > 0) {
-      this.heldOpeningBasmala = true;
+  private noteHeardMuqattaat(recognized: string[]): void {
+    if (this.lock) return;
+    for (const verse of this.db.verses) {
+      if (!isExactMuqattaatAyah1(verse)) continue;
+      const token = verseAlignWords(verse).words[0]!;
+      if (!heardIsolatedBodyToken(recognized, token)) continue;
+      const spelling = heardMuqattaatSpelling(recognized, compact(token));
+      for (const word of recognized) {
+        if (isBasmalaTailToken(word)) continue;
+        if (!spelling && !heardIsolatedBodyToken([word], token)) continue;
+        const heard = compact(word);
+        if (heard && !this.heardMuqattaatTokens.includes(heard)) this.heardMuqattaatTokens.push(heard);
+      }
     }
+    if (this.heardMuqattaatTokens.length > 8) {
+      this.heardMuqattaatTokens = this.heardMuqattaatTokens.slice(-8);
+    }
+  }
+
+  private acquireEvidence(recognized: string[]): string[] {
+    if (this.lock || !this.heardMuqattaatTokens.length) return recognized;
+    const extra = this.heardMuqattaatTokens.filter((token) => !recognized.includes(token));
+    return extra.length ? [...recognized, ...extra] : recognized;
+  }
+
+  private heardExactMuqattaat(recognized: string[]): boolean {
+    for (const verse of this.db.verses) {
+      if (!isExactMuqattaatAyah1(verse)) continue;
+      if (heardIsolatedBodyToken(recognized, verseAlignWords(verse).words[0]!)) return true;
+    }
+    return false;
   }
 
   /** Next ayah is the last of this surah and short enough that a 1.2 s
@@ -820,7 +937,7 @@ export class RecitationFollower {
     this.mismatches = 0;
     this.wordIndex = matched.length ? matched[matched.length - 1]! : -1;
     this.trimmedForShortLast = false;
-    this.heldOpeningBasmala = false;
+    this.heardMuqattaatTokens = [];
     this.window = keepLast(this.window, KEEP_AFTER_COMMIT_SEC);
     this.fresh = 0;
     const prefix = displayBodyWords(verse).slice(0, matched.length);
@@ -875,7 +992,7 @@ export class RecitationFollower {
     this.lock = null;
     this.wordIndex = -1;
     this.mismatches = 0;
-    this.heldOpeningBasmala = false;
+    this.heardMuqattaatTokens = [];
     if (clearWindow) {
       this.window = new Float32Array(0);
       this.fresh = 0;

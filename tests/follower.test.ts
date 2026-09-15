@@ -1219,27 +1219,7 @@ test('المصدر still does not lock 7:1 from a substring', async () => {
   assert.equal(engine.phase, 'acquiring');
 });
 
-test('acquire keeps audio after an opening Basmala so a trailing ayah-1 body is not slid off', async () => {
-  const basmala = {
-    text: 'بسم الله الرحمن الرحيم',
-    rawPhonemes: 'بسم الله الرحمن الرحيم',
-    championMatch: muqattaatChampion(2, 1, 0.9),
-  };
-  const engine = new RecitationFollower(dbFrom(muqattaat), script([basmala, basmala]));
-  assert.deepEqual(refs(await engine.feed(audio(1))), []);
-  resetRecognitionCycles();
-  await engine.feed(audio(5));
-  const cycle = lastRecognitionCycle();
-  assert.ok(cycle);
-  assert.ok(
-    cycle.windowSec > ACQUIRE_MAX_SEC,
-    `expected Basmala-hold window > ${ACQUIRE_MAX_SEC}s, got ${cycle.windowSec}`,
-  );
-  assert.ok(cycle.windowSec <= ACQUIRE_AFTER_BASMALA_SEC + 0.05);
-  assert.equal(engine.phase, 'acquiring');
-});
-
-test('acquire without Basmala stays at the 4s cap', async () => {
+test('first-lock acquire keeps 8s so a trailing ayah-1 body is not slid off', async () => {
   const noise = { text: 'zzzz yyyy xxxx', rawPhonemes: 'zzzz yyyy xxxx' };
   const engine = new RecitationFollower(dbFrom(muqattaat), script([noise, noise]));
   await engine.feed(audio(1));
@@ -1248,8 +1228,34 @@ test('acquire without Basmala stays at the 4s cap', async () => {
   const cycle = lastRecognitionCycle();
   assert.ok(cycle);
   assert.ok(
+    cycle.windowSec > ACQUIRE_MAX_SEC,
+    `expected first-lock window > ${ACQUIRE_MAX_SEC}s, got ${cycle.windowSec}`,
+  );
+  assert.ok(cycle.windowSec <= ACQUIRE_AFTER_BASMALA_SEC + 0.05);
+  assert.equal(engine.phase, 'acquiring');
+});
+
+test('reacquire stays at the 4s cap', async () => {
+  const noise = { text: 'zzzz yyyy xxxx', rawPhonemes: 'zzzz yyyy xxxx' };
+  const engine = follower([
+    spoken(114, 4),
+    spoken(114, 5),
+    spoken(114, 6),
+    spoken(114, 6),
+    noise,
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['114:4']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['114:5']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['114:6']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.equal(engine.phase, 'reacquiring');
+  resetRecognitionCycles();
+  await engine.feed(audio(5));
+  const cycle = lastRecognitionCycle();
+  assert.ok(cycle);
+  assert.ok(
     cycle.windowSec <= ACQUIRE_MAX_SEC + 0.05,
-    `acquire window grew to ${cycle.windowSec} without Basmala`,
+    `reacquire window grew to ${cycle.windowSec}`,
   );
 });
 
@@ -1261,6 +1267,44 @@ test('a Mac-length mixed window with 2:2 champion still first-locks 2:1', async 
     championMatch: muqattaatChampion(2, 2, 0.88),
   }]));
   assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('exact الم still first-locks 2:1 when locate returns no champion', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'الم',
+    rawPhonemes: 'الم',
+    locateAttempted: true,
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('a low-score champion still first-locks exact الم as 2:1', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'الم',
+    rawPhonemes: 'الم',
+    championMatch: muqattaatChampion(18, 46, 0.5),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('older-slice lookback recovers الم when a long window champions 2:2', async () => {
+  const two = muqattaat.find((item) => item.surah === 2 && item.ayah === 2)!;
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([
+    {
+      text: two.phonemes_joined,
+      rawPhonemes: two.phonemes_joined,
+      championMatch: muqattaatChampion(2, 2, 0.91),
+    },
+    {
+      text: 'الرحمن الرحيم الم',
+      rawPhonemes: 'الرحمن الرحيم الم',
+      championMatch: muqattaatChampion(2, 2, 0.8),
+    },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(6))), ['2:1']);
   assert.equal(engine.phase, 'following');
 });
 

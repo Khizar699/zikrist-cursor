@@ -130,24 +130,24 @@ Remaining suites were not scored here. Overnight locate+follow scoring is still 
 
 ## Ayah-1 body evidence (Al-Baqarah start)
 
-Rebased onto main `11759a9` (back-to-back Asr→Quraysh #5). Acquire treats post-Basmala ayah-1 **body** as lock evidence. Opening align uses a tight stem so `الم` cannot lock `المال`; follow leftover matching still allows ASR `الا` to hit `الانسن`. Mysterious-letter tokens accept a one-letter elongation (`المي`) or recited letter names (`الف لام ميم` / `الميم`) but not `المصدر` / `المال`. Isolated `الم` (compact length 3) can locate; equivalent muqattaʿāt such as 3:1 are not a close-rival veto of 2:1. A 4 s Mac window that has slid past `بسم` but still has `الرحمن الرحيم الم` is ayah-1 evidence, not the 55:1-inside-Basmala false lock. After a heard opening Basmala with no lock, acquire keeps ~8 s so `الم` is still in the window at the observed Mac 2:2@11s timestamp. Keep Nas last-ayah seed-trim, Basmala-echo 55:1, and last-ayah leftover crumbs so Asr→Quraysh can still start 106:1. Linux/x64 `onnxruntime-node` 1.24.3 headless replay (not a phone). **Mac `npm run test:replay -- longer` is the acceptance bar** — tip `8bd9c35` first-confirmed **2:2@11s** (never 2:1).
+Rebased onto main `810ed4c` (Prompt Smith sharper brief). 2:1 `text_clean` is `بسم الله الرحمن الرحيم الم`; 2:2 starts `ذلك الكتب`. Exact muqattaʿāt after the opening Basmala may first-lock ayah 1 without an engine champion and without waiting for ayah 2. Opening align stays tight so `الم` cannot lock `المال`; follow leftover matching still allows ASR `الا` to hit `الانسن`. Isolated `الم` / `المي` / letter names locate; `المصدر` and Basmala-echo 55:1 stay rejected. Initial acquire keeps ~8 s so Mac 2:2@11s still has `الم` PCM; reacquire stays 4 s for jump / back-to-back. If that long window’s CTC already names ayah 2+, acquire transcribes the older slice (drop newest 3 s) and locks ayah-1 from exact muqattaʿāt there first. Heard muqattaʿāt tokens are remembered across acquire hops. `ZIKRIST_TRACE=1` logs ASR text + champion + window seconds. Keep Nas last-ayah seed-trim, Basmala-echo 55:1, and last-ayah leftover crumbs. This workspace has no ONNX/WAV fixtures. **Mac `npm run test:replay -- longer` is the acceptance bar** — tips through `c0b3b1d` first-confirmed **2:2@11s ~0.91** (never 2:1). Do not merge on Linux-only ONNX.
 
 | Suite | Result |
 | --- | --- |
-| `longer` | PASS (Linux) — 2:1@6s → 2:2@8.5 → 2:3@17.5 → 2:4@29 → 2:5@30.5; `failureMode` null. Extra 2:6–2:11 after the gated prefix (follow overshoot, out of this start-slice). |
-| `nas` | PASS — 114:1@4 → 114:2@6.5 → 114:3@12.5 → 114:4@20 → 114:5@25.75 → 114:6@33.75; `wrongSurahRate` 0 (no 7:1) |
-| `fatiha` | PASS — 1:2@9 → 1:7@35 |
+| `longer` | Mac still FAIL on `c0b3b1d` (`sequence_break_at_0_got_2:2_expected_2:1`). Linux PASS on a pre-rebase tip (2:1@6s → 2:2–5) is not the gate. |
+| `nas` | Mac-green on `c0b3b1d` (114:6@31.75). Linux 114:1@4 → 6@33.75 |
+| `fatiha` | Mac-green on `c0b3b1d` |
 | `ikhlas` | PASS — 112:1–4 |
 | `falaq` | PASS — 113:1–5 |
 | `english-negative` | PASS — no verse locks |
-| `basmala-hold` | PASS — `001001` alone locked nothing |
-| `cold-start-mid` | PASS — 2:2 |
+| `basmala-hold` | Must stay PASS — `001001` alone locked nothing |
+| `cold-start-mid` | Must stay 2:2 (no invented 2:1) |
 | `stall-after-lock` | PASS — 112:2, no silence jump |
-| `asr` | PASS — 103:1@1 → 103:2@8.75 → 103:3@9.25 |
-| `kawthar` | PASS — 108:1@7.75 → 108:2@8.75 → 108:3@10.25 |
-| `quraysh` | PASS — 106:1@2 → 106:2@7.5 → 106:3@11 → 106:4@20.5 |
+| `asr` | Mac-green on `c0b3b1d` |
+| `kawthar` | Mac-green on `c0b3b1d` |
+| `quraysh` | Mac-green on `c0b3b1d` |
 | `back-to-back` | Mac-green on main `11759a9`; leftover-crumb units kept |
 | `jump` | Mac-green on main `11759a9` (came free from #5); do not regress |
 
-`npm test` 138/138 after rebase onto `11759a9`. Linux longer 2:1 first and nas/fatiha/short-surah Linux times above are from the **pre-rebase** tip. This workspace has no ONNX/WAV fixtures. Not a physical-device accuracy claim. **Only remaining merge gate: Mac `test:replay -- longer` first-lock 2:1.** Keep Mac nas/fatiha/asr/kawthar/quraysh/jump/back-to-back green.
+`npm test` 141/141; typecheck pass; lint still reports the pre-existing unused `openingScore` warning. Linux longer 2:1 first and nas/fatiha/short-surah Linux times above are from a **pre-rebase** tip. This workspace has no ONNX/WAV fixtures. Not a physical-device accuracy claim. **Only remaining merge gate: Mac `test:replay -- longer` first-lock 2:1.** Keep Mac nas/fatiha/asr/kawthar/quraysh/jump/back-to-back green.
 
