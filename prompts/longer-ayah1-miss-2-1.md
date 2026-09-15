@@ -1,36 +1,38 @@
-# Longer suite: lock Baqarah 2:1 before 2:2+
+# Longer suite: first-lock Baqarah 2:1 (الم), not 2:2
 
 ## Goal
 
-`npm run test:replay -- longer` must first-lock **2:1**, then 2:2–5 in order (Al-Baqarah clips 002001–002005).
+`npm run test:replay -- longer` on **Apple Silicon Mac** must first-lock **2:1**, then 2:2–5.
 
-## Baseline (Sim QA night-report-2231-expand @5674f3e)
+## Baseline
 
-- FAIL: longer skips 2:1 (sequence break at ayah 1)
-- Edge suites english-negative / basmala-hold / cold-start-mid / stall-after-lock PASS — do not regress
-- Gates: fatiha + ikhlas + falaq GREEN
+- Sim QA / Mac @11759a9 and PR #4 tips (incl. c0b3b1d): `sequence_break_at_0_got_2:2_expected_2:1` — first lock **2:2@~11s** score ~0.91
+- Linux-only greens on #4 were false for Mac — do not merge without Mac PASS
+- Keep greens: fatiha, nas 114:1–6, asr, kawthar, quraysh, ikhlas, falaq, jump, back-to-back, english-negative, basmala-hold, cold-start-mid, stall-after-lock
+
+## Corpus fact (do not invent)
+
+In `assets/model/quran.json`, **2:1** text_clean is `بسم الله الرحمن الرحيم الم` (opening Basmala + muqatta'at **الم**). **2:2** starts `ذلك الكتب…`. So 2:1 is not a normal verse body — it is Basmala-held until unique **الم**, then that token must be allowed to name 2:1 without waiting for 2:2.
+
+## Hypothesis (verify; discard if wrong)
+
+Acquire / ContinuationGate / mysterious-letter rules that correctly block Basmala-echo 55:1 and bare `001001` may also be **suppressing الم** as a first lock, so the first confirmable unique stretch becomes 2:2. Prefer unlocking **exact muqatta'at** for ayah-1 after Basmala over loosening general fuzzy stems (a prior stem loosen broke Asr `الا`→`الانسن`).
 
 ## Constraints
 
-- One concern: **longer / Baqarah 2:1 acquire miss** (mysterious letters / muqatta'at class likely).
-- Offline; real ONNX + follower. No fixture/harness retune.
-- Read replay-longer.json if present, follower.ts, VALIDATION.md.
+- One concern: **Baqarah 2:1 first lock on Mac**
+- Offline; real ONNX + RecitationFollower
+- No surah-ID-only hacks if a general “muqatta'at after opening Basmala” rule works
+- Do not regress Nas 114:6 or Asr 103:1–3
+- Read follower.ts, continuation-gate.ts, basmala.ts, replay-longer.json, PR #4 diff
 
-## Success criteria
+## Success criteria (Mac)
 
-1. test:replay longer → 2:1–5 ordered; failureMode null
-2. fatiha, ikhlas, falaq, english-negative, basmala-hold, stall-after-lock stay GREEN
-3. npm test / typecheck / lint; refresh JSON
+1. `npm run test:replay -- longer` → first lock **2:1**, then 2:2–5 (`failureMode` null for the 2:1–5 gate)
+2. `npm run test:replay -- basmala-hold` still PASS (001001 alone locks nothing)
+3. fatiha, nas, asr, kawthar, quraysh, jump, back-to-back still PASS
+4. `npm test` / typecheck / lint pass
 
 ## Deliverable
 
-Commands, JSON path, files changed, next slice.
-
-## Mac gate (required) — 2026-09-15 wrap
-
-Linux PASS on PR #4 was **not** enough. Mac on 8bd9c35 still `sequence_break_at_0_got_2:2_expected_2:1`.
-
-Before merge:
-1. On Apple Silicon: `npm run test:replay -- longer` → first lock **2:1**, then 2:2–5
-2. Also Mac: nas, fatiha, asr, kawthar, quraysh GREEN (Nas 114:6 must not regress)
-3. Do not claim green from Linux-only ONNX
+Mac commands + JSON paths + files changed. No Linux-only claim.
