@@ -334,12 +334,12 @@ export class RecitationFollower {
         }
         if (!this.canLock(match, verse, text, recognized)) continue;
         const chosen = this.preferCanonicalDuplicate(verse, text);
-        return this.commit(chosen, match.score, contiguousAlignToVerse(recognized, chosen));
+        return this.commit(chosen, match.score, this.alignForCommit(recognized, chosen));
       }
       const alternative = this.alternativeHeardVerse(recognized, text, ranked);
       if (alternative) {
         const chosen = this.preferCanonicalDuplicate(alternative, text);
-        return this.commit(chosen, this.locationScore(text, chosen), contiguousAlignToVerse(recognized, chosen));
+        return this.commit(chosen, this.locationScore(text, chosen), this.alignForCommit(recognized, chosen));
       }
     }
     return this.unconfirmedMessages(recognized, ranked, candidates);
@@ -482,6 +482,24 @@ export class RecitationFollower {
     if (this.locationScore(spoken, next) < LOCK_CLEAR_SCORE) return false;
     const unused = (token: string) => !currentBody.some((word) => wordsMatch(word, token) || relatedStem(word, token));
     return words.slice(1).some((token) => unused(token) && query.some((word) => wordsMatch(word, token)));
+  }
+
+
+  /** Prefer contiguous opening align; if the opening was ASR-garbled, map heard
+   * unique body tokens so ContinuationGate can confirm ayah-1 (Basmala-in-DB). */
+  private alignForCommit(recognized: string[], verse: QuranVerse): number[] {
+    const aligned = contiguousAlignToVerse(recognized, verse);
+    if (aligned.length) return aligned;
+    const { words, basmala } = verseAlignWords(verse);
+    const hits: number[] = [];
+    for (let index = 0; index < words.length; index++) {
+      if (recognized.some((word) => wordsMatch(word, words[index]!))) {
+        hits.push(index + basmala);
+      }
+    }
+    const skip = openingBasmalaWordCount(verse);
+    const uniqueHits = hits.filter((index) => index > skip);
+    return uniqueHits.length ? uniqueHits : hits;
   }
 
   private commit(verse: QuranVerse, score: number, matched: number[]): RecognitionMessage[] {
@@ -749,7 +767,9 @@ export class RecitationFollower {
     const rival = match.runners_up?.[0];
     if (!rival || rival.surah === match.surah) return false;
     if (match.score - rival.score >= SURAH_MARGIN) return false;
-    return verse.ayah <= 1 || !this.beatsRival(match, verse, text);
+    // Was `ayah <= 1 || !beatsRival` which made EVERY ayah-1 lock ambiguous whenever
+    // any close cross-surah rival existed (Kawthar/Asr/Quraysh skipped to ayah 2+).
+    return !this.beatsRival(match, verse, text);
   }
 
   private closeRival(match: QuranChampionMatch): boolean {
@@ -799,8 +819,13 @@ export class RecitationFollower {
     for (let ayah = match.ayah; ayah <= end; ayah++) {
       const verse = this.db.getVerse(match.surah, ayah);
       if (!verse || skipUnusableLock(verse)) continue;
-      if (recognized.length && !heardDistinct(recognized, verse, this.uniqueOpeningSkip(verse))) continue;
-      if (ayah > spanEnd && !heardDistinct(recognized, verse, this.uniqueOpeningSkip(verse))) continue;
+      // Allow unique-token evidence when the body opening was ASR-garbled (Kawthar انا→سبحان).
+      if (recognized.length
+        && !heardDistinct(recognized, verse, this.uniqueOpeningSkip(verse))
+        && !this.hasVerseEvidence(text, verse, recognized)) continue;
+      if (ayah > spanEnd
+        && !heardDistinct(recognized, verse, this.uniqueOpeningSkip(verse))
+        && !this.hasVerseEvidence(text, verse, recognized)) continue;
       const score = explainScore(text, verse);
       if (!best) {
         best = verse;
