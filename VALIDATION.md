@@ -175,7 +175,8 @@ Rebased onto main `810ed4c` (Prompt Smith sharper brief). 2:1 `text_clean` is `�
 
 Harness only. Prompt Smith already owns `prompts/real-imam/` (queue, fixture README, LIVE-FEEL, suite prompts, stub manifest). This change **registers** those suite ids in the replay runner instead of duplicating the briefs. **No founder/imam WAV or MP3 is committed.** Silent STUB audio was not invented. `RecitationFollower` was not retuned.
 
-- Manifest: `prompts/real-imam/manifest.stub.json` (`status: stub`). Founder drop: `~/Desktop/zikrist-imam-clips/`. Staging: `artifacts/recitation/imam/<suite-id>/<qari-or-source>/` (gitignored).
+- Manifest: `prompts/real-imam/manifest.stub.json` (`status: stub` — do not flip until algorithm fixes). Founder labels (ground truth): `prompts/real-imam/LABELS.md`, `labels.json`. Founder drop: `~/Desktop/zikrist-imam-clips/`. Staging: `artifacts/recitation/imam/<suite-id>/<qari-or-source>/` (gitignored).
+- Mac baseline 2026-09-16: Fatir 35:1–8 locks OK; Subayyal expected 4:129 locks wrong 41:34; Qiyam expected 36:16 locks wrong 78:4. Ignore hypothesized probe locks.
 - `npm run test:replay -- all` still resolves to the original **14** Quran suites (hard gate).
 - `npm run test:replay -- real-imam` **skips** the five stub suites with `failureMode: missing_fixture` and `status: skipped` (not PASS) and does not load ONNX.
 - `--include-pending` can list them next to `all`; stubs still skip until WAV exists, so they cannot fail the 14-suite gate.
