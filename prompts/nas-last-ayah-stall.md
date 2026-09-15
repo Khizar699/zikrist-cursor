@@ -9,7 +9,7 @@
 - FAIL `sequence_break_at_5_got_7:1_expected_114:6`
 - Matches: 114:1–5 then **7:1** (was stall_missing_114:6; now wrong-surah jump)
 - Isolated 114:6 clip ~8.2 s; default follow is 1.2 s / 0.4 s hop
-- Preserve: ikhlas, falaq, asr, kawthar, quraysh. Do not regress Fatiha (broken on main with first_lock 55:1 / 1:6 — separate agent).
+- Preserve: ikhlas, falaq, asr, kawthar, quraysh. Keep the `eacf963` Basmala-echo guard intact (`الرحمن` must not first-lock 55:1). Do not worsen Fatiha vs main.
 - Do not special-case 114:6 / 7:1 IDs; end-of-surah short-last-ayah + mysterious-letter whole-word guard only.
 
 ## Root cause
@@ -39,7 +39,7 @@ When mushaf-next is the last ayah of the current surah and has ≤ 4 body words:
 ## Acceptance
 
 1. `npm run test:replay -- nas` → 114:1–6; `failureMode: null`; never 7:1
-2. ikhlas, falaq, asr, kawthar, quraysh stay green; do not worsen Fatiha first-lock vs main
+2. ikhlas, falaq, asr, kawthar, quraysh stay green; keep Basmala-echo 55:1 skip; do not worsen Fatiha vs main
 3. `npm test`, typecheck, lint
 4. Unit: last-ayah window grows; unique last-ayah body token advances; Basmala+`المص` garbage cannot lock 7:1 after 114:5
 
