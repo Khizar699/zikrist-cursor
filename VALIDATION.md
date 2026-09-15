@@ -213,6 +213,6 @@ One suite only. Manifest `liturgy-thana` is `status: ready` with `clip_path` `li
 
 Mac ready path: `python3 -m pip install --user edge-tts` then `npm run liturgy:tts -- liturgy-thana` (default edge-tts `ar-SA-HamedNeural` rate `-25%`). If edge-tts 403: `npm run liturgy:tts -- liturgy-thana --engine say` (needs ffmpeg on `PATH`). Script refuses silent output. Then `npm run test:replay -- liturgy-thana` must **PASS (not skip)**. `npm run test:replay -- all` must stay **14/14**. Ready suites with a missing clip error `missing_clip` instead of skipping.
 
-This workspace (Linux/x64): `npm test` / `npm run typecheck` recorded in the PR body after local checks. Acoustic `liturgy-thana` scoring and Mac `all` 14/14 were **not** run here. **Mac Bot/Sim QA must generate the WAV and verify `liturgy-thana` PASS plus `all` = 14/14 before merge.**
+This workspace (Linux/x64): `npm test` **177/177**; `npm run typecheck` pass; lint still reports the pre-existing unused `openingScore` warning. `npx tsx scripts/replay.ts all --list` shows the original 14 Quran names. `npm run liturgy:tts -- liturgy-thana --dry-run` reads pack `arabic_uthmani` for `thana` and plans dest `artifacts/recitation/liturgy/liturgy-thana/liturgy-thana__edge-tts__ar-SA-HamedNeural.wav`. Acoustic `liturgy-thana` scoring and Mac `all` 14/14 were **not** run here (no `say`; WAV not generated). **Mac Bot/Sim QA must generate the WAV and verify `liturgy-thana` PASS plus `all` = 14/14 before merge.**
 
 
