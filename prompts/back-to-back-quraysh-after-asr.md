@@ -54,10 +54,8 @@ Linux PASS is **not** enough. Mac Sim QA on the leftover path still needs:
 
 ## Result
 
-Rebased onto current `main` `82d4f28` (includes merged Nas 114:6 `802bc66` plus the Baqarah Mac-gate prompt note). Leftover crumb/mix path unchanged.
-
-Linux/x64 ONNX after leftover-token filter (Mac Sim QA still needs a local re-run):
+Rebased onto current `main` `82d4f28` (includes merged Nas 114:6 `802bc66` plus the Baqarah Mac-gate prompt note). Leftover crumb/mix path unchanged. Post-rebase Linux/x64 re-run:
 
 - `npm test` 118/118; `npm run typecheck` pass. Lint still reports the pre-existing unused `openingScore` warning.
 - `back-to-back` PASS: 103:1@1s, 103:2@8.75s, 103:3@9.25s, 106:1@21.75s, 106:2@27.25s, 106:3@31.25s, 106:4@40.5s; `failureMode` null; `wrongSurahRate` 0. Asr does not re-lock 103:1 after 103:3.
-- Standalone `asr`, `quraysh`, `fatiha`, `nas`, `kawthar`, `ikhlas`, `falaq`, `basmala-hold` PASS. Not a physical-device or Mac-local claim.
+- Standalone `asr`, `quraysh`, `fatiha`, `nas` (114:1–6 including 114:6@33.75s), `kawthar`, `ikhlas`, `falaq`, `basmala-hold` PASS. Not a physical-device or Mac-local claim. Mac `npm run test:replay -- back-to-back` remains the merge gate.
