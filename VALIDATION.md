@@ -146,4 +146,4 @@ Rebased onto main `eacf963` (Basmala-echo guard so `001001` cannot first-lock 55
 | `kawthar` | PASS — 108:1@7.75 → 108:2@8.75 → 108:3@10.25 |
 | `quraysh` | PASS — 106:1@2 → 106:2@7.5 → 106:3@11 → 106:4@20.5 |
 
-`npm test` 114/114. Not a physical-device accuracy claim. Nas 114:6 is owned elsewhere.
+Rebased onto main `802bc66` (Nas 114:6 last-ayah seed-trim-before-append). Nas, Fatiha, and short-surah `asr` / `kawthar` / `quraysh` must stay green. Mac `npm run test:replay -- longer` is the acceptance bar; Linux numbers below are this workspace, not a phone.
