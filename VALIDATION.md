@@ -120,7 +120,7 @@ Gate contracts are covered by `tests/replay-suites.test.ts`. After `npm run fixt
 
 | Suite | Result |
 | --- | --- |
-| `jump` | Linux leftover-in-1.2s locked 112:1@16.75s; **Mac Alafasy concat still failed** `sequence_break_at_3_got_112:4_expected_112:1` (108:1@7.5, 108:2@8.5, 108:3@9.5, 112:4@24.75). Follow-up: post-surah locate uses the 4 s acquire window and only scores leftover that is not the finished ayah. This Linux harness: **PASS** 108:1–3 then 112:1–4 (112:1@17.5s). Linux is not a Mac pass. |
+| `jump` | Rebased onto `802bc66` / current main (Nas 114:6 kept: this Linux nas 114:6@33.75s). Follow-up: post-surah locate uses the 4 s acquire window and only scores leftover that is not the finished ayah. This Linux harness: **PASS** 108:1–3 then 112:1–4 (112:1@17.5s). **Mac `test:replay -- jump` is still the acceptance gate** — Linux is not a Mac pass. |
 | `kawthar` | PASS — 108:1–3 |
 | `ikhlas` | PASS — 112:1–4 |
 | `fatiha` | PASS — 1:2–1:7 |

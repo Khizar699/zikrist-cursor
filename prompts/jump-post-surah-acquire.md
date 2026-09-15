@@ -6,7 +6,7 @@
 
 ## Baseline
 
-- Start from latest `main` (`eacf963` or newer).
+- Start from current `main` (`802bc66` Nas 114:6 Mac-verified, or newer).
 - FAIL `jump`: `sequence_break_at_3_got_112:4_expected_112:1` (Kawthar locks, then Ikhlas starts at 112:4).
 - Standalone `kawthar` and `ikhlas` must stay green.
 - Do not undo the Basmala-echo guard (one-word ayah-1 that is only الرحمن must not lock 55:1).
