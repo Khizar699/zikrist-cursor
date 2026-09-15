@@ -6,6 +6,10 @@
 
 **P0 elsewhere:** `prompts/salah-liturgy/` (01-corpus in flight). This pack is harness/docs prep only until clips exist.
 
+## Label-fill (next)
+
+Founder labels verified 2026-09-16. **Next:** `prompts/real-imam/label-fill/00-QUEUE.md` — start `01-mid-surah-cold-dr-subayyal.md`, then `02-mid-surah-cold-qiyam.md`. Mid-ayah-pause still blocked; Qunut≠Quran.
+
 Launch **one session at a time**:
 
 1. `01-fixture-scaffold.md` — dirs, naming, empty stubs, manifest schema
