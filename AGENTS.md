@@ -32,7 +32,7 @@ Hafs ‘an ‘Asim is the initial corpus assumption, not a claim to support ever
 5. Existing user authorization to implement is sufficient. Do not ask for the same approval again or turn prompt creation into a second permission gate. Ask only for a material unresolved decision or an unauthorized consequential external action.
 6. Implement within that scope. Keep code small and typed; avoid unrelated refactors and unnecessary dependencies.
 7. Run relevant checks, inspect the application where possible, and report precisely what was and was not tested.
-8. Update run instructions, source notices, outstanding limitations, and `HANDOFF.md` (founder rule: every PR to `main` must bump handoff in the same PR — see `prompts/_SHARED-HANDOFF.md`).
+8. Update run instructions, source notices, outstanding limitations, and **continuity docs** in the same PR: always bump `HANDOFF.md` tip; update `VALIDATION.md` when verify results change; update queue status when a queue moves — see `prompts/_SHARED-HANDOFF.md`.
 
 The user authorized creating this file from a biasly reference and building the initial MVP. That reference supplied workflow ideas, not a requirement to use Next.js, web shadcn, scraping, Oxylabs, Gemini, pgvector, Vercel, or cloud-first data storage.
 

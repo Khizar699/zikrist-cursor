@@ -2,7 +2,7 @@
 
 Founder priority before real-imam expansion: recognize + show Arabic/English for **salah liturgy** heard around tilawah.
 
-**Hard gate every session:** `npm run test:replay -- all` stays **14/14** on Mac (fffa1f6 baseline). Soft optional: `nas-no-post-end-jump.md`. **HANDOFF:** bump `HANDOFF.md` in the same PR (`prompts/_SHARED-HANDOFF.md`).
+**Hard gate every session:** `npm run test:replay -- all` stays **14/14** on Mac (fffa1f6 baseline). Soft optional: `nas-no-post-end-jump.md`. **Continuity docs:** bump `HANDOFF.md` tip in the same PR; update `VALIDATION.md` and queue status when they apply (`prompts/_SHARED-HANDOFF.md`).
 
 ## HANDOFF.md (required every PR)
 

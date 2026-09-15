@@ -8,7 +8,7 @@
 Gates every session: fatiha, ikhlas, falaq, asr, kawthar, quraysh, english-negative, basmala-hold, cold-start-mid, stall-after-lock.
 
 
-**HANDOFF:** bump `HANDOFF.md` in the same PR (`prompts/_SHARED-HANDOFF.md`).
+**Continuity docs:** bump `HANDOFF.md` tip in the same PR; update `VALIDATION.md` and queue status when they apply (`prompts/_SHARED-HANDOFF.md`).
 
 ## Next priority (founder)
 Salah liturgy overnight: `prompts/salah-liturgy/00-OVERNIGHT-QUEUE.md` (after 14/14 Quran). Soft optional: `prompts/nas-no-post-end-jump.md`.

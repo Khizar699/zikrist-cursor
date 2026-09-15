@@ -6,9 +6,22 @@ Friends and **new Grok / Cursor agents** (no chat history) start here. Large rec
 
 Every PR that merges to `main` **must** update this file **in the same PR**: what landed, tip state, open tracks, gates (`npm run test:replay -- all` = **14/14** Quran), fixture restore commands, known fails. Prompt Smith / cloud agents follow `prompts/_SHARED-HANDOFF.md`. A PR without a `HANDOFF.md` bump is not mergeable.
 
+
+## Dictation for successor bots
+
+Founder rule for **every** Cursor/session agent (Prompt Smith, cloud agents, recreations with no chat history):
+
+1. **Write** continuity in the **same PR** — do not rely on chat memory.
+2. **Always** bump the **`HANDOFF.md` tip** (what landed, tip state, open tracks, gates, restore cmds, known fails).
+3. Update **`VALIDATION.md`** when verify / Mac gate results change.
+4. Update **queue status** files when a queue item finishes, holds, or the next prompt changes.
+5. Follow `prompts/_SHARED-HANDOFF.md` and the GitHub PR template checklist.
+
+A PR that ships code or prompts without these writes is incomplete.
+
 ## Tip state (update every PR)
 
-- **This PR:** Prompt Smith — bake HANDOFF into session deliverables (tts-fill 01–08, label-fill 01–02, mid-surah algo prompt) + `AGENTS.md` pointer; align with `prompts/_SHARED-HANDOFF.md`. Prior tip: #15 founder labels + `fixtures:imam`. Real-imam suites stay `stub`.
+- **This PR:** Prompt Smith — founder continuity dictation: expand `prompts/_SHARED-HANDOFF.md` (HANDOFF tip always; VALIDATION + queue status when applicable), HANDOFF “Dictation for successor bots”, `.github/PULL_REQUEST_TEMPLATE.md`, bake into session prompts.
 - **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate.
 - **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (tag `imam-fixtures-v1`, asset `zikrist-imam-fixtures-v1.zip`). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say` (Mac Majed).
 - **Known fails:** Subayyal want **4:129** currently **41:34**; Qiyam want **36:16** currently **78:4** — `prompts/imam-mid-surah-cold-false-lock.md`. Do not flip stub→ready until Mac-green.

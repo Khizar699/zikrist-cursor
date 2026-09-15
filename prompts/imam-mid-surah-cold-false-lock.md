@@ -26,7 +26,7 @@ Founder rule: update root `HANDOFF.md` **in the same PR** — what landed, open 
 
 ## Constraints
 
-**HANDOFF:** bump `HANDOFF.md` in the same PR (`prompts/_SHARED-HANDOFF.md`).
+**Continuity docs:** bump `HANDOFF.md` tip in the same PR; update `VALIDATION.md` and queue status when they apply (`prompts/_SHARED-HANDOFF.md`).
 
 - **One concern:** mid-surah **cold acquire** false first-lock on these two clips (refuse distant/short wrong champions on thin evidence; prefer distinctive mid-ayah body tokens).
 - Offline; real ONNX + existing `RecitationFollower` / continuation gate. **No** fake matches, **No** silent WAVs, **no** suite-ID hardcodes (`if suite === imam-…`).

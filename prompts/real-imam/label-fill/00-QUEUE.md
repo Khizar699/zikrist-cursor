@@ -3,7 +3,7 @@
 **Depends on:** harness real-imam scaffold on main; founder labels in `artifacts/recitation/imam/LABELS.md` + `labels.json` (2026-09-16).  
 **Audio:** gitignored under `artifacts/recitation/imam/` (already cut/named for several candidates).
 
-**Hard gate every session:** Mac `npm run test:replay -- all` = **14/14**. **HANDOFF:** bump `HANDOFF.md` in the same PR (`prompts/_SHARED-HANDOFF.md`).
+**Hard gate every session:** Mac `npm run test:replay -- all` = **14/14**. **Continuity docs:** bump `HANDOFF.md` tip in the same PR; update `VALIDATION.md` and queue status when they apply (`prompts/_SHARED-HANDOFF.md`).
 
 ## HANDOFF.md (required every PR)
 

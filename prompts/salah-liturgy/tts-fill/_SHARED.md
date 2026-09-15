@@ -15,7 +15,7 @@ Use pack `arabic_uthmani` / recognition text from `assets/content/salah-liturgy.
 
 Existing harness: PCM → follower heard tokens → `SalahLiturgyMatcher`. Do not add token-only fixtures that PASS without audio.
 
-**HANDOFF:** bump `HANDOFF.md` in the same PR (`prompts/_SHARED-HANDOFF.md`).
+**Continuity docs:** bump `HANDOFF.md` tip in the same PR; update `VALIDATION.md` and queue status when they apply (`prompts/_SHARED-HANDOFF.md`).
 
 ## Forbidden
 
@@ -32,4 +32,4 @@ Existing harness: PCM → follower heard tokens → `SalahLiturgyMatcher`. Do no
 
 ## Deliverable
 
-Plus `HANDOFF.md` bump in the same PR.
+Plus continuity docs: `HANDOFF.md` tip always; `VALIDATION.md` / queues when applicable (`prompts/_SHARED-HANDOFF.md`).
