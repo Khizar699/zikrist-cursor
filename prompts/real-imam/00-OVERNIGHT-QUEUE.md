@@ -27,5 +27,5 @@ npm run test:replay -- all           # hard gate: original 14 only
 npm run test:replay -- real-imam     # stub suites SKIP with missing_fixture (not PASS)
 ```
 
-Audio staging (gitignored): `artifacts/recitation/imam/<suite-id>/<qari-or-source>/`. No silent STUB WAVs.
+Audio staging (gitignored): convert source media to **16 kHz mono PCM16 WAV** (replay does not read MP3), then place under `artifacts/recitation/imam/<suite-id>/<qari-or-source>/`. No silent STUB WAVs. Until files exist, `npm run test:replay -- real-imam` **skips** with `missing_fixture` (not PASS).
 

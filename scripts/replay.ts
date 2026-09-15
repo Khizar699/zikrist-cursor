@@ -34,6 +34,8 @@ import {
   SAMPLE_RATE,
   SKIPPED_PENDING,
   evaluateFailure,
+  fixtureRestoreHint,
+  eachClipTrialLabel,
   isRealImamSuiteName,
   parseReplayCli,
   parseSuiteSelection,
@@ -321,9 +323,7 @@ if (cli.checkFixtures) {
     uniqueClips: uniqueClipsForSuites(names),
     missingClips: missing,
     suites: status,
-    restore: pendingOnly
-      ? 'Drop 16 kHz mono WAV under artifacts/recitation/imam/<suite-id>/<qari>/ from ~/Desktop/zikrist-imam-clips/ (prompts/real-imam/FIXTURES.md)'
-      : 'npm run fixtures:recitation',
+    restore: fixtureRestoreHint(names),
   }, null, 2));
   const blocking = status.filter((row) => row.missing.length && row.status !== SKIPPED_PENDING);
   if (pendingOnly && missing.length) {
@@ -389,7 +389,7 @@ try {
       ? item.suite.clips.map((clip, index) => ({
         suite: {
           ...item.suite,
-          label: `${item.suite.label}:${path.basename(clip, path.extname(clip))}`,
+          label: eachClipTrialLabel(item.suite.label, clip),
           clips: [clip],
         },
         files: [item.files[index]!],

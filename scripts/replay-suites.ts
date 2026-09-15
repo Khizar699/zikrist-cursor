@@ -362,6 +362,25 @@ export function loadRealImamStubManifest(): RealImamManifest {
   return loadRealImamManifest();
 }
 
+export const RECITATION_RESTORE = 'npm run fixtures:recitation';
+export const REAL_IMAM_RESTORE =
+  'Convert founder media from ~/Desktop/zikrist-imam-clips/ to 16 kHz mono PCM16 WAV under artifacts/recitation/imam/<suite-id>/<qari>/ (prompts/real-imam/FIXTURES.md)';
+
+export function fixtureRestoreHint(names: readonly string[]): string {
+  const hasImam = names.some((name) => isRealImamSuiteName(name));
+  const hasReady = names.some((name) => isReadySuiteName(name));
+  if (hasImam && hasReady) return `${RECITATION_RESTORE}; ${REAL_IMAM_RESTORE}`;
+  if (hasImam) return REAL_IMAM_RESTORE;
+  return RECITATION_RESTORE;
+}
+
+/** Distinct each-clip labels when qari folders share a basename. */
+export function eachClipTrialLabel(suiteLabel: string, clip: string): string {
+  const ext = path.extname(clip);
+  const stem = ext ? clip.slice(0, -ext.length) : clip;
+  return `${suiteLabel}:${stem.replace(/[\\/]/g, ':')}`;
+}
+
 export function uniqueClipsForSuites(names: readonly string[]): string[] {
   const clips = new Set<string>();
   for (const name of names) {

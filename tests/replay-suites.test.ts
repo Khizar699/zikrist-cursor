@@ -6,11 +6,15 @@ import {
   COLD_START_TRIM_SECONDS,
   ENGLISH_NEGATIVE_CLIP,
   MISSING_FIXTURE,
+  REAL_IMAM_RESTORE,
   REAL_IMAM_SUITE_NAMES,
+  RECITATION_RESTORE,
   SAMPLE_RATE,
   STALL_TRAILING_SILENCE_SECONDS,
   concatFloat32,
+  eachClipTrialLabel,
   evaluateFailure,
+  fixtureRestoreHint,
   insertSilenceAt,
   parseReplayCli,
   parseSuiteSelection,
@@ -107,6 +111,23 @@ test('real-imam selection is pending-only and stays out of default all', () => {
   assert.equal(suiteBlueprint('imam-mid-surah-cold').clipDir, 'artifacts/recitation/imam');
   assert.equal(suiteBlueprint('imam-multi-qari').clipRunMode, 'each-clip');
   assert.equal(MISSING_FIXTURE, 'missing_fixture');
+});
+
+test('each-clip trial labels keep qari directories so identical basenames do not collide', () => {
+  const clips = suiteBlueprint('imam-multi-qari').clips;
+  assert.equal(clips.length, 2);
+  const labels = clips.map((clip) => eachClipTrialLabel('imam-multi-qari', clip));
+  assert.equal(new Set(labels).size, 2);
+  assert.ok(labels[0]?.includes('qari-a'));
+  assert.ok(labels[1]?.includes('qari-b'));
+});
+
+test('fixture restore hints cover mixed ready and real-imam selections', () => {
+  assert.equal(fixtureRestoreHint([...ALL_SUITE_NAMES]), RECITATION_RESTORE);
+  assert.equal(fixtureRestoreHint([...REAL_IMAM_SUITE_NAMES]), REAL_IMAM_RESTORE);
+  const mixed = fixtureRestoreHint(['fatiha', 'imam-mid-surah-cold']);
+  assert.ok(mixed.includes(RECITATION_RESTORE));
+  assert.ok(mixed.includes(REAL_IMAM_RESTORE));
 });
 
 test('parseReplayCli extracts include-pending and list flags', () => {
