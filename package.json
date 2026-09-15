@@ -12,6 +12,7 @@
     "test": "tsx --test tests/*.test.ts",
     "assets:download": "node scripts/download-assets.mjs",
     "assets:verify": "node scripts/verify-assets.mjs",
+    "liturgy:verify": "node scripts/verify-salah-liturgy.mjs",
     "export": "expo export --platform ios --platform android",
     "postinstall": "patch-package",
     "test:replay": "tsx scripts/replay.ts",

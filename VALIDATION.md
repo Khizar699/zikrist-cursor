@@ -51,7 +51,17 @@ Test at least a mid-range Android, a lower-memory supported iPhone, and a recent
 - Peak RAM, thermal behavior, sustained inference throughput and battery. The current desktop memory result makes this a priority.
 - Arabic/Urdu shaping, large accessibility text, translator footnotes, and numbering/basmala conventions with a qualified content reviewer.
 
-Public distribution also requires model/content rights clearance and store privacy declarations. Stories, accounts, chat, prayer phrases, session history and dataset contribution are not implemented in this MVP.
+Public distribution also requires model/content rights clearance and store privacy declarations. Stories, accounts, chat, session history and dataset contribution are not implemented in this MVP.
+
+## Salah liturgy corpus (Phase 1 data only)
+
+Offline pack: `assets/content/salah-liturgy.json` (v1, 18 phrases). Schema/hash helper: `src/core/salah-liturgy.ts`. Verify: `npm run liturgy:verify` (also the first step of `npm run assets:verify`).
+
+Shipped: takbeer, Hanafi thana, istiʿadha, ruku/sujood tasbih (± وبحمده), jamiʿ bayn (سمع الله لمن حمده / ربنا ولك الحمد and two short variants), Ibn Masʿūd/Hanafi tashahhud, Ibrahimiyyah darood (ṣalli, bārik, and combined), amin, tasleem (± وَبَرَكَاتُهُ). English fields are **liturgy glosses**, not a Quran translation edition. Commercial redistribution of the glosses is unreviewed (`release_blocker_until_rights_review`).
+
+Deferred: `dua_qunoot` (contested Witr vs Fajr wordings), `basmala_liturgy` (reuse Quran Basmala hold), sitting between sujood (`رب اغفر لي`), Shafiʿi wajjahtu istiftah, darood `في العالمين`, longer istiʿadha.
+
+**This pack does not change `RecitationFollower`.** Quran `npm run test:replay -- all` (14 suites) remains the recognition regression gate. Matcher, on-screen liturgy display, and liturgy replay fixtures are later sessions (`prompts/salah-liturgy/02-matcher.md` onward).
 
 ## Headless replay harness (2026-09-15)
 
