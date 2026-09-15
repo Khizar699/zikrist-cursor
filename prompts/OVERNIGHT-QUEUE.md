@@ -10,3 +10,7 @@ Gates every session: fatiha, ikhlas, falaq, asr, kawthar, quraysh, english-negat
 
 ## Next priority (founder)
 Salah liturgy overnight: `prompts/salah-liturgy/00-OVERNIGHT-QUEUE.md` (after 14/14 Quran). Soft optional: `prompts/nas-no-post-end-jump.md`.
+
+
+## Parallel (scaffold): real-imam
+`prompts/real-imam/00-OVERNIGHT-QUEUE.md` — stubs until clips in Desktop/zikrist-imam-clips/. Does not block salah liturgy P0.
