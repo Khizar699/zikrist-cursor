@@ -224,7 +224,7 @@ function remainingAfterTail(recognized: string[], verseWords: string[]): string[
  * distinctive unexplained tokens in the whole window. */
 function leftoverAfterLastAyah(recognized: string[], verseWords: string[]): string[] {
   const fromTail = leftoverNewTokens(remainingAfterTail(recognized, verseWords), verseWords);
-  if (leftoverIsNewRecitation(fromTail)) return fromTail;
+  if (leftoverIsNewRecitation(fromTail) && compact(fromTail.join(' ')).length >= 6) return fromTail;
   const fromWindow = leftoverNewTokens(recognized, verseWords);
   if (leftoverIsNewRecitation(fromWindow) && compact(fromWindow.join(' ')).length >= 6) return fromWindow;
   return fromTail;
@@ -239,7 +239,8 @@ function leftoverNewTokens(recognized: string[], verseWords: string[]): string[]
 }
 
 function leftoverIsNewRecitation(leftover: string[]): boolean {
-  return leftover.length > leadingBasmalaWords(leftover);
+  if (leftover.length <= leadingBasmalaWords(leftover)) return false;
+  return leftover.some((token) => token.length >= 4);
 }
 
 /** Align to the verse body. Ayah-1 phoneme lists often prepend the opening
@@ -459,7 +460,6 @@ export class RecitationFollower {
     if (!this.lock || this.fresh < samplesFor(FOLLOW_TRIGGER_SEC)) return [];
     const current = this.lock;
     const next = this.db.getNextVerse(current.surah, current.ayah);
-    const alreadyComplete = this.ayahComplete(current);
     this.fresh = 0;
     const locate = this.mismatches > 0;
     const result = await this.transcribe(this.window, locate);
@@ -475,7 +475,8 @@ export class RecitationFollower {
     const heardNext = Boolean(next && heardDistinct(recognized, next, this.distinctSkip(next, current)));
     const currentBody = verseAlignWords(current).words;
     const leftover = leftoverAfterLastAyah(recognized, currentBody);
-    const leftoverUnexplained = leftoverIsNewRecitation(leftover);
+    const leftoverUnexplained = leftoverIsNewRecitation(leftover)
+      && compact(leftover.join(' ')).length >= 6;
     const matchedBody = alignWords(recognized, currentBody);
     const matched = matchedBody.map((index) => index + verseAlignWords(current).basmala);
     const wordIndex = matched.length ? matched[matched.length - 1]! : this.wordIndex;
@@ -484,15 +485,12 @@ export class RecitationFollower {
       || (wordIndex + 1) / current.phoneme_words.length >= TRACKING_COMPLETION_COVERAGE
     );
     const atLastAyah = Boolean(next && next.surah !== current.surah);
-    const atSurahBoundary = Boolean(
-      atLastAyah && (alreadyComplete || completeThisHop || leftoverUnexplained),
-    );
-    const newRecitationAfterSurah = Boolean(atLastAyah && leftoverUnexplained);
+    const atSurahBoundary = Boolean(atLastAyah && leftoverUnexplained);
     const advanced = wordIndex > this.wordIndex;
     const sharedPrefixOnly = this.onlySharedOpening(recognized, current);
     const neighborhood = Math.max(
-      sharedPrefixOnly || newRecitationAfterSurah ? 0 : currentScore,
-      newRecitationAfterSurah ? 0 : previousScore,
+      sharedPrefixOnly ? 0 : currentScore,
+      previousScore,
       heardNext ? nextScore : 0,
     );
     if (advanced) this.wordIndex = wordIndex;
@@ -560,25 +558,14 @@ export class RecitationFollower {
       return messages;
     }
 
-    if (newRecitationAfterSurah) {
-      const otherSurah = (message: RecognitionMessage) => (
+    if (atLastAyah && leftoverUnexplained && compact(leftover.join(' ')).length >= 6) {
+      const leftoverResult: TranscribeResult = { text: leftover.join(' '), rawPhonemes: leftover.join(' ') };
+      const acquired = this.lockFromTranscript(leftoverResult, true, current).filter((message) => (
         message.type !== 'verse_match' || message.surah !== current.surah
-      );
-      if (compact(leftover.join(' ')).length >= 6) {
-        const leftoverResult: TranscribeResult = { text: leftover.join(' '), rawPhonemes: leftover.join(' ') };
-        const acquired = this.lockFromTranscript(leftoverResult, true, current).filter(otherSurah);
-        if (acquired.some((message) => message.type === 'verse_match')) {
-          return [...messages, ...acquired];
-        }
-        const fromWindow = this.lockFromTranscript(result, true, current).filter(otherSurah);
-        if (fromWindow.some((message) => message.type === 'verse_match')) {
-          return [...messages, ...fromWindow];
-        }
-        // Leave follow so the next hops use the 4 s acquire window on kept audio.
-        this.startReacquire(false);
-        this.fresh = this.window.length;
+      ));
+      if (acquired.some((message) => message.type === 'verse_match')) {
+        return [...messages, ...acquired];
       }
-      return messages;
     }
 
     const fillingLastAyah = this.shortLastAyahFollow(current)
@@ -589,10 +576,9 @@ export class RecitationFollower {
       // Keep accumulating a short last ayah; still locate so a real jump can recover.
       if (!fillingLastAyah && this.mismatches >= reacquireAfter) {
         this.startReacquire(false);
-        const acquired = this.lockFromTranscript(result, false, newRecitationAfterSurah ? current : undefined);
+        const acquired = this.lockFromTranscript(result, false);
         const filtered = acquired.filter((message) => {
           if (message.type !== 'verse_match') return true;
-          if (newRecitationAfterSurah && this.sameRef(message, current)) return false;
           if (!stillInSurah) return true;
           return message.surah === current.surah || message.confidence >= 0.92;
         });
