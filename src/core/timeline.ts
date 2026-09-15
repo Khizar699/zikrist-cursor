@@ -1,5 +1,4 @@
-import type { WorkerOutbound } from '@tilawa/core';
-import type { Occurrence } from './types';
+import type { Occurrence, RecognitionMessage } from './types';
 
 /** Confirmed verse_match events only. Do not adopt Tilawa's final_sequence. */
 export class Timeline {
@@ -7,7 +6,7 @@ export class Timeline {
   private segment = 0;
   breakSegment(): void { this.segment++; }
 
-  accept(message: WorkerOutbound, audioOffsetMs: number, now = Date.now()): Occurrence | null {
+  accept(message: RecognitionMessage, audioOffsetMs: number, now = Date.now()): Occurrence | null {
     if (message.type === 'word_progress') {
       const last = this.occurrences.at(-1);
       if (last && last.surah === message.surah && last.ayah === message.ayah && last.segment === this.segment) {

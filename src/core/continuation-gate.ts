@@ -1,6 +1,6 @@
-import type { VerseMatchMessage, WordProgressMessage, WorkerOutbound } from '@tilawa/core';
+import type { VerseMatchMessage, WordProgressMessage } from '@tilawa/core';
 import { isFatihaBasmala, openingBasmalaWordCount } from './basmala';
-import { refKey, type VerseRef } from './types';
+import { refKey, type RecognitionMessage, type VerseRef } from './types';
 
 /** Extra guard around an upstream commit. Shared Basmala openings, unexpected
  * jumps and silence-flush first locations need subsequent unique evidence. */
@@ -17,8 +17,8 @@ export class ContinuationGate {
     return this.pending !== null && this.current === null && openingBasmalaWordCount(this.pending.message) > 0;
   }
 
-  accept(messages: WorkerOutbound[], voicedMs: number, voiced = false): WorkerOutbound[] {
-    const accepted: WorkerOutbound[] = [];
+  accept(messages: RecognitionMessage[], voicedMs: number, voiced = false): RecognitionMessage[] {
+    const accepted: RecognitionMessage[] = [];
     for (const message of messages) {
       if (message.type === 'verse_match') {
         const next = this.current ? this.nextVerse(this.current) : undefined;
@@ -57,7 +57,8 @@ export class ContinuationGate {
     const skip = openingBasmalaWordCount(this.pending.message);
     const unique = [...new Set(message.matched_indices)];
     if (skip > 0) {
-      return unique.some((index) => index >= skip);
+      // First body word after Basmala is often still shared (قُلْ, إِنَّ).
+      return unique.some((index) => index > skip);
     }
     if (!unique.includes(0)) return false;
     const lastAyah = this.current !== null && this.nextVerse(this.current) === undefined;

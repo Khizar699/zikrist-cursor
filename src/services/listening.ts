@@ -3,7 +3,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import {
   AudioManager, AudioRecorder, RecordingNotificationManager, type AudioEventSubscription,
 } from 'react-native-audio-api';
-import type { TilawaSession, WorkerOutbound } from '@tilawa/core';
+import type { TilawaSession } from '@tilawa/core';
 import { AudioQueue } from '../core/audio-queue';
 import { Timeline } from '../core/timeline';
 import { ContinuationGate } from '../core/continuation-gate';
@@ -12,7 +12,7 @@ import { shouldReplaceHeldVerse } from '../core/display-hold';
 import { samePassage } from '../core/passage';
 import { isCaptureGap, isLongPause, isSpeech } from '../core/capture-policy';
 import { nextSequentialRef } from '../core/sequential';
-import type { DisplayVerse } from '../core/types';
+import type { DisplayVerse, RecognitionMessage } from '../core/types';
 import { content } from './content';
 import { loadModel } from './model';
 
@@ -22,10 +22,11 @@ export type ListeningState = {
   error: string | null;
   current: DisplayVerse | null;
   passage: DisplayVerse[];
+  draftWords: string[];
   meter: number[];
 };
 const initial: ListeningState = {
-  status: 'loading', phase: 'searching', error: null, current: null, passage: [], meter: [],
+  status: 'loading', phase: 'searching', error: null, current: null, passage: [], draftWords: [], meter: [],
 };
 const errorText = (error: unknown) => error instanceof Error ? error.message : String(error);
 
@@ -34,7 +35,7 @@ class Listening {
   private listeners = new Set<() => void>();
   private session: TilawaSession | null = null;
   private recorder: AudioRecorder | null = null;
-  private queue: AudioQueue<WorkerOutbound[]> | null = null;
+  private queue: AudioQueue<RecognitionMessage[]> | null = null;
   private timeline = new Timeline();
   private subscriptions: AudioEventSubscription[] = [];
   private stopping: Promise<void> | null = null;
@@ -167,9 +168,16 @@ class Listening {
     }
   }
 
-  private receive(messages: WorkerOutbound[], offset: number): void {
+  private receive(messages: RecognitionMessage[], offset: number): void {
     if (this.state.status !== 'listening') return;
     for (const message of messages) {
+      if (message.type === 'heard_words') {
+        if (this.state.current) continue;
+        const same = this.state.draftWords.length === message.words.length
+          && this.state.draftWords.every((word, index) => word === message.words[index]);
+        if (!same) this.update({ draftWords: message.words });
+        continue;
+      }
       const occurrence = this.timeline.accept(message, offset);
       if (occurrence) {
         const generation = ++this.displayGeneration;
@@ -201,8 +209,8 @@ class Listening {
   private show(verse: DisplayVerse, extra: Partial<ListeningState> = {}): void {
     const passage = content.cachedNeighborhood(verse);
     const same = this.state.current?.surah === verse.surah && this.state.current.ayah === verse.ayah && samePassage(this.state.passage, passage);
-    if (same && Object.keys(extra).length === 0) return;
-    this.update({ current: verse, passage, ...extra });
+    if (same && Object.keys(extra).length === 0 && this.state.draftWords.length === 0) return;
+    this.update({ current: verse, passage, draftWords: [], ...extra });
   }
   private prepareAhead(verse: DisplayVerse): void {
     const next = nextSequentialRef(verse, (ref) => content.hasVerse(ref));
@@ -245,7 +253,7 @@ class Listening {
     this.session?.reset();
     this.follower?.reset();
     this.update({
-      status: 'ready', meter: [],
+      status: 'ready', meter: [], draftWords: [],
       error: errors.length ? [this.state.error, ...errors].filter(Boolean).join('\n') : this.state.error,
     });
   }

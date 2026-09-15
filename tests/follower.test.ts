@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { QuranDB, type QuranVerse, type QuranChampionMatch, type TranscribeResult, type WorkerOutbound } from '@tilawa/core';
+import { QuranDB, type QuranVerse, type QuranChampionMatch, type TranscribeResult } from '@tilawa/core';
 import { RecitationFollower, FOLLOW_TRIGGER_SEC, FOLLOW_WINDOW_SEC, type TranscribeFn } from '../src/core/follower';
+import type { RecognitionMessage } from '../src/core/types';
 import { lastRecognitionCycle, resetRecognitionCycles } from '../src/core/recognition-clocks';
 
 function verse(surah: number, ayah: number, words: string[], name = 'Test'): QuranVerse {
@@ -92,8 +93,16 @@ function countingDb(rows = corpus) {
   return { db, searches: () => searches };
 }
 
-function refs(messages: WorkerOutbound[]): string[] {
+function refs(messages: RecognitionMessage[]): string[] {
   return messages.filter((message) => message.type === 'verse_match').map((message) => `${message.surah}:${message.ayah}`);
+}
+
+function heard(messages: RecognitionMessage[]): string[] {
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index];
+    if (message?.type === 'heard_words') return message.words;
+  }
+  return [];
 }
 
 function follower(results: TranscribeResult[], db = dbFrom()): RecitationFollower {
@@ -564,5 +573,58 @@ test('local recognition clocks record a locate cycle without verse identifiers',
   assert.equal(cycle!.phase, 'acquiring');
   assert.ok(cycle!.windowSec >= 0.9);
   assert.equal('text' in cycle!, false);
+});
+
+const qulLookalikes = [
+  verse(10, 16, ['qul', 'law', 'shaa', 'allahu', 'ma', 'talawtuhu', 'alaykum', 'wala', 'adrakum', 'bihi'], 'Yunus'),
+  verse(17, 110, ['qul', 'idau', 'allaha', 'awi', 'idau', 'alrahman'], 'Al-Isra'),
+  verse(109, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'qul', 'ya', 'ayyuha', 'alkafirun'], 'Al-Kafirun'),
+  verse(112, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'qul', 'huwa', 'allahu', 'ahad'], 'Al-Ikhlas'),
+  verse(112, 2, ['allahu', 'alsamad'], 'Al-Ikhlas'),
+  verse(113, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'qul', 'audhu', 'birabbi', 'alfalaq'], 'Al-Falaq'),
+];
+
+function qulChampion(surah: number, ayah: number, score: number): QuranChampionMatch {
+  const found = qulLookalikes.find((item) => item.surah === surah && item.ayah === ayah)!;
+  return {
+    surah, ayah, text: found.phonemes_joined, phonemes_joined: found.phonemes_joined,
+    score, raw_score: score, bonus: 0,
+  };
+}
+
+test('a shared Qul opening pairs the heard word without naming an ayah', async () => {
+  const engine = new RecitationFollower(dbFrom(qulLookalikes), script([{
+    text: 'qul',
+    rawPhonemes: 'qul',
+    championMatch: qulChampion(10, 16, 0.9),
+  }]));
+  const messages = await engine.feed(audio(1));
+  assert.deepEqual(refs(messages), []);
+  assert.deepEqual(heard(messages), ['qul']);
+  assert.equal(engine.phase, 'acquiring');
+});
+
+test('Qul then Allah does not first-lock a long lookalike such as Yunus 10:16', async () => {
+  const engine = new RecitationFollower(dbFrom(qulLookalikes), script([{
+    text: 'qul allahu ahad',
+    rawPhonemes: 'qul allahu ahad',
+    championMatch: qulChampion(10, 16, 0.92),
+  }]));
+  const messages = await engine.feed(audio(1));
+  assert.deepEqual(refs(messages), []);
+  assert.deepEqual(heard(messages), ['qul']);
+  assert.equal(engine.phase, 'acquiring');
+});
+
+test('Ikhlas audio locks 112:1 even when the engine names Yunus 10:16', async () => {
+  const engine = new RecitationFollower(dbFrom(qulLookalikes), script([{
+    text: 'qul huwa allahu ahad',
+    rawPhonemes: 'qul huwa allahu ahad',
+    championMatch: qulChampion(10, 16, 0.92),
+  }]));
+  const messages = await engine.feed(audio(1));
+  assert.deepEqual(refs(messages), ['112:1']);
+  assert.deepEqual(heard(messages), ['qul', 'huwa', 'allahu', 'ahad']);
+  assert.equal(engine.phase, 'following');
 });
 

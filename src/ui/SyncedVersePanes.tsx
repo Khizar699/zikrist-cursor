@@ -61,6 +61,15 @@ function VersePane({
   />;
 }
 
+export function HeardWordPanes({ words }: { words: string[] }) {
+  return <View style={s.panes}>
+    <View style={[s.pane, { justifyContent: 'center' }]}>
+      <Text selectable style={[s.arabic, { paddingHorizontal: 28 }]}>{words.join(' ')}</Text>
+    </View>
+    <View style={s.pane} />
+  </View>;
+}
+
 export function SyncedVersePanes({ verses, focus, urdu }: { verses: DisplayVerse[]; focus: DisplayVerse; urdu: boolean }) {
   const focusKey = refKey(focus);
   const index = passageIndex(verses, focus);

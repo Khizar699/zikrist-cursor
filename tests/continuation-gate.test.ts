@@ -22,10 +22,11 @@ test('Al-Fatihah 1:1 is not shown from Basmala alone; 1:2 confirms the opening',
   assert.equal(gate.isAmbiguousOpening, false);
 });
 
-test('Ikhlas 112:1 waits for words after the shared Basmala', () => {
+test('Ikhlas 112:1 waits for a unique word after Basmala, not Qul alone', () => {
   const gate = make();
   assert.deepEqual(gate.accept([match(112, 1)], 1000, true), []);
   assert.deepEqual(gate.accept([progress(112, 1, [0, 1, 2, 3], 8)], 1500, true), []);
+  assert.deepEqual(gate.accept([progress(112, 1, [4], 8)], 1600, true), []);
   const unique = progress(112, 1, [4, 5], 8);
   assert.deepEqual(gate.accept([unique], 1800, true), [match(112, 1), unique]);
 });
@@ -118,6 +119,13 @@ test('mushaf-next surah still waits for words after the shared Basmala', () => {
   assert.ok(gate.isCheckingJump);
   const unique = progress(113, 1, [4, 5], 8);
   assert.deepEqual(gate.accept([unique], 3600, true), [match(113, 1), unique]);
+});
+
+test('heard words still surface while a first ayah-1 match is held', () => {
+  const gate = make();
+  const draft = { type: 'heard_words' as const, words: ['qul'] };
+  assert.deepEqual(gate.accept([draft, match(112, 1)], 1000, true), [draft]);
+  assert.ok(gate.isAmbiguousOpening);
 });
 
 test('an initial speculative match and old-window progress cannot display a verse', () => {

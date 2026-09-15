@@ -1,3 +1,5 @@
+import type { WorkerOutbound } from '@tilawa/core';
+
 export type Language = 'en' | 'ur';
 export type FollowerPhase = 'acquiring' | 'following' | 'reacquiring';
 export type VerseRef = { surah: number; ayah: number };
@@ -8,4 +10,7 @@ export type Occurrence = VerseRef & {
   index: number; confirmedAtMs: number; audioOffsetMs: number; score: number;
   segment: number; matchedWords: number; totalWords: number;
 };
+/** Unconfirmed Arabic prefix. Not a translation and not a verse claim. */
+export type HeardWordsMessage = { type: 'heard_words'; words: string[] };
+export type RecognitionMessage = WorkerOutbound | HeardWordsMessage;
 export const refKey = (ref: VerseRef) => `${ref.surah}:${ref.ayah}`;

@@ -10,7 +10,7 @@ import { listening, type ListeningState } from './services/listening';
 import type { Settings } from './core/types';
 import { colors, styles as s } from './ui/theme';
 import { inter, tajawal } from './ui/fonts';
-import { SyncedVersePanes } from './ui/SyncedVersePanes';
+import { HeardWordPanes, SyncedVersePanes } from './ui/SyncedVersePanes';
 import { ListeningControl } from './ui/ListeningControl';
 
 export default function App() {
@@ -24,7 +24,9 @@ function useListening<T>(select: (state: ListeningState) => T): T {
 function LivePassage({ urdu, ready, displayError }: { urdu: boolean; ready: boolean; displayError: string | null }) {
   const current = useListening((state) => state.current);
   const passage = useListening((state) => state.passage);
+  const draftWords = useListening((state) => state.draftWords);
   if (!current) {
+    if (draftWords.length) return <HeardWordPanes words={draftWords} />;
     return <View style={[s.panes, { justifyContent: 'center', alignItems: 'center' }]}>
       {!ready && !displayError ? <ActivityIndicator color={colors.muted} /> : null}
     </View>;

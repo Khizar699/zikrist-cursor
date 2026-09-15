@@ -111,7 +111,35 @@ function suiteFiles(name: string): { label: string; files: string[]; expect?: { 
       ],
     };
   }
-  throw new Error(`Unknown suite "${name}". Use fatiha | ikhlas | nas | wav paths.`);
+  if (name === 'kawthar') {
+    return {
+      label: 'kawthar',
+      files: [1, 2, 3].map((ayah) => path.join(rec, `10800${ayah}.wav`)),
+      expect: [1, 2, 3].map((ayah) => ({ surah: 108, ayah })),
+    };
+  }
+  if (name === 'falaq') {
+    return {
+      label: 'falaq',
+      files: [1, 2, 3, 4, 5].map((ayah) => path.join(rec, `11300${ayah}.wav`)),
+      expect: [1, 2, 3, 4, 5].map((ayah) => ({ surah: 113, ayah })),
+    };
+  }
+  if (name === 'asr') {
+    return {
+      label: 'asr',
+      files: [1, 2, 3].map((ayah) => path.join(rec, `10300${ayah}.wav`)),
+      expect: [1, 2, 3].map((ayah) => ({ surah: 103, ayah })),
+    };
+  }
+  if (name === 'quraysh') {
+    return {
+      label: 'quraysh',
+      files: [1, 2, 3, 4].map((ayah) => path.join(rec, `10600${ayah}.wav`)),
+      expect: [1, 2, 3, 4].map((ayah) => ({ surah: 106, ayah })),
+    };
+  }
+  throw new Error(`Unknown suite "${name}". Use fatiha | ikhlas | nas | kawthar | falaq | asr | quraysh | wav paths.`);
 }
 
 function evaluateFailure(
@@ -204,8 +232,9 @@ async function replaySuite(label: string, files: string[], expect?: { surah: num
     const rms = Math.sqrt(sum / Math.max(1, chunk.length));
     const voiced = rms >= SPEECH_RMS;
     if (voiced) voicedMs += (chunk.length / SAMPLE_RATE) * 1000;
-    // Feed every chunk (including intra-clip silence), matching prior desktop
-    // native replay. Trailing pad silence still flushes the follower.
+    // Match live mic: do not feed unvoiced frames into the follower. Trailing
+    // pad after the clip is still fed so a final flush can run.
+    if (!voiced && index < audio.length) continue;
     const raw = await follower.feed(chunk);
     const accepted = gate.accept(raw, voicedMs, voiced);
     if (process.env.ZIKRIST_TRACE === '1' && (raw.length || accepted.length)) {
@@ -256,7 +285,7 @@ async function replaySuite(label: string, files: string[], expect?: { surah: num
 }
 
 const args = process.argv.slice(2);
-const suites = args.length === 0 ? ['fatiha', 'ikhlas', 'nas'] : args;
+const suites = args.length === 0 ? ['fatiha', 'ikhlas', 'nas', 'kawthar', 'falaq', 'asr', 'quraysh'] : args;
 const results: { label: string; outPath: string; failureMode: string | null }[] = [];
 
 for (const arg of suites) {

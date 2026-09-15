@@ -15,9 +15,10 @@ test('confirmed matches keep recitation order and repetitions, without duplicate
   assert.equal(timeline.occurrences.length, 4, 'A new recitation of the same verse must remain a separate occurrence');
 });
 
-test('candidates and retrospective final paths cannot invent a displayed verse', () => {
+test('candidates, heard words, and retrospective final paths cannot invent a displayed verse', () => {
   const timeline = new Timeline();
   timeline.accept({ type: 'verse_candidate', stable: true, final_flush: false, candidates: [{ surah: 1, ayah: 1, confidence: 0.99, source: 'discovery', rank: 0 }] }, 100);
+  timeline.accept({ type: 'heard_words', words: ['qul'] }, 150);
   timeline.accept({ type: 'final_sequence', confidence: 0.99, verses: [{ surah: 1, ayah: 1, confidence: 0.99 }] }, 200);
   assert.equal(timeline.occurrences.length, 0);
 });
