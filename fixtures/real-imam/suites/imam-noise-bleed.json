@@ -1,0 +1,23 @@
+{
+  "suite": "imam-noise-bleed",
+  "clipId": "imam-noise-bleed__pending__112-1-4",
+  "status": "pending",
+  "title": "Noise / speaker bleed",
+  "description": "Pending real-imam clip: intended Ikhlas 112:1–4 under ambient noise or a second voice. Prefer no lock over wrong-surah thrash.",
+  "clips": ["qari-a/imam-noise-bleed__pending__112-1-4.wav"],
+  "expect": [
+    { "surah": 112, "ayah": 1 },
+    { "surah": 112, "ayah": 2 },
+    { "surah": 112, "ayah": 3 },
+    { "surah": 112, "ayah": 4 }
+  ],
+  "expected_first_lock": { "surah": 112, "ayah": 1 },
+  "gate": "ordered-sequence",
+  "clipRunMode": "concat",
+  "notes": [
+    "failureMode sequence_break / first_lock_* and wrongSurahRate document bleed thrash.",
+    "Do not mix EveryAyah with generated noise and call it this suite."
+  ],
+  "license_status": "unresolved",
+  "source": "~/Desktop/zikrist-imam-clips/"
+}

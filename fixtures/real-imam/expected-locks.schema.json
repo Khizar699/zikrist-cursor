@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zikrist.local/fixtures/real-imam/expected-locks.schema.json",
+  "title": "Zikrist real-imam expected locks",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "suite",
+    "clipId",
+    "status",
+    "title",
+    "description",
+    "clips",
+    "expect",
+    "expected_first_lock",
+    "gate",
+    "notes",
+    "license_status"
+  ],
+  "properties": {
+    "suite": {
+      "type": "string",
+      "pattern": "^imam-[a-z0-9-]+$"
+    },
+    "clipId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Primary clip id without directory, usually {suite}__{tag}__{span}"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "ready"]
+    },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "clips": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": ".+\\.wav$"
+      }
+    },
+    "expect": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/verseRef" }
+    },
+    "expected_first_lock": {
+      "anyOf": [
+        { "$ref": "#/$defs/verseRef" },
+        { "type": "null" }
+      ]
+    },
+    "gate": {
+      "type": "string",
+      "enum": ["ordered-sequence", "no-verse-locks", "basmala-hold", "stall-after-lock"]
+    },
+    "clipRunMode": {
+      "type": "string",
+      "enum": ["concat", "each-clip"]
+    },
+    "trimStartSeconds": { "type": "number", "minimum": 0 },
+    "trailingSilenceSeconds": { "type": "number", "minimum": 0 },
+    "insertSilence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["durationSeconds"],
+        "properties": {
+          "atAudioSeconds": { "anyOf": [{ "type": "number", "minimum": 0 }, { "type": "null" }] },
+          "durationSeconds": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "license_status": { "type": "string" },
+    "source": { "type": "string" }
+  },
+  "$defs": {
+    "verseRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surah", "ayah"],
+      "properties": {
+        "surah": { "type": "integer", "minimum": 1, "maximum": 114 },
+        "ayah": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

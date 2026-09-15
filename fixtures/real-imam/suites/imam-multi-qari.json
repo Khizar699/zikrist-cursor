@@ -1,0 +1,26 @@
+{
+  "suite": "imam-multi-qari",
+  "clipId": "imam-multi-qari__pending__112-1-4",
+  "status": "pending",
+  "title": "Multi-qari placeholder",
+  "description": "Pending: same 112:1–4 expect on qari-a and qari-b. each-clip so the files are not concatenated.",
+  "clips": [
+    "qari-a/imam-multi-qari__pending__112-1-4.wav",
+    "qari-b/imam-multi-qari__pending__112-1-4.wav"
+  ],
+  "expect": [
+    { "surah": 112, "ayah": 1 },
+    { "surah": 112, "ayah": 2 },
+    { "surah": 112, "ayah": 3 },
+    { "surah": 112, "ayah": 4 }
+  ],
+  "expected_first_lock": { "surah": 112, "ayah": 1 },
+  "gate": "ordered-sequence",
+  "clipRunMode": "each-clip",
+  "notes": [
+    "Both files must exist before the suite leaves missing_fixture.",
+    "To score one reciter early, temporarily keep a single path in clips."
+  ],
+  "license_status": "unresolved",
+  "source": "~/Desktop/zikrist-imam-clips/"
+}

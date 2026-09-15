@@ -2,12 +2,19 @@
  * Named headless-replay suite blueprints and gate helpers.
  * No ONNX / follower logic lives here — algorithm stays in src/core.
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const SAMPLE_RATE = 16000;
 export const DEFAULT_TRAILING_SILENCE_SECONDS = 2;
 export const STALL_TRAILING_SILENCE_SECONDS = 4;
 export const COLD_START_TRIM_SECONDS = 0.75;
 export const ENGLISH_NEGATIVE_CLIP = 'english-negative.wav';
+export const DEFAULT_CLIP_DIR = 'artifacts/recitation';
+export const REAL_IMAM_CLIP_DIR = 'fixtures/real-imam/clips';
+export const REAL_IMAM_SUITES_DIR = 'fixtures/real-imam/suites';
+export const MISSING_FIXTURE = 'missing_fixture';
 
 export type VerseRef = { surah: number; ayah: number };
 export type MatchRow = { surah: number; ayah: number; audioSeconds: number; score: number };
@@ -18,6 +25,10 @@ export type ReplayGate =
   | 'basmala-hold'
   | 'stall-after-lock';
 
+export type ClipRunMode = 'concat' | 'each-clip';
+export type SuiteReadiness = 'ready' | 'pending';
+export type SilenceInsert = { atAudioSeconds: number | null; durationSeconds: number };
+
 export type SuiteBlueprint = {
   label: string;
   clips: string[];
@@ -25,7 +36,31 @@ export type SuiteBlueprint = {
   gate: ReplayGate;
   trimStartSeconds?: number;
   trailingSilenceSeconds?: number;
+  insertSilence?: SilenceInsert[];
+  clipRunMode?: ClipRunMode;
+  clipDir?: string;
+  readiness?: SuiteReadiness;
+  expectedLocksPath?: string;
   description: string;
+};
+
+export type RealImamSuiteSpec = {
+  suite: string;
+  clipId: string;
+  status: SuiteReadiness;
+  title: string;
+  description: string;
+  clips: string[];
+  expect: VerseRef[];
+  expected_first_lock: VerseRef | null;
+  gate: ReplayGate;
+  clipRunMode?: ClipRunMode;
+  trimStartSeconds?: number;
+  trailingSilenceSeconds?: number;
+  insertSilence?: SilenceInsert[];
+  notes: string[];
+  license_status: string;
+  source?: string;
 };
 
 function verseFileName(surah: number, ayah: number): string {
@@ -78,9 +113,48 @@ export const ALL_SUITE_NAMES = [
   'stall-after-lock',
 ] as const;
 
-export type SuiteName = (typeof ALL_SUITE_NAMES)[number];
+/** Pending real-imam pack. Not part of default / `all`. No audio until founder drops clips. */
+export const REAL_IMAM_SUITE_NAMES = [
+  'imam-mid-surah-cold',
+  'imam-mid-ayah-pause',
+  'imam-surah-switch',
+  'imam-noise-bleed',
+  'imam-multi-qari',
+] as const;
 
-const SUITES: Record<SuiteName, SuiteBlueprint> = {
+export type ReadySuiteName = (typeof ALL_SUITE_NAMES)[number];
+export type RealImamSuiteName = (typeof REAL_IMAM_SUITE_NAMES)[number];
+export type SuiteName = ReadySuiteName | RealImamSuiteName;
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+function loadRealImamSpec(name: RealImamSuiteName): RealImamSuiteSpec {
+  const file = path.join(repoRoot, REAL_IMAM_SUITES_DIR, `${name}.json`);
+  const spec = JSON.parse(fs.readFileSync(file, 'utf8')) as RealImamSuiteSpec;
+  if (spec.suite !== name) {
+    throw new Error(`real-imam spec ${file} suite "${spec.suite}" does not match ${name}`);
+  }
+  return spec;
+}
+
+function blueprintFromRealImamSpec(spec: RealImamSuiteSpec): SuiteBlueprint {
+  return {
+    label: spec.suite,
+    clips: spec.clips,
+    expect: spec.expect,
+    gate: spec.gate,
+    trimStartSeconds: spec.trimStartSeconds,
+    trailingSilenceSeconds: spec.trailingSilenceSeconds,
+    insertSilence: spec.insertSilence,
+    clipRunMode: spec.clipRunMode ?? 'concat',
+    clipDir: REAL_IMAM_CLIP_DIR,
+    readiness: spec.status,
+    expectedLocksPath: `${REAL_IMAM_SUITES_DIR}/${spec.suite}.json`,
+    description: spec.description,
+  };
+}
+
+const READY_SUITES: Record<ReadySuiteName, SuiteBlueprint> = {
   fatiha: {
     label: 'fatiha',
     clips: FATIHA_CLIPS,
@@ -183,32 +257,85 @@ const SUITES: Record<SuiteName, SuiteBlueprint> = {
   },
 };
 
-export function isSuiteName(name: string): name is SuiteName {
+const REAL_IMAM_SUITES = Object.fromEntries(
+  REAL_IMAM_SUITE_NAMES.map((name) => [name, blueprintFromRealImamSpec(loadRealImamSpec(name))]),
+) as Record<RealImamSuiteName, SuiteBlueprint>;
+
+const SUITES: Record<SuiteName, SuiteBlueprint> = { ...READY_SUITES, ...REAL_IMAM_SUITES };
+
+export function isReadySuiteName(name: string): name is ReadySuiteName {
   return (ALL_SUITE_NAMES as readonly string[]).includes(name);
+}
+
+export function isRealImamSuiteName(name: string): name is RealImamSuiteName {
+  return (REAL_IMAM_SUITE_NAMES as readonly string[]).includes(name);
+}
+
+export function isSuiteName(name: string): name is SuiteName {
+  return isReadySuiteName(name) || isRealImamSuiteName(name);
 }
 
 export function suiteBlueprint(name: string): SuiteBlueprint {
   if (!isSuiteName(name)) {
     throw new Error(
-      `Unknown suite "${name}". Use ${ALL_SUITE_NAMES.join(' | ')} | core | all | wav paths.`,
+      `Unknown suite "${name}". Use ${ALL_SUITE_NAMES.join(' | ')} | core | all | real-imam | ${REAL_IMAM_SUITE_NAMES.join(' | ')} | wav paths.`,
     );
   }
   return SUITES[name];
 }
 
-export function parseSuiteSelection(args: string[]): string[] {
+export function parseReplayCli(args: string[]): {
+  help: boolean;
+  list: boolean;
+  checkFixtures: boolean;
+  includePending: boolean;
+  wavArgs: string[];
+  namedArgs: string[];
+} {
+  return {
+    help: args.includes('--help') || args.includes('-h'),
+    list: args.includes('--list'),
+    checkFixtures: args.includes('--check-fixtures'),
+    includePending: args.includes('--include-pending'),
+    wavArgs: args.filter((arg) => arg.endsWith('.wav') || arg.endsWith('.WAV')),
+    namedArgs: args.filter((arg) => !arg.startsWith('--') && !arg.endsWith('.wav') && !arg.endsWith('.WAV')),
+  };
+}
+
+export function parseSuiteSelection(args: string[], options?: { includePending?: boolean }): string[] {
   const names = args.filter((arg) => !arg.startsWith('--') && !arg.endsWith('.wav') && !arg.endsWith('.WAV'));
-  if (!names.length || names.includes('all')) return [...ALL_SUITE_NAMES];
+  const includePending = Boolean(options?.includePending);
+  if (!names.length || names.includes('all')) {
+    if (includePending || names.includes('real-imam')) {
+      return [...ALL_SUITE_NAMES, ...REAL_IMAM_SUITE_NAMES];
+    }
+    return [...ALL_SUITE_NAMES];
+  }
   const resolved: string[] = [];
   for (const name of names) {
     if (name === 'core') {
       resolved.push(...CORE_SUITE_NAMES);
       continue;
     }
+    if (name === 'real-imam') {
+      resolved.push(...REAL_IMAM_SUITE_NAMES);
+      continue;
+    }
     suiteBlueprint(name);
     resolved.push(name);
   }
   return [...new Set(resolved)];
+}
+
+export function suiteClipDirectory(suite: Pick<SuiteBlueprint, 'clipDir'>): string {
+  return suite.clipDir ?? DEFAULT_CLIP_DIR;
+}
+
+export function loadRealImamSuiteSpec(name: string): RealImamSuiteSpec {
+  if (!isRealImamSuiteName(name)) {
+    throw new Error(`Not a real-imam suite: ${name}`);
+  }
+  return loadRealImamSpec(name);
 }
 
 export function uniqueClipsForSuites(names: readonly string[]): string[] {
@@ -248,13 +375,32 @@ export function trimStartPcm(audio: Float32Array, seconds: number, sampleRate = 
   return audio.subarray(skip);
 }
 
+export function insertSilenceAt(
+  audio: Float32Array,
+  atAudioSeconds: number,
+  durationSeconds: number,
+  sampleRate = SAMPLE_RATE,
+): Float32Array {
+  const at = Math.max(0, Math.min(audio.length, Math.round(atAudioSeconds * sampleRate)));
+  const silence = silencePcm(durationSeconds, sampleRate);
+  const out = new Float32Array(audio.length + silence.length);
+  out.set(audio.subarray(0, at), 0);
+  out.set(silence, at);
+  out.set(audio.subarray(at), at + silence.length);
+  return out;
+}
+
 export function prepareSuiteAudio(
   clips: Float32Array[],
-  suite: Pick<SuiteBlueprint, 'trimStartSeconds' | 'trailingSilenceSeconds'>,
+  suite: Pick<SuiteBlueprint, 'trimStartSeconds' | 'trailingSilenceSeconds' | 'insertSilence'>,
 ): { audio: Float32Array; trailingSilenceSeconds: number } {
   let audio = concatFloat32(clips);
   if (suite.trimStartSeconds) {
     audio = trimStartPcm(audio, suite.trimStartSeconds);
+  }
+  for (const gap of suite.insertSilence ?? []) {
+    if (gap.atAudioSeconds == null) continue;
+    audio = insertSilenceAt(audio, gap.atAudioSeconds, gap.durationSeconds);
   }
   return {
     audio,
@@ -339,18 +485,24 @@ export function wrongSurahStats(
 }
 
 export function suiteHelpText(): string {
-  const lines = ALL_SUITE_NAMES.map((name) => `  ${name.padEnd(18)} ${SUITES[name].description}`);
+  const ready = ALL_SUITE_NAMES.map((name) => `  ${name.padEnd(22)} ${SUITES[name].description}`);
+  const pending = REAL_IMAM_SUITE_NAMES.map((name) => `  ${name.padEnd(22)} [pending] ${SUITES[name].description}`);
   return [
     'Usage:',
     '  npm run test:replay',
     '  npm run test:replay -- all',
     '  npm run test:replay -- core',
+    '  npm run test:replay -- real-imam',
+    '  npm run test:replay -- --include-pending',
     '  npm run test:replay -- <suite>',
     '  npm run test:replay -- --check-fixtures',
     '  npm run test:replay -- --list',
     '  npm run test:replay -- artifacts/recitation/112001.wav ...',
     '',
-    'Suites:',
-    ...lines,
+    'Ready (default all, 14 suites):',
+    ...ready,
+    '',
+    'Pending real-imam (missing clips → missing_fixture; not in default all):',
+    ...pending,
   ].join('\n');
 }

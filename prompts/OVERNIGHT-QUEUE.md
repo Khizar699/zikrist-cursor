@@ -13,4 +13,4 @@ Salah liturgy overnight: `prompts/salah-liturgy/00-OVERNIGHT-QUEUE.md` (after 14
 
 
 ## Parallel (scaffold): real-imam
-`prompts/real-imam/00-OVERNIGHT-QUEUE.md` — stubs until clips in Desktop/zikrist-imam-clips/. Does not block salah liturgy P0.
+`prompts/real-imam/00-OVERNIGHT-QUEUE.md` — pending suites under `fixtures/real-imam/`; `npm run test:replay -- real-imam` → `missing_fixture` until clips. Does not block salah liturgy P0. Quran `test:replay -- all` stays 14.

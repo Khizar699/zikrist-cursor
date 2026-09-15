@@ -1,0 +1,22 @@
+{
+  "suite": "imam-mid-surah-cold",
+  "clipId": "imam-mid-surah-cold__pending__002-255-256",
+  "status": "pending",
+  "title": "Mid-surah cold start",
+  "description": "Pending real-imam clip: start listening mid-surah (placeholder 2:255 then 2:256). Not synthetic cold-start-mid.",
+  "clips": ["qari-a/imam-mid-surah-cold__pending__002-255-256.wav"],
+  "expect": [
+    { "surah": 2, "ayah": 255 },
+    { "surah": 2, "ayah": 256 }
+  ],
+  "expected_first_lock": { "surah": 2, "ayah": 255 },
+  "gate": "ordered-sequence",
+  "clipRunMode": "concat",
+  "notes": [
+    "Placeholder expect for Ayat al-Kursi then 2:256. Edit to match the dropped clip.",
+    "First lock must not be forced to 2:1 or an unrelated surah.",
+    "Drop 16 kHz mono WAV at clips/qari-a/; MP3 must be converted first."
+  ],
+  "license_status": "unresolved",
+  "source": "~/Desktop/zikrist-imam-clips/"
+}

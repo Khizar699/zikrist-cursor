@@ -5,10 +5,14 @@ import {
   CORE_SUITE_NAMES,
   COLD_START_TRIM_SECONDS,
   ENGLISH_NEGATIVE_CLIP,
+  MISSING_FIXTURE,
+  REAL_IMAM_SUITE_NAMES,
   SAMPLE_RATE,
   STALL_TRAILING_SILENCE_SECONDS,
   concatFloat32,
   evaluateFailure,
+  insertSilenceAt,
+  parseReplayCli,
   parseSuiteSelection,
   prepareSuiteAudio,
   silencePcm,
@@ -69,6 +73,7 @@ test('named suites use SSSAAA clip names and wire kawthar/falaq/asr/quraysh plus
     'longer', 'jump', 'english-negative', 'basmala-hold', 'back-to-back',
     'cold-start-mid', 'stall-after-lock',
   ]);
+  assert.equal(ALL_SUITE_NAMES.length, 14);
 });
 
 test('parseSuiteSelection defaults to all suites and expands core', () => {
@@ -77,6 +82,43 @@ test('parseSuiteSelection defaults to all suites and expands core', () => {
   assert.deepEqual(parseSuiteSelection(['core']), [...CORE_SUITE_NAMES]);
   assert.deepEqual(parseSuiteSelection(['kawthar', 'english-negative']), ['kawthar', 'english-negative']);
   assert.throws(() => parseSuiteSelection(['not-a-suite']), /Unknown suite/);
+});
+
+test('real-imam selection is pending-only and stays out of default all', () => {
+  assert.deepEqual([...REAL_IMAM_SUITE_NAMES], [
+    'imam-mid-surah-cold',
+    'imam-mid-ayah-pause',
+    'imam-surah-switch',
+    'imam-noise-bleed',
+    'imam-multi-qari',
+  ]);
+  assert.equal(parseSuiteSelection(['all']).some((name) => name.startsWith('imam-')), false);
+  assert.deepEqual(parseSuiteSelection(['real-imam']), [...REAL_IMAM_SUITE_NAMES]);
+  assert.deepEqual(
+    parseSuiteSelection(['all'], { includePending: true }),
+    [...ALL_SUITE_NAMES, ...REAL_IMAM_SUITE_NAMES],
+  );
+  assert.deepEqual(
+    parseSuiteSelection(['all', 'real-imam']),
+    [...ALL_SUITE_NAMES, ...REAL_IMAM_SUITE_NAMES],
+  );
+  assert.deepEqual(parseSuiteSelection(['imam-mid-surah-cold']), ['imam-mid-surah-cold']);
+  assert.equal(suiteBlueprint('imam-mid-surah-cold').readiness, 'pending');
+  assert.equal(suiteBlueprint('imam-mid-surah-cold').clipDir, 'fixtures/real-imam/clips');
+  assert.equal(suiteBlueprint('imam-multi-qari').clipRunMode, 'each-clip');
+  assert.equal(MISSING_FIXTURE, 'missing_fixture');
+});
+
+test('parseReplayCli extracts include-pending and list flags', () => {
+  assert.deepEqual(parseReplayCli(['--list', 'real-imam']), {
+    help: false,
+    list: true,
+    checkFixtures: false,
+    includePending: false,
+    wavArgs: [],
+    namedArgs: ['real-imam'],
+  });
+  assert.equal(parseReplayCli(['all', '--include-pending']).includePending, true);
 });
 
 test('english-negative is an inverted gate: PASS only when no verse commits', () => {
@@ -145,6 +187,13 @@ test('PCM concat, trim, and stall pad stay in the harness helpers', () => {
   });
   assert.equal(prepared.audio.length, SAMPLE_RATE * 0.75);
   assert.equal(prepared.trailingSilenceSeconds, 4);
+  const withGap = insertSilenceAt(new Float32Array([1, 2, 3, 4]), 2 / SAMPLE_RATE, 3 / SAMPLE_RATE, SAMPLE_RATE);
+  assert.equal(withGap.length, 7);
+  assert.deepEqual([...withGap], [1, 2, 0, 0, 0, 3, 4]);
+  const skippedNullGap = prepareSuiteAudio([new Float32Array(4)], {
+    insertSilence: [{ atAudioSeconds: null, durationSeconds: 1 }],
+  });
+  assert.equal(skippedNullGap.audio.length, 4);
 });
 
 test('verse clip ids stay SSSAAA and include every downloaded surah', () => {
@@ -161,4 +210,5 @@ test('verse clip ids stay SSSAAA and include every downloaded surah', () => {
     '001001.wav',
     ENGLISH_NEGATIVE_CLIP,
   ]);
+  assert.equal(ids.some((id) => id.includes('imam-')), false);
 });

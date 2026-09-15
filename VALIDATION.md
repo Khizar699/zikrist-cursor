@@ -161,3 +161,16 @@ Rebased onto main `810ed4c` (Prompt Smith sharper brief). 2:1 `text_clean` is `Ø
 
 `npm test` 141/141; typecheck pass; lint still reports the pre-existing unused `openingScore` warning. Linux longer 2:1 first and nas/fatiha/short-surah Linux times above are from a **pre-rebase** tip. This workspace has no ONNX/WAV fixtures. Not a physical-device accuracy claim. **Only remaining merge gate: Mac `test:replay -- longer` first-lock 2:1.** Keep Mac nas/fatiha/asr/kawthar/quraysh/jump/back-to-back green.
 
+## Real-imam coverage pack (scaffold, no audio)
+
+Harness/docs only. **No founder/imam WAV or MP3 is committed.** Silent STUB audio was not invented. `RecitationFollower` was not retuned.
+
+- Layout: `fixtures/real-imam/` (README, `expected-locks.schema.json`, `manifest.json`, `suites/*.json`, empty `clips/qari-a` and `clips/qari-b`).
+- Overnight prompts: `prompts/real-imam/00-OVERNIGHT-QUEUE.md` (mid-surah cold start, mid-ayah pause/resume, surah switch, noise/bleed, multi-qari, live-feel checklist).
+- `npm run test:replay -- all` still resolves to the original **14** Quran suites (hard gate).
+- `npm run test:replay -- real-imam` (or `npm run test:replay:real-imam`) reports `failureMode: missing_fixture` for the five pending suites and does not load ONNX.
+- `--list` documents pending entries. `--include-pending` adds them to `all` and will fail until clips exist.
+- Salah liturgy remains a **separate** track (`prompts/salah-liturgy/`, data-only pack). Do not treat this scaffold as imam-ready or as liturgy coverage.
+
+Drop 16 kHz mono PCM16 WAV under `fixtures/real-imam/clips/` using the clip ids in the suite JSON. Convert MP3/video with ffmpeg as documented in `fixtures/real-imam/README.md`. Founder source folder: `~/Desktop/zikrist-imam-clips/`. Imam/bystander recording rights stay unresolved; a local file is not a redistribution grant.
+

@@ -1,9 +1,20 @@
-# Suite: multi-qari placeholder (scaffold)
+# Suite: multi-qari placeholder (real-imam)
 
 ## Goal
 
-Layout for `imam-multi-qari`: same expected ayah sequence, **different** `qari-or-source` folders. No algorithm change required — prove harness can select alternate clips via manifest.
+Harness can score the **same** expected sequence on **different** `qari-or-source` folders. Suite `imam-multi-qari` uses `clipRunMode: each-clip` so qari-a and qari-b are **not** concatenated.
+
+Placeholder expect: **112:1–4** for both slots.
+
+```
+fixtures/real-imam/clips/qari-a/imam-multi-qari__pending__112-1-4.wav
+fixtures/real-imam/clips/qari-b/imam-multi-qari__pending__112-1-4.wav
+```
+
+Until **both** WAVs exist, the suite is `missing_fixture` (drop one reciter by temporarily removing the other path from the suite JSON if you want a single-qari run).
+
+No follower change required — this proves clip selection via manifest.
 
 ## Success
 
-At least two stub qari slots (`qari-a`, `qari-b`) with identical expectations; import path documented; 14/14 gate.
+Two stub qari slots with identical `expect`; import path documented; 14/14 gate. After clips: each file writes its own replay JSON label `imam-multi-qari:<clip-stem>`.
