@@ -683,6 +683,30 @@ test('a garbled unique opening of the next short ayah still advances', async () 
   assert.deepEqual(refs(await engine.feed(hop())), ['106:3']);
 });
 
+test('shared Basmala الرحمن does not first-lock a one-word ayah-1 echo such as 55:1', async () => {
+  const local = [
+    verse(1, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم'], 'Al-Fatihah'),
+    verse(1, 2, ['الحمد', 'لله', 'رب', 'العلمين'], 'Al-Fatihah'),
+    verse(55, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'الرحمن'], 'Ar-Rahman'),
+    verse(55, 2, ['علم', 'القرءان'], 'Ar-Rahman'),
+    verse(103, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'والعصر'], 'Al-Asr'),
+  ];
+  const rahman = local[2]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([{
+      text: 'بسم الله الرحمن الرحيم',
+      rawPhonemes: 'بسم الله الرحمن الرحيم',
+      championMatch: {
+        surah: 55, ayah: 1, text: rahman.phonemes_joined, phonemes_joined: rahman.phonemes_joined,
+        score: 0.92, raw_score: 0.92, bonus: 0,
+      },
+    }]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), []);
+  assert.equal(engine.phase, 'acquiring');
+});
+
 test('a short Asr-like opening does not first-lock a distant lookalike', async () => {
   const local = [
     verse(103, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'والعصر'], 'Al-Asr'),

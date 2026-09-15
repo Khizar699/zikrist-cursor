@@ -63,8 +63,8 @@ Public distribution also requires model/content rights clearance and store priva
 ## Overnight algorithm loop (2026-09-15 late)
 
 - Ikhlas (`npm run test:replay -- ikhlas`) gated **PASS**: 112:1→4 in order.
-- Nas / Fatiha / short-surah tails still algorithm work (see overnight queue). Expanded suites: kawthar, falaq, asr, quraysh + edge suites.
-- Short-surah start/tail (PR #2): ContinuationGate confirms a one-word ayah-1 body after Basmala; follow advances on unused distinctive tokens of the expected next ayah (including a unique opening or a tail such as الابتر) without re-scoring that tail against the opening. `unused` is stem/word-strict so a current-ayah token cannot consume the next ayah via 0.72 fuzzy after prefix stripping. Nas 114:6 is owned elsewhere.
+- Fatiha / Nas / longer Baqarah still algorithm work (see overnight queue). Expanded suites: kawthar, falaq, asr, quraysh + edge suites.
+- Short-surah start/tail (PR #2 + Basmala-echo guard): ContinuationGate confirms a distinctive one-word ayah-1 body after Basmala; a one-word body that is only a Basmala token (الرحمن) cannot first-lock 55:1. Follow advances on unused distinctive tokens of the expected next ayah (including a unique opening or a tail such as الابتر) without re-scoring that tail against the opening. `unused` is stem/word-strict so a current-ayah token cannot consume the next ayah via 0.72 fuzzy after prefix stripping. Nas 114:6 is owned elsewhere.
 - Unit tests cover the short ayah-1 confirm, short next/final leftover tokens, and a distant lookalike reject. Not a physical-device claim.
 
 ## Expanded replay suites (2026-09-15 harness-only)
