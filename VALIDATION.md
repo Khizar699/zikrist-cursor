@@ -65,3 +65,50 @@ Public distribution also requires model/content rights clearance and store priva
 - Ikhlas (`npm run test:replay -- ikhlas`) gated **PASS**: 112:1→4 in order.
 - Nas / Fatiha still failing. Expanded suites: kawthar, falaq, asr, quraysh.
 - Unit tests 89/89. Not a physical-device claim.
+
+## Expanded replay suites (2026-09-15 harness-only)
+
+Harness/docs/fixture wiring only. `RecitationFollower` acquire/follow thresholds were not retuned.
+
+Commands:
+
+```bash
+npm run fixtures:recitation
+npm run test:replay -- --check-fixtures
+npm run test:replay                 # all suites
+npm run test:replay -- all
+npm run test:replay -- core         # fatiha, ikhlas, nas
+npm run test:replay -- <suite>
+```
+
+| Suite | Clips / transform | Gate |
+| --- | --- | --- |
+| `fatiha` | `001001`–`001007` | ordered 1:2–1:7; Ibrahim 14:39/14:40 first-lock still special-cased |
+| `ikhlas` | `112001`–`112004` | ordered 112:1–4 |
+| `nas` | `114001`–`114006` | ordered 114:1–6 |
+| `kawthar` | `108001`–`108003` | ordered 108:1–3 |
+| `falaq` | `113001`–`113005` | ordered 113:1–5 |
+| `asr` | `103001`–`103003` | ordered 103:1–3 |
+| `quraysh` | `106001`–`106004` | ordered 106:1–4 |
+| `longer` | `002001`–`002005` (Al-Baqarah 2:1–5, not Mulk) | ordered 2:1–5 |
+| `jump` | Kawthar then Ikhlas concat | ordered 108:1–3 then 112:1–4 |
+| `english-negative` | `english-negative.wav` | inverted: PASS only if **no** verse locks; `failureMode` `verse_lock_s:a` if any commit |
+| `basmala-hold` | `001001` alone | PASS only if no locks; `locked_fatiha_1:1` or `locked_s:a` otherwise |
+| `back-to-back` | Asr then Quraysh concat | ordered 103:1–3 then 106:1–4 |
+| `cold-start-mid` | trim first 0.75 s of `002002` | ordered 2:2 |
+| `stall-after-lock` | `112002` + 4 s **fed** trailing silence | first lock 112:2 and no later jump |
+
+JSON path: `artifacts/qa-runs/replay-<suite>.json`. Fields include `matches`, `firstLockSeconds`, `clocks`, `failureMode`, `wrongSurahRate`, `wrongSurahCount`, `firstLockWrongSurah`.
+
+Fixture-ready after `npm run fixtures:recitation` (ffmpeg required; EveryAyah Alafasy MP3 → 16 kHz mono WAV). Composed suites reuse those clips. Evaluation audio stays gitignored. An EveryAyah URL is not a redistribution grant.
+
+Gate contracts are covered by `tests/replay-suites.test.ts` (`npm test` 99/99). After `npm run fixtures:recitation`, `--check-fixtures` reported all 14 suites ready. A Linux/x64 `onnxruntime-node` smoke on this workspace (not a phone, not Sim QA overnight):
+
+| Suite | Result |
+| --- | --- |
+| `english-negative` | PASS — no verse locks; `wrongSurahRate` 0 |
+| `basmala-hold` | PASS — `001001` alone locked nothing; `wrongSurahRate` 0 |
+| `stall-after-lock` | PASS — first lock 112:2, no jump during 4 s fed silence |
+| `kawthar` | `failureMode` `stall_missing_108:3_after_2_matches` (108:1 then 108:2; `wrongSurahRate` 0) |
+
+Remaining suites were not scored here. Overnight locate+follow scoring is still for Sim QA on Mac (or any machine with the model + WAVs). Honest `failureMode` is a valid harness result, not a reason to retune the follower in this change.
