@@ -83,9 +83,18 @@ function wordsMatch(left: string, right: string, minRatio = 0.8): boolean {
   return levRatio(left, right) >= minRatio;
 }
 
-/** Shared stem such as الصرط / صرط. Not a 0.7 fuzzy hit like الرحمن / الحمد,
- * and not a short ayah-1 body hosted in a longer word (الم / المال). */
+/** Shared stem such as الصرط / صرط, or ASR الا hitting الانسن. Not a 0.7
+ * fuzzy hit like الرحمن / الحمد. Opening align uses openingStem instead so
+ * الم cannot stand in for المال. */
 function relatedStem(left: string, right: string): boolean {
+  if (left === right) return true;
+  if (left.length <= 2 || right.length <= 2) return false;
+  const longer = left.length >= right.length ? left : right;
+  const shorter = left.length >= right.length ? right : left;
+  return longer.endsWith(shorter) || longer.startsWith(shorter);
+}
+
+function openingStem(left: string, right: string): boolean {
   if (left === right) return true;
   if (left.length <= 2 || right.length <= 2) return false;
   const longer = left.length >= right.length ? left : right;
@@ -106,7 +115,7 @@ function softTokenMatch(left: string, right: string): boolean {
 }
 
 function openingWordMatch(left: string, right: string): boolean {
-  return left === right || relatedStem(left, right);
+  return left === right || openingStem(left, right);
 }
 
 /** Opening words in order. Extra spoken words may be skipped; a distinctive

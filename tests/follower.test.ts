@@ -1031,6 +1031,29 @@ function muqattaatChampion(surah: number, ayah: number, score: number, extra: Pa
   };
 }
 
+test('Asr 103:2 still advances when ASR prefixes الانسن as الا', async () => {
+  const local = [
+    verse(103, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'والعصر'], 'Al-Asr'),
+    verse(103, 2, ['ان', 'الانسن', 'لفي', 'خسر'], 'Al-Asr'),
+    verse(103, 3, ['الا', 'الذين', 'امنوا'], 'Al-Asr'),
+  ];
+  const one = local[0]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: one.phonemes_joined, rawPhonemes: one.phonemes_joined, championMatch: {
+          surah: 103, ayah: 1, text: one.phonemes_joined, phonemes_joined: one.phonemes_joined,
+          score: 0.92, raw_score: 0.92, bonus: 0,
+        },
+      },
+      { text: 'والعصر الا الانسن لفي خسر', rawPhonemes: 'والعصر الا الانسن لفي خسر' },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:1']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['103:2']);
+});
+
 test('ayah-1 body الم locks 2:1, not a longer lookalike such as 18:46 المال', async () => {
   const spoken = 'بسم الله الرحمن الرحيم الم';
   const engine = new RecitationFollower(dbFrom(muqattaat), script([{
