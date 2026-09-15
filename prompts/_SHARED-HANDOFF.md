@@ -13,7 +13,9 @@ Update root **`HANDOFF.md` tip** in the same PR:
 5. **Fixture restore** — `npm run fixtures:recitation` and `npm run fixtures:imam` (tag `imam-fixtures-v1` / `zikrist-imam-fixtures-v1.zip`); liturgy `npm run liturgy:tts -- <id> --engine say` with ffmpeg on `PATH`
 6. **Known fails** — at least Subayyal 4:129≠41:34 and Qiyam 36:16≠78:4 until those are Mac-green; never invent ayah labels
 
-A PR without a `HANDOFF.md` tip bump is **not mergeable**.
+A PR without a `HANDOFF.md` tip bump is **not mergeable**. CI: `.github/workflows/handoff-required.yml` fails PRs to `main` that omit `HANDOFF.md` from the diff.
+
+Bots: Tip → `AGENTS.md` → the one prompt Tip names (HANDOFF **Bot start protocol**). Do not load every `prompts/**` file up front.
 
 ## When applicable
 
@@ -29,4 +31,4 @@ A PR without a `HANDOFF.md` tip bump is **not mergeable**.
 - Flipping real-imam suites to `ready` until `prompts/imam-mid-surah-cold-false-lock.md` is Mac-green
 - Committing wav/mp3
 
-See **Maintainer rule** and **Dictation for successor bots** in `HANDOFF.md`. Use the PR template checklist.
+See **Maintainer rule**, **Dictation for successor bots**, and **Bot start protocol** in `HANDOFF.md`. Use the PR template checklist.

@@ -2,7 +2,9 @@
 
 An offline Quran recognition and translation MVP for iOS and Android. This is a technical evaluation build, not a finished production application.
 
-**Assistants / Grok bots with no chat history:** read [HANDOFF.md](HANDOFF.md) first (14/14 Quran gate, fixture restore, founder labels, teammate lanes). **Maintainer rule:** every PR to `main` must bump `HANDOFF.md` in the same PR (`prompts/_SHARED-HANDOFF.md`).
+## Continuing from GitHub
+
+Friends and new bots: [HANDOFF.md](HANDOFF.md) **Tip state**, then **Bot start protocol** (`AGENTS.md` → the one prompt Tip names). Clone → `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam`.
 
 The app is a single live-translation screen: microphone capture, on-device Tilawa / ONNX recognition, and a dual-pane Arabic + English (or previously installed Urdu) passage. After the first lock, surrounding ayahs are already on screen; the focused ayah is full opacity and neighbors stay dim. It does not include session history, accounts, cloud sync, analytics, training uploads, stories, chat, in-app settings, or local audio saving.
 

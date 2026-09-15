@@ -4,7 +4,7 @@ Friends and **new Grok / Cursor agents** (no chat history) start here. Large rec
 
 ## Maintainer rule (founder)
 
-Every PR that merges to `main` **must** update this file **in the same PR**: what landed, tip state, open tracks, gates (`npm run test:replay -- all` = **14/14** Quran), fixture restore commands, known fails. Prompt Smith / cloud agents follow `prompts/_SHARED-HANDOFF.md`. A PR without a `HANDOFF.md` bump is not mergeable.
+Every PR that merges to `main` **must** update this file **in the same PR**: what landed, tip state, open tracks, gates (`npm run test:replay -- all` = **14/14** Quran), fixture restore commands, known fails. Prompt Smith / cloud agents follow `prompts/_SHARED-HANDOFF.md`. A PR without a `HANDOFF.md` bump is not mergeable. CI: `.github/workflows/handoff-required.yml`.
 
 
 ## Dictation for successor bots
@@ -18,6 +18,17 @@ Founder rule for **every** Cursor/session agent (Prompt Smith, cloud agents, rec
 5. Follow `prompts/_SHARED-HANDOFF.md` and the GitHub PR template checklist.
 
 A PR that ships code or prompts without these writes is incomplete.
+
+## Bot start protocol
+
+Cheap read order (do not load every `prompts/**` file up front):
+
+1. **Tip state** only first (next section).
+2. Then `AGENTS.md`.
+3. Then the **single** open-track prompt named in Tip.
+4. Restore fixtures if missing: `npm run fixtures:recitation` then `npm run fixtures:imam`.
+
+Skip overnight queues unless picking next work. Dictation above is what to **write** in the PR.
 
 ## Tip state (update every PR)
 
@@ -48,7 +59,7 @@ npm run fixtures:recitation    # EveryAyah Quran replay wavs
 npm run fixtures:imam          # Release tag imam-fixtures-v1 / zikrist-imam-fixtures-v1.zip
 ```
 
-If `fixtures:imam` 404s, the zip is not published yet — see https://github.com/Khizar699/zikrist-cursor/releases. Do not commit audio.
+The zip is **uploaded**. If `fixtures:imam` 404s, the tag/asset was removed or `ZIKRIST_IMAM_RELEASE_TAG` is wrong — see https://github.com/Khizar699/zikrist-cursor/releases. Do not commit audio.
 
 **Liturgy TTS** (gitignored under `artifacts/recitation/liturgy/`): put ffmpeg on `PATH`, then Mac `say` Majed:
 
@@ -113,7 +124,7 @@ Re-download imam clips: `npm run fixtures:imam -- --force`.
 
 The zip unpacks **into** `artifacts/recitation/imam/`, merging `LABELS.md`, `labels.json`, suite folders, `_inbox/`, and `sources/`. The script skips when that `LABELS.md` and at least one suite wav already exist.
 
-If the release is not uploaded yet, the script exits with HTTP 404 and points at https://github.com/Khizar699/zikrist-cursor/releases. That is expected until a maintainer publishes tag `imam-fixtures-v1`.
+Asset is live. A 404 means the tag/asset disappeared or `ZIKRIST_IMAM_RELEASE_TAG` is wrong; the script still names https://github.com/Khizar699/zikrist-cursor/releases.
 
 Real-imam replay suites stay `stub` until algorithm fixes land. Restoring wavs is not a readiness flip. `npm run test:replay -- real-imam` still **skips** with `missing_fixture` (not PASS) while the manifest is stub.
 

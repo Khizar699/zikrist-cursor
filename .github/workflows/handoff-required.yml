@@ -1,0 +1,31 @@
+# Every PR to main must change HANDOFF.md (living Tip state).
+# See prompts/_SHARED-HANDOFF.md.
+name: Handoff required
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  require-handoff:
+    name: HANDOFF.md must change
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if HANDOFF.md is not in the PR diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          files="$(gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files" \
+            --jq '.[].filename')"
+          echo "Changed files:"
+          printf '%s\n' "$files"
+          if ! printf '%s\n' "$files" | grep -Fxq 'HANDOFF.md'; then
+            echo '::error::Every PR to main must update HANDOFF.md (Tip state). See prompts/_SHARED-HANDOFF.md.'
+            exit 1
+          fi
