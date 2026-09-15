@@ -456,6 +456,8 @@ export class RecitationFollower {
     const heardNext = Boolean(next && heardDistinct(recognized, next, this.distinctSkip(next, current)));
     const currentBody = verseAlignWords(current).words;
     const leftover = remainingAfterTail(recognized, currentBody);
+    const leftoverUnexplained = leftoverIsNewRecitation(leftover)
+      && !leftover.some((token) => currentBody.some((word) => wordsMatch(token, word) || relatedStem(token, word)));
     const matchedBody = alignWords(recognized, currentBody);
     const matched = matchedBody.map((index) => index + verseAlignWords(current).basmala);
     const wordIndex = matched.length ? matched[matched.length - 1]! : this.wordIndex;
@@ -463,10 +465,11 @@ export class RecitationFollower {
       wordIndex >= current.phoneme_words.length - 1
       || (wordIndex + 1) / current.phoneme_words.length >= TRACKING_COMPLETION_COVERAGE
     );
+    const atLastAyah = Boolean(next && next.surah !== current.surah);
     const atSurahBoundary = Boolean(
-      (alreadyComplete || completeThisHop) && next && next.surah !== current.surah,
+      atLastAyah && (alreadyComplete || completeThisHop || leftoverUnexplained),
     );
-    const newRecitationAfterSurah = Boolean(atSurahBoundary && leftoverIsNewRecitation(leftover));
+    const newRecitationAfterSurah = Boolean(atLastAyah && leftoverUnexplained);
     const advanced = wordIndex > this.wordIndex;
     const sharedPrefixOnly = this.onlySharedOpening(recognized, current);
     const neighborhood = Math.max(
@@ -540,11 +543,21 @@ export class RecitationFollower {
     }
 
     if (newRecitationAfterSurah) {
-      const leftoverResult: TranscribeResult = { text: leftover.join(' '), rawPhonemes: leftover.join(' ') };
-      const acquired = this.lockFromTranscript(leftoverResult, true, current);
-      if (acquired.some((message) => message.type === 'verse_match')) {
-        return [...messages, ...acquired];
+      if (compact(leftover.join(' ')).length >= 6) {
+        const leftoverResult: TranscribeResult = { text: leftover.join(' '), rawPhonemes: leftover.join(' ') };
+        const acquired = this.lockFromTranscript(leftoverResult, true, current);
+        if (acquired.some((message) => message.type === 'verse_match')) {
+          return [...messages, ...acquired];
+        }
       }
+      const fromWindow = this.lockFromTranscript(result, true, current);
+      if (fromWindow.some((message) => message.type === 'verse_match')) {
+        return [...messages, ...fromWindow];
+      }
+      // Leave follow so the next hops use the 4 s acquire window on kept audio.
+      this.startReacquire(false);
+      this.fresh = this.window.length;
+      return messages;
     }
 
     const fillingLastAyah = this.shortLastAyahFollow(current)

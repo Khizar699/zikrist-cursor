@@ -226,12 +226,12 @@ test('a kept window can still locate Al-Fatihah after the neighborhood fails', a
   const fatiha = corpus.find((item) => item.surah === 1 && item.ayah === 2)!;
   const noise = { text: 'zzzz yyyy xxxx wwww', rawPhonemes: 'zzzz yyyy xxxx wwww' };
   const engine = follower([
-    spoken(112, 4),
+    spoken(112, 2),
     noise,
     noise,
     { text: fatiha.phonemes_joined, rawPhonemes: fatiha.phonemes_joined, championMatch: champion(1, 2, 0.86) },
   ]);
-  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:4']);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:2']);
   assert.deepEqual(refs(await engine.feed(audio(FOLLOW_TRIGGER_SEC))), []);
   assert.deepEqual(refs(await engine.feed(audio(FOLLOW_TRIGGER_SEC))), []);
   assert.deepEqual(refs(await engine.feed(audio(FOLLOW_TRIGGER_SEC))), ['1:2']);
@@ -701,6 +701,39 @@ test('after Asr last ayah, leftover Quraysh tokens still lock 106:1 when the 103
   );
   assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
   assert.deepEqual(refs(await engine.feed(hop())), ['106:1']);
+});
+
+test('after Asr last ayah, leftover that cannot lock yet cold-starts so the next surah can acquire', async () => {
+  const local = [
+    verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
+    verse(104, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'ويل', 'لكل', 'همزة', 'لمزة'], 'Al-Humazah'),
+    verse(106, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'لايلف', 'قريش'], 'Quraysh'),
+  ];
+  const three = local[0]!;
+  const next = local[2]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 103, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: 'ل ت', rawPhonemes: 'ل ت' },
+      {
+        text: next.phoneme_words.slice(4).join(' '), rawPhonemes: next.phoneme_words.slice(4).join(' '), championMatch: {
+          surah: 106, ayah: 1, text: next.phonemes_joined, phonemes_joined: next.phonemes_joined,
+          score: 0.9, raw_score: 0.9, bonus: 0,
+        },
+      },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.equal(engine.phase, 'reacquiring');
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['106:1']);
+  assert.equal(engine.phase, 'following');
 });
 
 test('a last-10 prior cannot commit when a clearly better acoustic match exists', async () => {
