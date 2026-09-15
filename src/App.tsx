@@ -10,7 +10,8 @@ import { listening, type ListeningState } from './services/listening';
 import type { Settings } from './core/types';
 import { colors, styles as s } from './ui/theme';
 import { inter, tajawal } from './ui/fonts';
-import { HeardWordPanes, SyncedVersePanes } from './ui/SyncedVersePanes';
+import { listeningSurface } from './core/salah-liturgy-display';
+import { HeardWordPanes, LiturgyPanes, SyncedVersePanes } from './ui/SyncedVersePanes';
 import { ListeningControl } from './ui/ListeningControl';
 
 export default function App() {
@@ -25,13 +26,16 @@ function LivePassage({ urdu, ready, displayError }: { urdu: boolean; ready: bool
   const current = useListening((state) => state.current);
   const passage = useListening((state) => state.passage);
   const draftWords = useListening((state) => state.draftWords);
-  if (!current) {
-    if (draftWords.length) return <HeardWordPanes words={draftWords} />;
-    return <View style={[s.panes, { justifyContent: 'center', alignItems: 'center' }]}>
-      {!ready && !displayError ? <ActivityIndicator color={colors.muted} /> : null}
-    </View>;
+  const liturgy = useListening((state) => state.liturgy);
+  const surface = listeningSurface({ liturgy, current, passage, draftWords });
+  if (surface.mode === 'liturgy') return <LiturgyPanes liturgy={surface.liturgy} />;
+  if (surface.mode === 'heard_words') return <HeardWordPanes words={surface.words} />;
+  if (surface.mode === 'passage') {
+    return <SyncedVersePanes verses={surface.passage} focus={surface.current} urdu={urdu} />;
   }
-  return <SyncedVersePanes verses={passage.length ? passage : [current]} focus={current} urdu={urdu} />;
+  return <View style={[s.panes, { justifyContent: 'center', alignItems: 'center' }]}>
+    {!ready && !displayError ? <ActivityIndicator color={colors.muted} /> : null}
+  </View>;
 }
 
 function Zikrist() {
