@@ -376,7 +376,7 @@ export class RecitationFollower {
   private lockFromTranscript(
     result: TranscribeResult,
     allowSearch: boolean,
-    ignore?: VerseRef | null,
+    ignore?: VerseRef,
   ): RecognitionMessage[] {
     const text = result.text.trim();
     const recognized = text.split(/\s+/).filter(Boolean);
@@ -555,7 +555,7 @@ export class RecitationFollower {
       // Keep accumulating a short last ayah; still locate so a real jump can recover.
       if (!fillingLastAyah && this.mismatches >= reacquireAfter) {
         this.startReacquire(false);
-        const acquired = this.lockFromTranscript(result, false, newRecitationAfterSurah ? current : null);
+        const acquired = this.lockFromTranscript(result, false, newRecitationAfterSurah ? current : undefined);
         const filtered = acquired.filter((message) => {
           if (message.type !== 'verse_match') return true;
           if (newRecitationAfterSurah && this.sameRef(message, current)) return false;
