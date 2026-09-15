@@ -174,3 +174,5 @@ Harness/docs only. **No founder/imam WAV or MP3 is committed.** Silent STUB audi
 
 Drop 16 kHz mono PCM16 WAV under `fixtures/real-imam/clips/` using the clip ids in the suite JSON. Convert MP3/video with ffmpeg as documented in `fixtures/real-imam/README.md`. Founder source folder: `~/Desktop/zikrist-imam-clips/`. Imam/bystander recording rights stay unresolved; a local file is not a redistribution grant.
 
+This workspace (Linux/x64, no EveryAyah WAVs restored): `npm test` **151/151**; `npm run typecheck` pass; lint still reports the pre-existing unused `openingScore` warning. `npx tsx scripts/replay.ts --list` shows 14 ready + 5 pending. `npx tsx scripts/replay.ts real-imam` exited 1 with five `failureMode: missing_fixture` rows and did **not** load ONNX. `parseSuiteSelection(['all'])` is the original 14 names. Acoustic `npm run test:replay -- all` was **not** scored here. Not a physical-device, mosque, or imam-ready claim.
+
