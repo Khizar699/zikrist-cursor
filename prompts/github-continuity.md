@@ -2,7 +2,7 @@
 
 ## Goal
 
-On top of founder dictation already on `main` (`bcee7d9`): enforce HANDOFF bumps with CI, add a cheap bot read order, tip the live Release zip. Do **not** duplicate dictation / PR template / AGENTS §8.
+Local Cursor: `.cursor/rules/zikrist-continuity.mdc` (`alwaysApply`) so a cloned folder in Agent/Composer uses the same read order without a pasted prompt.
 
 ## Scope
 
