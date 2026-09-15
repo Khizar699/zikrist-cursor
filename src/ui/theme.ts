@@ -39,6 +39,22 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
+  liturgyLabel: {
+    fontFamily: fonts.translation,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.muted,
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
+  liturgyCategory: {
+    fontFamily: fonts.translation,
+    fontSize: 15,
+    lineHeight: 20,
+    color: colors.muted,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
   error: { color: colors.danger, fontSize: 13, lineHeight: 18, textAlign: 'center', paddingHorizontal: 28, paddingBottom: 10 },
   footer: { alignItems: 'center', justifyContent: 'center', paddingTop: 8, paddingBottom: 10, minHeight: 96 },
 });

@@ -16,13 +16,16 @@ import type { DisplayVerse, RecognitionMessage } from '../core/types';
 import { content } from './content';
 import { loadModel } from './model';
 import liturgyPack from '../../assets/content/salah-liturgy.json';
+import { reduceListeningDisplay, type LiturgyDisplay } from '../core/salah-liturgy-display';
 import {
   filterQuranMessagesForLiturgy,
   matcherFromPack,
+  packFromUnknown,
   type SalahLiturgyLockEvent,
 } from '../core/salah-liturgy-matcher';
 
 type InferenceBatch = { quran: RecognitionMessage[]; liturgy: SalahLiturgyLockEvent | null };
+const pack = packFromUnknown(liturgyPack);
 
 export type ListeningState = {
   status: 'loading' | 'ready' | 'starting' | 'listening' | 'stopping' | 'error';
@@ -31,10 +34,11 @@ export type ListeningState = {
   current: DisplayVerse | null;
   passage: DisplayVerse[];
   draftWords: string[];
+  liturgy: LiturgyDisplay | null;
   meter: number[];
 };
 const initial: ListeningState = {
-  status: 'loading', phase: 'searching', error: null, current: null, passage: [], draftWords: [], meter: [],
+  status: 'loading', phase: 'searching', error: null, current: null, passage: [], draftWords: [], liturgy: null, meter: [],
 };
 const errorText = (error: unknown) => error instanceof Error ? error.message : String(error);
 
@@ -57,7 +61,7 @@ class Listening {
   private meterTimer: ReturnType<typeof setTimeout> | null = null;
   private gate: ContinuationGate | null = null;
   private follower: RecitationFollower | null = null;
-  private liturgy = matcherFromPack(liturgyPack);
+  private liturgy = matcherFromPack(pack);
 
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   snapshot = () => this.state;
@@ -202,6 +206,16 @@ class Listening {
     if (!liturgy) return messages;
     this.follower?.reset();
     this.gate?.reset();
+    const next = reduceListeningDisplay({
+      liturgy: this.state.liturgy,
+      current: this.state.current,
+      passage: this.state.passage,
+      draftWords: this.state.draftWords,
+    }, { type: 'salah_liturgy', pack, phraseId: liturgy.phraseId });
+    if (next.liturgy !== this.state.liturgy || next.draftWords !== this.state.draftWords) {
+      this.displayGeneration += 1;
+      this.update({ liturgy: next.liturgy, draftWords: next.draftWords });
+    }
     return filterQuranMessagesForLiturgy(messages);
   }
 
@@ -209,7 +223,7 @@ class Listening {
     if (this.state.status !== 'listening') return;
     for (const message of messages) {
       if (message.type === 'heard_words') {
-        if (this.state.current) continue;
+        if (this.state.current || this.state.liturgy) continue;
         const same = this.state.draftWords.length === message.words.length
           && this.state.draftWords.every((word, index) => word === message.words[index]);
         if (!same) this.update({ draftWords: message.words });
@@ -224,10 +238,13 @@ class Listening {
             && item.surah === this.state.current.surah
             && item.ayah === this.state.current.ayah
           ));
-          if (shouldReplaceHeldVerse(this.state.current, verse, {
-            hasVerse: (ref) => content.hasVerse(ref),
-            displayedWasConfirmed,
-          })) {
+          if (
+            this.state.liturgy
+            || shouldReplaceHeldVerse(this.state.current, verse, {
+              hasVerse: (ref) => content.hasVerse(ref),
+              displayedWasConfirmed,
+            })
+          ) {
             this.show(verse, { phase: 'following' });
           }
           this.prepareAhead(verse);
@@ -245,9 +262,20 @@ class Listening {
   }
   private show(verse: DisplayVerse, extra: Partial<ListeningState> = {}): void {
     const passage = content.cachedNeighborhood(verse);
-    const same = this.state.current?.surah === verse.surah && this.state.current.ayah === verse.ayah && samePassage(this.state.passage, passage);
-    if (same && Object.keys(extra).length === 0 && this.state.draftWords.length === 0) return;
-    this.update({ current: verse, passage, draftWords: [], ...extra });
+    const sameVerse = this.state.current?.surah === verse.surah && this.state.current.ayah === verse.ayah;
+    const same = sameVerse && samePassage(this.state.passage, passage);
+    if (same && Object.keys(extra).length === 0 && this.state.draftWords.length === 0 && !this.state.liturgy) return;
+    if (this.state.liturgy && sameVerse && Object.keys(extra).length === 0) {
+      if (!samePassage(this.state.passage, passage)) this.update({ passage });
+      return;
+    }
+    const next = reduceListeningDisplay({
+      liturgy: this.state.liturgy,
+      current: this.state.current,
+      passage: this.state.passage,
+      draftWords: this.state.draftWords,
+    }, { type: 'verse_match', verse, passage });
+    this.update({ current: next.current, passage: next.passage, draftWords: [], liturgy: null, ...extra });
   }
   private prepareAhead(verse: DisplayVerse): void {
     const next = nextSequentialRef(verse, (ref) => content.hasVerse(ref));

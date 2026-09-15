@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FlatList, Text, View } from 'react-native';
 import { CONTEXT_OPACITY, passageIndex } from '../core/passage';
+import type { LiturgyDisplay } from '../core/salah-liturgy-display';
 import { refKey, type DisplayVerse } from '../core/types';
 import { fonts, styles as s } from './theme';
 
@@ -59,6 +60,24 @@ function VersePane({
       </View>;
     }}
   />;
+}
+
+export function LiturgyPanes({ liturgy }: { liturgy: LiturgyDisplay }) {
+  return <View
+    style={s.panes}
+    accessibilityLabel={`${liturgy.label}. ${liturgy.categoryLabel}. ${liturgy.arabic}. ${liturgy.english}`}
+  >
+    <View style={[s.pane, { justifyContent: 'center' }]}>
+      <View style={[s.verseRow, { gap: 6 }]}>
+        <Text style={s.liturgyLabel}>{liturgy.label}</Text>
+        <Text style={s.liturgyCategory}>{liturgy.categoryLabel}</Text>
+        <Text selectable style={s.arabic}>{liturgy.arabic}</Text>
+      </View>
+    </View>
+    <View style={[s.pane, { justifyContent: 'center' }]}>
+      <Text selectable style={[s.translation, { paddingHorizontal: 28 }]}>{liturgy.english}</Text>
+    </View>
+  </View>;
 }
 
 export function HeardWordPanes({ words }: { words: string[] }) {
