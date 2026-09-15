@@ -175,13 +175,26 @@ Rebased onto main `810ed4c` (Prompt Smith sharper brief). 2:1 `text_clean` is `�
 
 Harness only. Prompt Smith already owns `prompts/real-imam/` (queue, fixture README, LIVE-FEEL, suite prompts, stub manifest). This change **registers** those suite ids in the replay runner instead of duplicating the briefs. **No founder/imam WAV or MP3 is committed.** Silent STUB audio was not invented. `RecitationFollower` was not retuned.
 
-- Manifest: `prompts/real-imam/manifest.stub.json` (`status: stub`). Founder drop: `~/Desktop/zikrist-imam-clips/`. Staging: `artifacts/recitation/imam/<suite-id>/<qari-or-source>/` (gitignored).
+- Manifest: `prompts/real-imam/manifest.stub.json` (`status: stub` — do not flip until algorithm fixes). Founder labels (ground truth): `prompts/real-imam/LABELS.md`, `labels.json`. Founder drop: `~/Desktop/zikrist-imam-clips/`. Staging: `artifacts/recitation/imam/<suite-id>/<qari-or-source>/` (gitignored).
+- Mac baseline 2026-09-16: Fatir 35:1–8 locks OK; Subayyal expected 4:129 locks wrong 41:34; Qiyam expected 36:16 locks wrong 78:4. Ignore hypothesized probe locks.
 - `npm run test:replay -- all` still resolves to the original **14** Quran suites (hard gate).
 - `npm run test:replay -- real-imam` **skips** the five stub suites with `failureMode: missing_fixture` and `status: skipped` (not PASS) and does not load ONNX.
 - `--include-pending` can list them next to `all`; stubs still skip until WAV exists, so they cannot fail the 14-suite gate.
 - Salah liturgy replay is a **separate** pending pack (`prompts/salah-liturgy/`). See the liturgy replay section below.
 
 This workspace (Linux/x64, no EveryAyah WAVs restored): `npm test` **150/150**; `npm run typecheck` pass. `npx tsx scripts/replay.ts real-imam` exited **0** with five skipped `missing_fixture` rows (not PASS) and did not load ONNX. Acoustic `npm run test:replay -- all` was **not** scored here. Not a physical-device, mosque, or imam-ready claim.
+
+## Founder-verified real-imam labels (2026-09-16)
+
+Docs only. `LABELS.md` + `labels.json` committed as ground truth. `manifest.stub.json` suites remain `stub`. No matcher/follower edits. No wavs committed. Mac probes: Fatir 35:1–8 OK; Subayyal expected 4:129 locked 41:34; Qiyam expected 36:16 locked 78:4. `imam-mid-ayah-pause` still empty. Qunut at s9P8adOF7F0@4:56 is liturgy/dua later.
+
+This workspace: `npm run typecheck` pass; `npx tsx --test tests/real-imam-pack.test.ts` 3/3; `npx tsx scripts/replay.ts real-imam` five skipped `missing_fixture` (not PASS). Full `npm test` 174/176 — two ENOENT on missing `assets/model/quran.json` (pre-existing, not this change). Lint still reports unused `openingScore`. Acoustic Quran `all` and physical-device probes were not scored here.
+
+## Imam fixture handoff restore (GitHub Release zip)
+
+Friends clone without git LFS. Labels stay in git. Audio comes from public Release asset `zikrist-imam-fixtures-v1.zip` on tag `imam-fixtures-v1` via `npm run fixtures:imam`. Suites remain `stub`. Matcher/follower were not retuned. No wav/mp3 committed. Liturgy TTS remains `npm run liturgy:tts -- <id> --engine say`. See `HANDOFF.md`.
+
+This workspace: `npm run typecheck` pass; `npx tsx --test tests/download-imam-fixtures.test.ts tests/real-imam-pack.test.ts` 8/8; missing-tag run prints HTTP 404 + Releases page (exit 1). `npx eslint` on the new script/test is clean. No wav/mp3 tracked.
 
 ## Salah liturgy replay suites (stub-first, 2026-09-15)
 

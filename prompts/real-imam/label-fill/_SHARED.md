@@ -38,7 +38,7 @@ Do **not** retune in the fill PR. Open a **separate** algorithm prompt (one fail
 
 ## Hard gate every session
 
-Mac: `npm run test:replay -- all` = **14/14** (Quran synthetic). Soft optional only: `prompts/nas-no-post-end-jump.md`.
+Mac: `npm run test:replay -- all` = **14/14** (Quran synthetic). Soft optional only: `prompts/nas-no-post-end-jump.md`. **HANDOFF:** bump `HANDOFF.md` in the same PR (`prompts/_SHARED-HANDOFF.md`).
 
 ## Verify
 

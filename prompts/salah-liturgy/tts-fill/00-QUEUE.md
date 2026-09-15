@@ -2,7 +2,7 @@
 
 **Depends on:** main `87f65f3`+ (01–04 landed). Manifest: `prompts/salah-liturgy/manifest.stub.json`.
 
-**Hard gate every session:** Mac `npm run test:replay -- all` = **14/14**. Soft optional only: `prompts/nas-no-post-end-jump.md`.
+**Hard gate every session:** Mac `npm run test:replay -- all` = **14/14**. Soft optional only: `prompts/nas-no-post-end-jump.md`. **HANDOFF:** bump `HANDOFF.md` in the same PR (`prompts/_SHARED-HANDOFF.md`).
 
 **Rules**
 - **One suite per Cursor session** — do not mega-fill all clips

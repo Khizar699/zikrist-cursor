@@ -31,6 +31,36 @@ test('real-imam harness reads Prompt Smith stub manifest, not a duplicate pack',
   assert.equal(fs.existsSync(path.join(root, 'prompts/real-imam/FIXTURES.md')), true);
 });
 
+test('founder labels exist as ground truth and do not flip suites to ready', () => {
+  const labelsPath = path.join(root, 'prompts/real-imam/LABELS.md');
+  const jsonPath = path.join(root, 'prompts/real-imam/labels.json');
+  assert.equal(fs.existsSync(labelsPath), true);
+  assert.equal(fs.existsSync(jsonPath), true);
+  const labelsMd = fs.readFileSync(labelsPath, 'utf8');
+  assert.match(labelsMd, /Khizar/);
+  assert.match(labelsMd, /4:129/);
+  assert.match(labelsMd, /36:16/);
+  const labels = JSON.parse(fs.readFileSync(jsonPath, 'utf8')) as {
+    verified_by: string;
+    verified_at: string;
+    suite_candidates: {
+      'imam-mid-ayah-pause': unknown[];
+      notes: string;
+      'imam-mid-surah-cold': Array<{ expected_first_lock: { surah: number; ayah: number } }>;
+    };
+  };
+  assert.equal(labels.verified_by, 'Khizar Javed');
+  assert.equal(labels.verified_at, '2026-09-16');
+  assert.equal(labels.suite_candidates['imam-mid-ayah-pause'].length, 0);
+  assert.match(labels.suite_candidates.notes, /Qunut/);
+  const firstLocks = labels.suite_candidates['imam-mid-surah-cold'].map(
+    (row) => `${row.expected_first_lock.surah}:${row.expected_first_lock.ayah}`,
+  );
+  assert.ok(firstLocks.includes('4:129'));
+  assert.ok(firstLocks.includes('36:16'));
+  assert.equal(loadRealImamStubManifest().suites.every((row) => row.status === 'stub'), true);
+});
+
 test('stub suites map to artifacts/recitation/imam paths and skip, not PASS', () => {
   assert.equal(MISSING_FIXTURE, 'missing_fixture');
   assert.equal(SKIPPED_PENDING, 'skipped');

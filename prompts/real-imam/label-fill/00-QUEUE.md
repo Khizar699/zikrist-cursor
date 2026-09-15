@@ -3,7 +3,7 @@
 **Depends on:** harness real-imam scaffold on main; founder labels in `artifacts/recitation/imam/LABELS.md` + `labels.json` (2026-09-16).  
 **Audio:** gitignored under `artifacts/recitation/imam/` (already cut/named for several candidates).
 
-**Hard gate every session:** Mac `npm run test:replay -- all` = **14/14**.
+**Hard gate every session:** Mac `npm run test:replay -- all` = **14/14**. **HANDOFF:** bump `HANDOFF.md` in the same PR (`prompts/_SHARED-HANDOFF.md`).
 
 **Rules** — see `_SHARED.md`. One suite (or one new sibling suite id) per Cursor session. No matcher retune.
 
