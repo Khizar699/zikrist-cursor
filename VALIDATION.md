@@ -63,7 +63,7 @@ Event API (not a Quran `verse_match`; English gloss stays on the pack row, match
 { kind: 'salah_liturgy'; phraseId: string; category: string; atMs: number; confidence?: number }
 ```
 
-`confidence` is a token-similarity score in 0–1, not calibrated probability and not shown as percent certainty. Basmala stays on the Quran hold path. Short takbeer / amin / jamiʿ bayn need an isolated window and are refused while a Quran ayah is mid-follow. When liturgy locks, listening drops that hop’s `verse_match` / `word_progress` / `heard_words` and resets follower+gate so liturgy cannot become a displayed ayah. Default `npm run test:replay -- all` still runs follower+gate only (Quran 14/14 gate). Liturgy suites (`npm run test:replay -- liturgy`) attach the matcher on the same PCM → `lastHeardTokens` path as live listening **when audio exists**; stubs skip with `missing_fixture` (not PASS). Matcher thresholds were not retuned for this harness pass.
+`confidence` is a token-similarity score in 0–1, not calibrated probability and not shown as percent certainty. Basmala stays on the Quran hold path. Short takbeer / amin / jamiʿ bayn need an isolated window and are refused while a Quran ayah is mid-follow. When liturgy locks, listening drops that hop’s `verse_match` / `word_progress` / `heard_words` and resets follower+gate so liturgy cannot become a displayed ayah. Default `npm run test:replay -- all` still runs follower+gate only (Quran 14/14 gate). Liturgy suites (`npm run test:replay -- liturgy`) attach the matcher on the same PCM → `lastHeardTokens` path as live listening **when audio exists**; remaining stubs skip with `missing_fixture` (not PASS). `liturgy-takbeer` is manifest-ready: generate WAV then score (must not skip). Matcher thresholds were not retuned for this harness pass.
 
 Open risks: takbeer is two tokens — mosque/ASR `الله أكبر` inside Quran 29:45 or a noisy mid-ayah decode could still false-lock on-device despite isolation rules (unmeasured). Amin is one token. Romanized long-phrase ASR is untested; units use corpus Arabic. Follower locate thresholds were not retuned.
 
@@ -193,7 +193,16 @@ Harness only. Registers the eight suite ids from `prompts/salah-liturgy/04-repla
 - Mixed suites list EveryAyah Fatiha `001001`–`001007` for the Quran half only; liturgy clips remain stubs so the suite still skips until phrase audio exists.
 - Chosen scoring path when audio later exists: PCM through `RecitationFollower` + `SalahLiturgyMatcher` (same as `listening.ts`). Token-fixtures are not registered because they could PASS without acoustic evidence. Matcher units already cover token locks.
 - JSON skip shape: `fixtures/salah-liturgy/sample-skip.json` (`phraseId`/`audioSeconds` null; `failureMode: missing_fixture`).
-- Phrases still lacking audio: suite targets `takbeer`, `thana`, `ruku_tasbih`, `sujood_tasbih`, `tashahhud`; remaining shipped pack rows (`istiadha`, tasbih-with-hamd variants, jamiʿ bayn, darood lines, amin, tasleem) have no suite yet; `liturgy-english-negative` needs its own non-Arabic clip.
+- Phrases still lacking audio: suite targets `thana`, `ruku_tasbih`, `sujood_tasbih`, `tashahhud`; remaining shipped pack rows (`istiadha`, tasbih-with-hamd variants, jamiʿ bayn, darood lines, amin, tasleem) have no suite yet; `liturgy-english-negative` needs its own non-Arabic clip. `takbeer` is manifest-ready (see next section).
 
 This workspace (Linux/x64, no EveryAyah WAVs, no ONNX model): `npm test` **172/172**; `npm run typecheck` pass; lint still reports the pre-existing unused `openingScore` warning. `npx tsx scripts/replay.ts liturgy` and `salah-liturgy` exited **0** with eight skipped `missing_fixture` rows (not PASS) and did not load ONNX. `parseSuiteSelection(['all'])` is the original 14 Quran names. Acoustic `npm run test:replay -- all` was **not** scored here. Shared replay helpers were touched. **Mac must re-verify `npm run test:replay -- all` = 14/14.** Linux ONNX is not that gate. Not a physical-device, mosque, or imam-ready claim.
+
+## Salah liturgy TTS fill (`liturgy-takbeer` ready, 2026-09-15)
+
+One suite only. Manifest `liturgy-takbeer` is `status: ready` with `clip_path` `liturgy-takbeer/liturgy-takbeer__edge-tts__ar-SA-HamedNeural.wav` (relative to `artifacts/recitation/liturgy`). Spoken text is pack `arabic_uthmani` for phrase id `takbeer` (`اللَّهُ أَكْبَرُ`). Other liturgy suites stay stubs. Matcher / follower / UI were not retuned. Imam clips were not touched. WAV/MP3 is gitignored and is not in this PR.
+
+Mac ready path: `python3 -m pip install --user edge-tts` then `npm run liturgy:tts -- liturgy-takbeer` (fallback `--engine say` + ffmpeg). Script refuses silent output. Then `npm run test:replay -- liturgy-takbeer` must **PASS (not skip)**. `npm run test:replay -- all` must stay **14/14**. Ready suites with a missing clip error `missing_clip` instead of skipping.
+
+This workspace (Linux/x64): units + typecheck + lint as recorded in Completed checks after this change. Acoustic `liturgy-takbeer` and Quran `all` were **not** scored here (no durable TTS WAV, no ONNX). **Mac Bot/Sim QA generates the WAV, then verifies both gates before merge.**
+
 
