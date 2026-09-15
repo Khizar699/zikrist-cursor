@@ -492,13 +492,19 @@ export class RecitationFollower {
     const skip = Math.max(overlap, needUnique);
     if (heardDistinct(query, next, skip)) return true;
     const spoken = query.join(' ');
-    const unused = (token: string) => !currentBody.some((word) => softTokenMatch(word, token));
-    // Distinctive later tokens (النفثت / الجنه) may arrive without the shared ومن/من
-    // opening in a short follow window. Require a real unique body token — not just
-    // a shared رب/rabbi leftover from Fatiha after Ibrahim 14:39.
+    const unused = (token: string) => !currentBody.some((word) => wordsMatch(word, token) || relatedStem(word, token));
+    // Distinctive unused tokens of the expected next ayah may arrive without the
+    // opening: a garbled فليعبدوا, a tail الابتر, or النفثت after shared ومن.
+    // Do not drop a unique opening, and do not re-score a tail against the opening.
+    // unused() stays stem/word-strict so وانحر cannot consume الابتر via 0.72 fuzzy.
+    const openingShared = isAmbiguousAdvanceOpening(opening)
+      || this.uniqueOpeningSkip(next) > basmala;
+    const from = openingShared && words.length > 1
+      ? Math.max(1, skip > basmala ? skip - basmala : 1)
+      : 0;
     const distinctive = words
-      .slice(Math.max(1, skip > basmala ? skip - basmala : 1))
-      .filter((token) => token.length >= 4 && unused(token));
+      .slice(from)
+      .filter((token) => token.length >= 3 && unused(token) && !isAmbiguousAdvanceOpening(token));
     const hits = distinctive.filter((token) => query.some((word) => softTokenMatch(word, token)));
     if (!hits.length) return false;
     // Ambiguous openings still need a strong location score so leftover رب≠14:40.
@@ -506,7 +512,7 @@ export class RecitationFollower {
       return this.locationScore(spoken, next) >= LOCK_CLEAR_SCORE && hits.length >= 1
         && hits.some((token) => !isAmbiguousAdvanceOpening(token) && token.length >= 5);
     }
-    return this.locationScore(spoken, next) >= 0.55;
+    return hits.some((token) => token.length >= 4);
   }
 
 

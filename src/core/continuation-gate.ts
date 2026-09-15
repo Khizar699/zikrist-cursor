@@ -57,7 +57,13 @@ export class ContinuationGate {
     const skip = openingBasmalaWordCount(this.pending.message);
     const unique = [...new Set(message.matched_indices)];
     if (skip > 0) {
-      // First body word after Basmala is often still shared (قُلْ, إِنَّ).
+      const bodyHits = unique.filter((index) => index >= skip);
+      if (!bodyHits.length) return false;
+      // A one-word ayah-1 body (العصر) has no later index to wait for.
+      // Longer bodies still need a word after the first post-Basmala token
+      // because that first token is often shared (قُلْ, إِنَّ).
+      const bodyLen = Math.max(0, message.total_words - skip);
+      if (bodyLen <= 1) return true;
       return unique.some((index) => index > skip);
     }
     if (!unique.includes(0)) return false;

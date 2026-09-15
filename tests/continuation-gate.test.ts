@@ -135,3 +135,18 @@ test('an initial speculative match and old-window progress cannot display a vers
   gate.reset();
   assert.equal(gate.isCheckingJump, false);
 });
+
+test('a one-word ayah-1 body after Basmala confirms on that unique word', () => {
+  const gate = make();
+  assert.deepEqual(gate.accept([match(103, 1)], 1000, true), []);
+  const body = progress(103, 1, [4], 5);
+  assert.deepEqual(gate.accept([body], 1100, true), [match(103, 1), body]);
+});
+
+test('a longer ayah-1 body still waits past the first post-Basmala word', () => {
+  const gate = make();
+  assert.deepEqual(gate.accept([match(106, 1)], 1000, true), []);
+  assert.deepEqual(gate.accept([progress(106, 1, [4], 6)], 1100, true), []);
+  const unique = progress(106, 1, [4, 5], 6);
+  assert.deepEqual(gate.accept([unique], 1200, true), [match(106, 1), unique]);
+});

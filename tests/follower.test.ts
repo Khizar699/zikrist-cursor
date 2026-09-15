@@ -616,6 +616,98 @@ test('Qul then Allah does not first-lock a long lookalike such as Yunus 10:16', 
   assert.equal(engine.phase, 'acquiring');
 });
 
+test('a short final ayah advances from a unique tail token when the opening is missing', async () => {
+  const local = [
+    verse(108, 2, ['فصل', 'لربك', 'وانحر'], 'Al-Kawthar'),
+    verse(108, 3, ['ان', 'شانئك', 'هو', 'الابتر'], 'Al-Kawthar'),
+  ];
+  const two = local[0]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: two.phonemes_joined, rawPhonemes: two.phonemes_joined, championMatch: {
+          surah: 108, ayah: 2, text: two.phonemes_joined, phonemes_joined: two.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: 'الاب', rawPhonemes: 'الاب' },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['108:2']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['108:3']);
+});
+
+test('a short next ayah advances from unique later words when the opening was garbled', async () => {
+  const local = [
+    verse(106, 2, ['الفهم', 'رحله', 'الشتاء', 'والصيف'], 'Quraysh'),
+    verse(106, 3, ['فليعبدوا', 'رب', 'هذا', 'البيت'], 'Quraysh'),
+    verse(106, 4, ['الذي', 'اطعمهم', 'من', 'جوع'], 'Quraysh'),
+  ];
+  const two = local[0]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: two.phonemes_joined, rawPhonemes: two.phonemes_joined, championMatch: {
+          surah: 106, ayah: 2, text: two.phonemes_joined, phonemes_joined: two.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: 'هذا البيت', rawPhonemes: 'هذا البيت' },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['106:2']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['106:3']);
+});
+
+test('a garbled unique opening of the next short ayah still advances', async () => {
+  const local = [
+    verse(106, 2, ['الفهم', 'رحله', 'الشتاء', 'والصيف'], 'Quraysh'),
+    verse(106, 3, ['فليعبدوا', 'رب', 'هذا', 'البيت'], 'Quraysh'),
+  ];
+  const two = local[0]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: two.phonemes_joined, rawPhonemes: two.phonemes_joined, championMatch: {
+          surah: 106, ayah: 2, text: two.phonemes_joined, phonemes_joined: two.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: 'بل يعبد', rawPhonemes: 'بل يعبد' },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['106:2']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['106:3']);
+});
+
+test('a short Asr-like opening does not first-lock a distant lookalike', async () => {
+  const local = [
+    verse(103, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'والعصر'], 'Al-Asr'),
+    verse(103, 2, ['ان', 'الانسن', 'لفي', 'خسر'], 'Al-Asr'),
+    verse(51, 53, ['اتواصوا', 'به', 'بل', 'هم', 'قوم', 'طاغون'], 'Adh-Dhariyat'),
+  ];
+  const asr = local[0]!;
+  const lookalike = local[2]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([{
+      text: asr.phoneme_words.at(-1)!,
+      rawPhonemes: asr.phoneme_words.at(-1)!,
+      championMatch: {
+        surah: 51, ayah: 53, text: lookalike.phonemes_joined, phonemes_joined: lookalike.phonemes_joined,
+        score: 0.88, raw_score: 0.88, bonus: 0,
+      },
+    }]),
+  );
+  const messages = await engine.feed(audio(1));
+  assert.equal(refs(messages).includes('51:53'), false);
+  assert.deepEqual(refs(messages), ['103:1']);
+  assert.deepEqual(heard(messages), ['والعصر']);
+});
+
 test('Ikhlas audio locks 112:1 even when the engine names Yunus 10:16', async () => {
   const engine = new RecitationFollower(dbFrom(qulLookalikes), script([{
     text: 'qul huwa allahu ahad',
