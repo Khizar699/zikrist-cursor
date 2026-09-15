@@ -611,6 +611,42 @@ test('after Kawthar, repeating Kawthar still locks from its opening', async () =
   assert.deepEqual(refs(await engine.feed(hop())), ['108:1']);
 });
 
+test('after Kawthar, Ikhlas unique body tokens lock 112:1 even without Qul', async () => {
+  const engine = follower([
+    spoken(108, 3),
+    {
+      text: 'huwa allahu ahad',
+      rawPhonemes: 'huwa allahu ahad',
+      championMatch: champion(108, 3, 0.7),
+    },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['108:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['112:1']);
+});
+
+test('after Kawthar, 112:4-only audio does not first-lock mid-surah Ikhlas', async () => {
+  const engine = follower([
+    spoken(108, 3),
+    spoken(112, 4, 0.92),
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['108:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.equal(engine.phase, 'following');
+});
+
+test('after Kawthar, re-hearing the last ayah does not wipe the next-surah acquire window', async () => {
+  const engine = follower([
+    spoken(108, 3),
+    spoken(108, 3),
+    spoken(108, 3),
+    spoken(112, 1),
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['108:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.deepEqual(refs(await engine.feed(hop())), ['112:1']);
+});
+
 test('after Kawthar, leftover last-ayah tokens plus Ikhlas opening lock 112:1', async () => {
   const kawthar3 = corpus.find((item) => item.surah === 108 && item.ayah === 3)!;
   const ikhlas1 = corpus.find((item) => item.surah === 112 && item.ayah === 1)!;

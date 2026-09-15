@@ -82,6 +82,16 @@ test('dropping pending jump evidence keeps the last accepted verse', () => {
   assert.deepEqual(gate.accept([match(112, 3)], 4000, true), [match(112, 3)]);
 });
 
+test('after a finished short surah, Ikhlas 112:1 confirms on هو', () => {
+  const gate = new ContinuationGate((ref) => (
+    ref.surah === 108 && ref.ayah === 3 ? { surah: 109, ayah: 1 } : { surah: ref.surah, ayah: ref.ayah + 1 }
+  ));
+  gate.accept([match(108, 3)], 2000, true);
+  assert.deepEqual(gate.accept([match(112, 1)], 3000, true), []);
+  const unique = progress(112, 1, [4, 5], 8);
+  assert.deepEqual(gate.accept([unique], 3600, true), [match(112, 1), unique]);
+});
+
 test('a jump from the last ayah can confirm with voiced unique words', () => {
   const gate = new ContinuationGate((ref) => (
     ref.surah === 114 && ref.ayah === 6 ? undefined : { surah: ref.surah, ayah: ref.ayah + 1 }
