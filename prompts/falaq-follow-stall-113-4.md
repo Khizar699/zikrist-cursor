@@ -1,26 +1,25 @@
-# Restore Falaq follow through 113:4–5 (no stall after 113:3)
+# Restore Falaq follow through 113:4–5 (post-1fdb13e)
 
 ## Goal
 
-`npm run test:replay -- falaq` must complete **113:1–5** in order. Do not stall after 113:3.
+`npm run test:replay -- falaq` must complete **113:1–5**. Do not stall after 113:3.
 
-## Last Sim QA (52f4cb4)
+## Baseline (HEAD 1fdb13e)
 
-- REGRESSION: `stall_missing_113:4_after_3_matches` (was full GREEN on 9e55c92)
-- Matches: 113:1@3, 113:2@3.5, 113:3@10 — missing 113:4–5
-- Keep Fatiha 1:2–1:7 and Ikhlas 112:1–4 GREEN
+- FAIL `stall_missing_113:4_after_3_matches`
+- Matches: 113:1–3 only (was full GREEN on 9e55c92; regressed since 52f4cb4)
+- Regression gates: fatiha 1:2–7 + ikhlas 112:1–4 must stay GREEN
 
 ## Constraints
 
-- One concern: **Falaq mid-follow stall** after 113:3.
-- Offline; real ONNX + RecitationFollower. Likely side-effect of 52f4cb4 follow/acquire harden — find and fix without undoing Fatiha/Ikhlas wins.
-- Read follower.ts, replay-falaq.json, VALIDATION.md, diff vs 9e55c92 behavior.
+- One concern: Falaq mid-follow stall after 113:3.
+- Offline; real ONNX + RecitationFollower. Fix without undoing ContinuationGate ayah-1 / Fatiha wins on 1fdb13e.
+- Read follower.ts, continuation-gate.ts, replay-falaq.json, VALIDATION.md.
 
 ## Success criteria
 
-1. test:replay falaq → 113:1–5 ordered; failureMode null
-2. fatiha + ikhlas stay GREEN
-3. npm test / typecheck / lint pass; refresh replay-falaq.json
+1. test:replay falaq → 113:1–5; failureMode null
+2. fatiha + ikhlas GREEN; npm test/typecheck/lint; refresh replay-falaq.json
 
 ## Deliverable
 
