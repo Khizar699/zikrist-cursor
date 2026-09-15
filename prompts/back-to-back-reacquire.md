@@ -6,7 +6,7 @@ When one short surah ends and another begins in the same session, acquire the ne
 
 ## Scope
 
-Inspected: `AGENTS.md`, `prompts/back-to-back-quraysh-after-asr.md`, `prompts/OVERNIGHT-QUEUE.md`, `src/core/{follower,continuation-gate,salah-prior,basmala}.ts`, `tests/{follower,continuation-gate}.test.ts`, `scripts/{replay,replay-suites}.ts`.
+Inspected: `AGENTS.md`, `prompts/back-to-back-quraysh-after-asr.md` (Prompt Smith brief), `prompts/OVERNIGHT-QUEUE.md`, `src/core/{follower,continuation-gate,salah-prior,basmala}.ts`, `tests/{follower,continuation-gate}.test.ts`, `scripts/{replay,replay-suites}.ts`. Rebased onto main after Nas #3 (`802bc66`); do not retune Nas/Baqarah.
 
 Failure: `stall_missing_106:1_after_3_matches` — Asr 103:1–3 locks, then Quraysh 106:1 never acquires.
 
