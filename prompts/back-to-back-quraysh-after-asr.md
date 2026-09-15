@@ -44,7 +44,17 @@
 
 Headless ONNX replay and unit tests. Not a physical-device, mosque, or battery claim.
 
+## Mac gate (required)
+
+Linux PASS is **not** enough. Mac Sim QA on the leftover path still needs:
+
+1. Apple Silicon: `npm run test:replay -- back-to-back` → 103:1–3 then 106:1–4 (`failureMode` null)
+2. Also Mac: `asr`, `quraysh`, `fatiha`, `nas` GREEN (Nas 114:6 must not regress)
+3. Do not claim green from Linux-only ONNX
+
 ## Result
+
+Rebased onto current `main` `82d4f28` (includes merged Nas 114:6 `802bc66` plus the Baqarah Mac-gate prompt note). Leftover crumb/mix path unchanged.
 
 Linux/x64 ONNX after leftover-token filter (Mac Sim QA still needs a local re-run):
 
