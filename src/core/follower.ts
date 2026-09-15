@@ -83,13 +83,15 @@ function wordsMatch(left: string, right: string, minRatio = 0.8): boolean {
   return levRatio(left, right) >= minRatio;
 }
 
-/** Shared stem such as الصرط / صرط. Not a 0.7 fuzzy hit like الرحمن / الحمد. */
+/** Shared stem such as الصرط / صرط. Not a 0.7 fuzzy hit like الرحمن / الحمد,
+ * and not a short ayah-1 body hosted in a longer word (الم / المال). */
 function relatedStem(left: string, right: string): boolean {
   if (left === right) return true;
   if (left.length <= 2 || right.length <= 2) return false;
   const longer = left.length >= right.length ? left : right;
   const shorter = left.length >= right.length ? right : left;
-  return longer.endsWith(shorter) || longer.startsWith(shorter);
+  if (longer.endsWith(shorter)) return true;
+  return longer.startsWith(shorter) && longer.length - shorter.length <= 1;
 }
 
 /** Advance/follow soft match: نفاث ≈ النفثت, الجنة ≈ الجنه. */
@@ -859,7 +861,14 @@ export class RecitationFollower {
     const skip = openingBasmalaWordCount(verse);
     if (skip > 0) {
       const unique = verse.phonemes_joined_no_bsm_ns ?? compact(verse.phonemes_joined_no_bsm ?? '');
-      if (unique && fragmentScore(compact(text), unique) < 0.45) return false;
+      if (unique) {
+        const query = compact(text);
+        // Short ayah-1 bodies (الم) must appear in the window, not host the window.
+        const score = unique.length <= query.length
+          ? fragmentScore(unique, query)
+          : fragmentScore(query, unique);
+        if (score < 0.45) return false;
+      }
     }
     return match.score >= LOCK_CLEAR_SCORE || !this.closeRival(match) || (verse.ayah > 1 && this.beatsRival(match, verse, text));
   }
@@ -964,12 +973,21 @@ export class RecitationFollower {
   ): QuranVerse | undefined {
     const first = this.db.getVerse(match.surah, match.ayah);
     if (!first) return undefined;
+    const opening = this.db.getVerse(match.surah, 1);
+    const openingBody = Boolean(
+      match.ayah > 1
+      && opening
+      && !skipUnusableLock(opening)
+      && this.hasVerseEvidence(text, opening, recognized)
+    );
+    const begin = openingBody ? 1 : match.ayah;
+    const keepEarliest = preferEarliest || openingBody;
     const spanEnd = match.ayah_end && match.ayah_end > match.ayah ? match.ayah_end : match.ayah;
     const last = this.db.getSurah(match.surah).at(-1)?.ayah ?? spanEnd;
     const end = Math.min(last, Math.max(spanEnd, match.ayah + 3));
     let best: QuranVerse | undefined;
     let bestScore = -1;
-    for (let ayah = match.ayah; ayah <= end; ayah++) {
+    for (let ayah = begin; ayah <= end; ayah++) {
       const verse = this.db.getVerse(match.surah, ayah);
       if (!verse || skipUnusableLock(verse)) continue;
       // Allow unique-token evidence when the body opening was ASR-garbled (Kawthar انا→سبحان).
@@ -985,7 +1003,10 @@ export class RecitationFollower {
         bestScore = score;
         continue;
       }
-      if (preferEarliest) {
+      // Ayah-1 body in the window is the start of the recitation, not a later
+      // ayah that happens to score higher in the same acquire window.
+      if (openingBody && best.ayah === 1) continue;
+      if (keepEarliest) {
         if (bestScore < LOCK_SCORE && score >= LOCK_SCORE) {
           best = verse;
           bestScore = score;

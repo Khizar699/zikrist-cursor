@@ -1011,3 +1011,63 @@ test('Ikhlas audio locks 112:1 even when the engine names Yunus 10:16', async ()
   assert.equal(engine.phase, 'following');
 });
 
+const muqattaat = [
+  verse(1, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم'], 'Al-Fatihah'),
+  verse(2, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'الم'], 'Al-Baqarah'),
+  verse(2, 2, ['ذلك', 'الكتب', 'لا', 'ريب', 'فيه', 'هدي', 'للمتقين'], 'Al-Baqarah'),
+  verse(3, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'الم'], 'Al-Imran'),
+  verse(18, 46, ['المال', 'والبنون', 'زينه', 'الحيوه', 'الدنيا'], 'Al-Kahf'),
+];
+
+function muqattaatChampion(surah: number, ayah: number, score: number, extra: Partial<QuranChampionMatch> = {}): QuranChampionMatch {
+  const found = muqattaat.find((item) => item.surah === surah && item.ayah === ayah)!;
+  return {
+    surah, ayah, text: found.phonemes_joined, phonemes_joined: found.phonemes_joined,
+    score, raw_score: score, bonus: 0, ...extra,
+  };
+}
+
+test('ayah-1 body الم locks 2:1, not a longer lookalike such as 18:46 المال', async () => {
+  const spoken = 'بسم الله الرحمن الرحيم الم';
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: muqattaatChampion(18, 46, 0.83),
+  }]));
+  const messages = await engine.feed(audio(1));
+  assert.deepEqual(refs(messages), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('a window that still contains ayah-1 body prefers 2:1 over 2:2 already in the span', async () => {
+  const spoken = 'الم ذلك الكتب لا ريب فيه';
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: muqattaatChampion(2, 2, 0.88),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('2:2-only audio still first-locks 2:2 when ayah-1 body is absent', async () => {
+  const two = muqattaat.find((item) => item.surah === 2 && item.ayah === 2)!;
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: two.phonemes_joined,
+    rawPhonemes: two.phonemes_joined,
+    championMatch: muqattaatChampion(2, 2, 0.88),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:2']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('Basmala alone does not lock 2:1', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'بسم الله الرحمن الرحيم',
+    rawPhonemes: 'بسم الله الرحمن الرحيم',
+    championMatch: muqattaatChampion(2, 1, 0.9),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), []);
+  assert.equal(engine.phase, 'acquiring');
+});
+
