@@ -151,6 +151,14 @@ function alignWords(recognized: string[], verseWords: string[]): number[] {
   return alignWordPositions(recognized, verseWords).map((item) => item.verse);
 }
 
+
+function isAmbiguousAdvanceOpening(word: string): boolean {
+  const arabic = new Set(['رب', 'الله', 'الحمد', 'قل', 'بسم']);
+  if (arabic.has(word)) return true;
+  const w = word.toLowerCase();
+  return /^rabb/.test(w) || w === 'allah' || w === 'allahu' || /^alhamd/.test(w) || w === 'qul' || w === 'bismi';
+}
+
 function uniqueWordSkip(verse: QuranVerse, current?: QuranVerse): number {
   const basmala = openingBasmalaWordCount(verse);
   if (!current?.phoneme_words.length || !verse.phoneme_words.length) return basmala;
@@ -325,11 +333,13 @@ export class RecitationFollower {
           continue;
         }
         if (!this.canLock(match, verse, text, recognized)) continue;
-        return this.commit(verse, match.score, contiguousAlignToVerse(recognized, verse));
+        const chosen = this.preferCanonicalDuplicate(verse, text);
+        return this.commit(chosen, match.score, contiguousAlignToVerse(recognized, chosen));
       }
       const alternative = this.alternativeHeardVerse(recognized, text, ranked);
       if (alternative) {
-        return this.commit(alternative, this.locationScore(text, alternative), contiguousAlignToVerse(recognized, alternative));
+        const chosen = this.preferCanonicalDuplicate(alternative, text);
+        return this.commit(chosen, this.locationScore(text, chosen), contiguousAlignToVerse(recognized, chosen));
       }
     }
     return this.unconfirmedMessages(recognized, ranked, candidates);
@@ -392,7 +402,8 @@ export class RecitationFollower {
 
     if (atSurahBoundary) {
       const pooled = this.lockFromNextSurahPool(text, recognized, current.surah);
-      if (pooled) {
+      // Basmala alone must not open the next surah.
+      if (pooled && !this.onlySharedOpening(recognized, pooled) && heardDistinct(recognized, pooled, this.distinctSkip(pooled))) {
         return [...messages, ...this.commit(pooled, this.locationScore(text, pooled), contiguousAlignToVerse(recognized, pooled))];
       }
     }
@@ -455,27 +466,22 @@ export class RecitationFollower {
   /** Unique leftover opening of mushaf-next. Overlapping current-ayah audio in
    * the follow window must not veto that evidence with a mixed-window score. */
   private shouldAdvance(recognized: string[], next: QuranVerse, current: QuranVerse): boolean {
+    if (next.surah !== current.surah) return false;
     const currentBody = verseAlignWords(current).words;
     const leftover = remainingAfterCurrent(recognized, currentBody);
     const query = leftover.length ? leftover : recognized;
-    if (heardDistinct(query, next, this.distinctSkip(next, current))) return true;
-    // Short next ayahs (e.g. 112:2 الله الصمد): the unique token may arrive without the
-    // shared opening word. Count that as advance evidence.
-    return this.heardUniqueBodyTokens(query.length ? query : recognized, next, current);
-  }
-
-  private heardUniqueBodyTokens(recognized: string[], verse: QuranVerse, current?: QuranVerse): boolean {
-    const { words, basmala } = verseAlignWords(verse);
-    if (!words.length || !recognized.length) return false;
-    const bodySkip = Math.max(0, this.distinctSkip(verse, current) - basmala);
-    const unique = words.slice(bodySkip);
-    if (!unique.length) return false;
-    const currentBody = current ? verseAlignWords(current).words : [];
-    // Do not advance on stems shared with the current ayah (e.g. الصرط → صرط).
-    return unique.some((token) => {
-      if (currentBody.some((word) => wordsMatch(word, token) || relatedStem(word, token))) return false;
-      return recognized.some((word) => wordsMatch(word, token));
-    });
+    const { words, basmala } = verseAlignWords(next);
+    // Shared openings (رب/rabbi, الله/allah, الحمد/alhamdu, قل/qul) alone must not
+    // advance — Fatiha leftover after Ibrahim 14:39 must not become 14:40.
+    const overlap = uniqueWordSkip(next, current);
+    const opening = words[0] ?? '';
+    const needUnique = words.length > 1 && isAmbiguousAdvanceOpening(opening) ? basmala + 1 : overlap;
+    const skip = Math.max(overlap, needUnique);
+    if (heardDistinct(query, next, skip)) return true;
+    const spoken = query.join(' ');
+    if (this.locationScore(spoken, next) < LOCK_CLEAR_SCORE) return false;
+    const unused = (token: string) => !currentBody.some((word) => wordsMatch(word, token) || relatedStem(word, token));
+    return words.slice(1).some((token) => unused(token) && query.some((word) => wordsMatch(word, token)));
   }
 
   private commit(verse: QuranVerse, score: number, matched: number[]): RecognitionMessage[] {
@@ -637,16 +643,47 @@ export class RecitationFollower {
     return best;
   }
 
+
+  /** When two ayahs share the same body modulo a leading و/ف (1:2 vs 37:182),
+   * prefer the higher location score, then the earlier surah/ayah. */
+  private preferCanonicalDuplicate(verse: QuranVerse, text: string): QuranVerse {
+    const normKey = (words: string[]) => words.map((word) => word.replace(/^[وف]/, '')).join('\0');
+    const key = normKey(verseAlignWords(verse).words);
+    if (!key) return verse;
+    let best = verse;
+    let bestScore = this.locationScore(text, verse);
+    for (const other of this.db.verses) {
+      if (other.surah === best.surah && other.ayah === best.ayah) continue;
+      if (skipUnusableLock(other)) continue;
+      if (normKey(verseAlignWords(other).words) !== key) continue;
+      const score = this.locationScore(text, other);
+      if (score > bestScore + 0.02) {
+        best = other;
+        bestScore = score;
+        continue;
+      }
+      if (Math.abs(score - bestScore) <= 0.02) {
+        if (other.surah < best.surah || (other.surah === best.surah && other.ayah < best.ayah)) {
+          best = other;
+          bestScore = Math.max(bestScore, score);
+        }
+      }
+    }
+    return best;
+  }
+
   private canLock(match: QuranChampionMatch, verse: QuranVerse, text: string, recognized: string[]): boolean {
     if (skipUnusableLock(verse) || match.score < LOCK_SCORE) return false;
     if (!this.hasVerseEvidence(text, verse, recognized)) return false;
     // Reject locks that only hear a shared prefix (قل اعوذ برب / Basmala) with no unique body word.
     if (this.onlySharedOpening(recognized, verse)) return false;
-    // Isolated mysterious-letter ayahs (e.g. 7:1 المص) need that letter sequence, not noise.
+    // Isolated mysterious-letter ayahs (e.g. 7:1 المص) need that token as a word —
+    // substring hits like المصدر / المدرس must not lock.
     const body = displayBodyWords(verse);
     if (body.length === 1 && body[0]!.length <= 5) {
-      const token = compact(body[0]!);
-      if (token && !compact(text).includes(token) && fragmentScore(compact(text), token) < 0.85) return false;
+      const token = body[0]!;
+      const heard = recognized.some((word) => wordsMatch(word, token) || compact(word) === compact(token));
+      if (!heard) return false;
     }
     const skip = openingBasmalaWordCount(verse);
     if (skip > 0) {
@@ -659,18 +696,30 @@ export class RecitationFollower {
   private hasVerseEvidence(text: string, verse: QuranVerse, recognized: string[]): boolean {
     const skip = this.uniqueOpeningSkip(verse);
     const { words, basmala } = verseAlignWords(verse);
+    if (!words.length) return false;
     const matched = contiguousAlignFromOpening(recognized, words);
-    if (!matched.length || matched[0] !== 0) return false;
     const bodySkip = Math.max(0, skip - basmala);
-    if (bodySkip > 0 && words.length > bodySkip && !matched.includes(bodySkip)) return false;
-    if (!openingIsAtStart(recognized, words) && matched.length < Math.min(2, words.length)) return false;
-    // Score against the recited body (no prepended Basmala) so ayah-1 clips match.
     const bodyRef = compact(words.join(' '));
     const query = compact(text);
     if (!bodyRef) return false;
-    if (bodyRef.length <= query.length) return fragmentScore(bodyRef, query) >= LOCK_SCORE;
-    const opening = bodyRef.slice(0, Math.min(bodyRef.length, query.length + 6));
-    return Math.max(fragmentScore(query, opening), levRatio(query, opening)) >= LOCK_SCORE;
+    const openingScore = () => {
+      if (bodyRef.length <= query.length) return fragmentScore(bodyRef, query) >= LOCK_SCORE;
+      const opening = bodyRef.slice(0, Math.min(bodyRef.length, query.length + 6));
+      return Math.max(fragmentScore(query, opening), levRatio(query, opening)) >= LOCK_SCORE;
+    };
+    if (matched.length && matched[0] === 0) {
+      if (!(bodySkip > 0 && words.length > bodySkip && !matched.includes(bodySkip))) {
+        if (!openingIsAtStart(recognized, words) && matched.length < Math.min(2, words.length)) return false;
+        return openingScore();
+      }
+    }
+    // Opening ASR-garbled (سبحان for انا on 108:1) but unique body tokens are clear.
+    const unique = words.slice(Math.max(bodySkip, 1));
+    if (!unique.length) return false;
+    const hits = unique.filter((token) => recognized.some((word) => wordsMatch(word, token)));
+    const need = Math.min(2, unique.length);
+    if (hits.length < need) return false;
+    return this.locationScore(text, verse) >= LOCK_CLEAR_SCORE;
   }
 
   private locationScore(text: string, verse: QuranVerse): number {
