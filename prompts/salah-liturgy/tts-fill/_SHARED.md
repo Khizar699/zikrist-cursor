@@ -15,6 +15,8 @@ Use pack `arabic_uthmani` / recognition text from `assets/content/salah-liturgy.
 
 Existing harness: PCM → follower heard tokens → `SalahLiturgyMatcher`. Do not add token-only fixtures that PASS without audio.
 
+**Continuity docs:** bump `HANDOFF.md` tip in the same PR; update `VALIDATION.md` and queue status when they apply (`prompts/_SHARED-HANDOFF.md`).
+
 ## Forbidden
 
 - Matcher threshold changes
@@ -27,3 +29,7 @@ Existing harness: PCM → follower heard tokens → `SalahLiturgyMatcher`. Do no
 
 - Prefer `npm run liturgy:tts -- <suite>` (edge-tts). On Mac, if edge-tts returns **403**, use `--engine say` (e.g. Majed) — same 16 kHz mono path; document voice in suite `notes`.
 - Always regenerate the gitignored WAV on the Mac that will score `test:replay`.
+
+## Deliverable
+
+Plus continuity docs: `HANDOFF.md` tip always; `VALIDATION.md` / queues when applicable (`prompts/_SHARED-HANDOFF.md`).

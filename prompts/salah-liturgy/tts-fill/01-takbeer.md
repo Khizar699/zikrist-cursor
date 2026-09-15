@@ -25,4 +25,6 @@ Other suites; matcher retune; UI; imam clips.
 
 ## Deliverable
 
+Write continuity docs in this same PR: `HANDOFF.md` tip (always); `VALIDATION.md` / queue status when applicable (`prompts/_SHARED-HANDOFF.md`).
+
 Clip path, Mac JSON snippet (`phraseId`, `failureMode`), license note.

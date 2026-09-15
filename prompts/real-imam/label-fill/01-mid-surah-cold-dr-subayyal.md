@@ -54,4 +54,6 @@ Stop. Do not retune. Ping Bot with failureMode / first_lock; open a **separate**
 
 ## Deliverable
 
+Write continuity docs in this same PR: `HANDOFF.md` tip (always); `VALIDATION.md` / queue status when applicable (`prompts/_SHARED-HANDOFF.md`).
+
 Clip basename, Mac JSON snippet, PR link.

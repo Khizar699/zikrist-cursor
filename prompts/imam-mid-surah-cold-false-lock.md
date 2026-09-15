@@ -20,7 +20,13 @@ Ground truth: `artifacts/recitation/imam/LABELS.md` + `labels.json` (2026-09-16)
   - **4:129** `ولن تستطيعوا…` vs **41:34** `ولا تستوي…` — early `ول-/تـسـتـ` window can crown the wrong long ayah.
   - **36:16** `…ربنا يعلم…` vs short **78:4** `كلا سيعلمون` — thin window + short-ayah / shared علم root can lock 78:4 in ~2s.
 
+## HANDOFF.md (required every PR)
+
+Founder rule: update root `HANDOFF.md` **in the same PR** — what landed, open tracks, gates, restore cmds. A session PR without a HANDOFF bump is **incomplete**.
+
 ## Constraints
+
+**Continuity docs:** bump `HANDOFF.md` tip in the same PR; update `VALIDATION.md` and queue status when they apply (`prompts/_SHARED-HANDOFF.md`).
 
 - **One concern:** mid-surah **cold acquire** false first-lock on these two clips (refuse distant/short wrong champions on thin evidence; prefer distinctive mid-ayah body tokens).
 - Offline; real ONNX + existing `RecitationFollower` / continuation gate. **No** fake matches, **No** silent WAVs, **no** suite-ID hardcodes (`if suite === imam-…`).
@@ -62,5 +68,7 @@ Refresh JSON under `artifacts/qa-runs/` for the custom runs if the harness write
 5. Session ends with: commands, JSON paths, files changed, honest residual fails — next slice is **label-fill `01`** then **`02`** (Bot launches those after this is green).
 
 ## Deliverable
+
+Must include `HANDOFF.md` update in the same PR.
 
 PR + Mac JSON snippets for both clips + note that label-fill may proceed.

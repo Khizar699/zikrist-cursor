@@ -1,0 +1,650 @@
+{
+  "version": 1,
+  "verified_by": "Khizar Javed",
+  "verified_at": "2026-09-16",
+  "sources": {
+    "azad-kashmir-masjid-e-nabi": {
+      "file": "azad kashmir in masjid e nabi.mp3",
+      "segments": [
+        {
+          "t0": 0,
+          "ranges": [
+            {
+              "surah": 25,
+              "ayah_start": 69,
+              "ayah_end": 77
+            }
+          ]
+        }
+      ]
+    },
+    "hafiz-usama-zehri": {
+      "file": "Hafiz Usama Zehri.mp3",
+      "segments": [
+        {
+          "t0": 0,
+          "ranges": [
+            {
+              "surah": 1,
+              "ayah_start": 1,
+              "ayah_end": 7
+            },
+            {
+              "surah": 27,
+              "ayah_start": 15,
+              "ayah_end": 20
+            }
+          ]
+        },
+        {
+          "t0": 90,
+          "ranges": [
+            {
+              "surah": 1,
+              "ayah_start": 1,
+              "ayah_end": 7
+            },
+            {
+              "surah": 27,
+              "ayah_start": 21,
+              "ayah_end": 26
+            }
+          ]
+        },
+        {
+          "t0": 182,
+          "ranges": [
+            {
+              "surah": 27,
+              "ayah_start": 27,
+              "ayah_end": 36
+            }
+          ]
+        },
+        {
+          "t0": 282,
+          "ranges": [
+            {
+              "surah": 1,
+              "ayah_start": 1,
+              "ayah_end": 7
+            },
+            {
+              "surah": 27,
+              "ayah_start": 37,
+              "ayah_end": 47
+            }
+          ]
+        },
+        {
+          "t0": 400,
+          "ranges": [
+            {
+              "surah": 1,
+              "ayah_start": 1,
+              "ayah_end": 7
+            },
+            {
+              "surah": 27,
+              "ayah_start": 48,
+              "ayah_end": 59
+            }
+          ]
+        },
+        {
+          "t0": 515,
+          "ranges": [
+            {
+              "surah": 1,
+              "ayah_start": 1,
+              "ayah_end": 7
+            },
+            {
+              "surah": 27,
+              "ayah_start": 60,
+              "ayah_end": 70
+            }
+          ]
+        },
+        {
+          "t0": 648,
+          "ranges": [
+            {
+              "surah": 1,
+              "ayah_start": 1,
+              "ayah_end": 7
+            },
+            {
+              "surah": 27,
+              "ayah_start": 71,
+              "ayah_end": 82
+            }
+          ]
+        }
+      ]
+    },
+    "sheikh-yunus-aswalus": {
+      "file": "sheikh yunus aswalus.mp3",
+      "segments": [
+        {
+          "t0": 0,
+          "ranges": [
+            {
+              "surah": 39,
+              "ayah_start": 61,
+              "ayah_end": 67
+            }
+          ]
+        },
+        {
+          "t0": 80,
+          "ranges": [
+            {
+              "surah": 39,
+              "ayah_start": 68,
+              "ayah_end": 75
+            }
+          ]
+        },
+        {
+          "t0": 193,
+          "ranges": [
+            {
+              "surah": 78,
+              "ayah_start": 31,
+              "ayah_end": 40
+            }
+          ]
+        }
+      ]
+    },
+    "taraweh-from-jamia-masjid": {
+      "file": "Taraweh From Jamia Masjid.mp3",
+      "segments": [
+        {
+          "t0": 0,
+          "ranges": [
+            {
+              "surah": 1,
+              "ayah_start": 1,
+              "ayah_end": 7
+            },
+            {
+              "surah": 2,
+              "ayah_start": 261,
+              "ayah_end": 265
+            }
+          ]
+        },
+        {
+          "t0": 118,
+          "ranges": [
+            {
+              "surah": 1,
+              "ayah_start": 1,
+              "ayah_end": 7
+            },
+            {
+              "surah": 2,
+              "ayah_start": 274,
+              "ayah_end": 281
+            }
+          ]
+        },
+        {
+          "t0": 237,
+          "ranges": [
+            {
+              "surah": 2,
+              "ayah_start": 282,
+              "ayah_end": 283
+            }
+          ]
+        },
+        {
+          "t0": 368,
+          "ranges": [
+            {
+              "surah": 2,
+              "ayah_start": 284,
+              "ayah_end": 286
+            }
+          ]
+        },
+        {
+          "t0": 457,
+          "ranges": [
+            {
+              "surah": 1,
+              "ayah_start": 1,
+              "ayah_end": 7
+            },
+            {
+              "surah": 3,
+              "ayah_start": 1,
+              "ayah_end": 9
+            }
+          ]
+        },
+        {
+          "t0": 594,
+          "ranges": [
+            {
+              "surah": 3,
+              "ayah_start": 10,
+              "ayah_end": 17
+            }
+          ]
+        },
+        {
+          "t0": 675,
+          "ranges": [
+            {
+              "surah": 3,
+              "ayah_start": 18,
+              "ayah_end": 25
+            }
+          ]
+        }
+      ]
+    },
+    "dr-subayyal-ikram-shorts": {
+      "file": "YTDown...Dr-Subayyal...",
+      "segments": [
+        {
+          "t0": 0,
+          "ranges": [
+            {
+              "surah": 4,
+              "ayah_start": 129,
+              "ayah_end": 130
+            }
+          ]
+        }
+      ]
+    },
+    "qiyam-ul-lail-shorts": {
+      "file": "YTDown...Qiyam...",
+      "segments": [
+        {
+          "t0": 0,
+          "ranges": [
+            {
+              "surah": 36,
+              "ayah_start": 16,
+              "ayah_end": 18
+            }
+          ]
+        }
+      ]
+    },
+    "youtube-vik00elo5nc": {
+      "segments": [
+        {
+          "t0": 0,
+          "ranges": [
+            {
+              "surah": 33,
+              "ayah_start": 44,
+              "ayah_end": 50
+            }
+          ]
+        },
+        {
+          "t0": 115,
+          "ranges": [
+            {
+              "surah": 33,
+              "ayah_start": 51,
+              "ayah_end": 52
+            }
+          ]
+        },
+        {
+          "t0": 196,
+          "ranges": [
+            {
+              "surah": 33,
+              "ayah_start": 53,
+              "ayah_end": 53
+            }
+          ]
+        },
+        {
+          "t0": 279,
+          "ranges": [
+            {
+              "surah": 33,
+              "ayah_start": 55,
+              "ayah_end": 58
+            }
+          ]
+        },
+        {
+          "t0": 344,
+          "ranges": [
+            {
+              "surah": 33,
+              "ayah_start": 59,
+              "ayah_end": 61
+            }
+          ]
+        },
+        {
+          "t0": 412,
+          "ranges": [
+            {
+              "surah": 33,
+              "ayah_start": 62,
+              "ayah_end": 73
+            }
+          ]
+        },
+        {
+          "t0": 528,
+          "ranges": [
+            {
+              "surah": 34,
+              "ayah_start": 1,
+              "ayah_end": 3
+            }
+          ]
+        },
+        {
+          "t0": 597,
+          "ranges": [
+            {
+              "surah": 34,
+              "ayah_start": 4,
+              "ayah_end": 14
+            }
+          ]
+        }
+      ]
+    },
+    "youtube-7comdotbdt8": {
+      "segments": [
+        {
+          "t0": 0,
+          "ranges": [
+            {
+              "surah": 35,
+              "ayah_start": 1,
+              "ayah_end": 8
+            }
+          ]
+        },
+        {
+          "t0": 123,
+          "ranges": [
+            {
+              "surah": 35,
+              "ayah_start": 9,
+              "ayah_end": 17
+            }
+          ]
+        },
+        {
+          "t0": 225,
+          "ranges": [
+            {
+              "surah": 35,
+              "ayah_start": 18,
+              "ayah_end": 26
+            }
+          ]
+        },
+        {
+          "t0": 320,
+          "ranges": [
+            {
+              "surah": 35,
+              "ayah_start": 27,
+              "ayah_end": 35
+            }
+          ]
+        },
+        {
+          "t0": 409,
+          "ranges": [
+            {
+              "surah": 35,
+              "ayah_start": 36,
+              "ayah_end": 42
+            }
+          ]
+        },
+        {
+          "t0": 525,
+          "ranges": [
+            {
+              "surah": 35,
+              "ayah_start": 43,
+              "ayah_end": 45
+            }
+          ]
+        }
+      ]
+    },
+    "youtube-s9p8adof7f0": {
+      "segments": [
+        {
+          "t0": 0,
+          "ranges": [
+            {
+              "surah": 1,
+              "ayah_start": 1,
+              "ayah_end": 7
+            },
+            {
+              "surah": 2,
+              "ayah_start": 197,
+              "ayah_end": 200
+            }
+          ]
+        },
+        {
+          "t0": 153,
+          "ranges": [
+            {
+              "surah": 1,
+              "ayah_start": 1,
+              "ayah_end": 7
+            },
+            {
+              "surah": 2,
+              "ayah_start": 204,
+              "ayah_end": 210
+            }
+          ]
+        },
+        {
+          "t0": 296,
+          "kind": "qunut_dua",
+          "ranges": []
+        }
+      ]
+    },
+    "youtube-wphnfatbdt8": {
+      "segments": [
+        {
+          "t0": 0,
+          "ranges": [
+            {
+              "surah": 1,
+              "ayah_start": 1,
+              "ayah_end": 7
+            },
+            {
+              "surah": 39,
+              "ayah_start": 32,
+              "ayah_end": 42
+            }
+          ]
+        },
+        {
+          "t0": 167,
+          "ranges": [
+            {
+              "surah": 39,
+              "ayah_start": 43,
+              "ayah_end": 52
+            }
+          ]
+        },
+        {
+          "t0": 293,
+          "ranges": [
+            {
+              "surah": 39,
+              "ayah_start": 53,
+              "ayah_end": 60
+            }
+          ]
+        },
+        {
+          "t0": 403,
+          "ranges": [
+            {
+              "surah": 39,
+              "ayah_start": 61,
+              "ayah_end": 67
+            }
+          ]
+        },
+        {
+          "t0": 465,
+          "ranges": [
+            {
+              "surah": 39,
+              "ayah_start": 68,
+              "ayah_end": 75
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "suite_candidates": {
+    "imam-mid-surah-cold": [
+      {
+        "clip": "imam-mid-surah-cold/qari-a/imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav",
+        "expected_first_lock": {
+          "surah": 4,
+          "ayah": 129
+        },
+        "expected_sequence": [
+          {
+            "surah": 4,
+            "ayah": 129
+          },
+          {
+            "surah": 4,
+            "ayah": 130
+          }
+        ]
+      },
+      {
+        "clip": "imam-mid-surah-cold/qari-a/imam-mid-surah-cold__qiyam-faisal__036-016-018__raw.wav",
+        "expected_first_lock": {
+          "surah": 36,
+          "ayah": 16
+        },
+        "expected_sequence": [
+          {
+            "surah": 36,
+            "ayah": 16
+          },
+          {
+            "surah": 36,
+            "ayah": 17
+          },
+          {
+            "surah": 36,
+            "ayah": 18
+          }
+        ]
+      },
+      {
+        "clip": "imam-mid-surah-cold/qari-a/imam-mid-surah-cold__masjid-e-nabi__025-069-077__raw.wav",
+        "expected_first_lock": {
+          "surah": 25,
+          "ayah": 69
+        },
+        "notes": "PA bleed; expect possible slow first-lock"
+      },
+      {
+        "clip": "imam-mid-surah-cold/qari-a/imam-mid-surah-cold__yunus-zumar__039-061-067__raw.wav",
+        "expected_first_lock": {
+          "surah": 39,
+          "ayah": 61
+        }
+      }
+    ],
+    "imam-surah-switch": [
+      {
+        "clip": "imam-surah-switch/qari-a/imam-surah-switch__ahzab-to-saba__033-062-034-003__raw.wav",
+        "expected_first_lock": {
+          "surah": 33,
+          "ayah": 62
+        },
+        "switch_to": {
+          "surah": 34,
+          "ayah": 1
+        },
+        "notes": "33:62-73 then 34:1-3"
+      },
+      {
+        "clip": "imam-surah-switch/qari-a/imam-surah-switch__baqarah-to-imran__002-284-003-009__raw.wav",
+        "expected_first_lock": {
+          "surah": 2,
+          "ayah": 284
+        },
+        "switch_to": {
+          "surah": 3,
+          "ayah": 1
+        },
+        "notes": "via Fatiha raka"
+      }
+    ],
+    "imam-noise-bleed": [
+      {
+        "clip": "imam-noise-bleed/qari-a/imam-noise-bleed__masjid-e-nabi__025-069-077__raw.wav",
+        "expected_first_lock": {
+          "surah": 25,
+          "ayah": 69
+        },
+        "pass_means": "no thrash to random surahs; may hold lower confidence"
+      }
+    ],
+    "imam-multi-qari": [
+      {
+        "slot": "qari-a",
+        "clip": "imam-multi-qari/qari-a/imam-multi-qari__hafiz-usama__001-027-015__raw.wav",
+        "expected_first_lock": {
+          "surah": 1,
+          "ayah": 2
+        },
+        "notes": "Fatiha then Naml 27:15"
+      },
+      {
+        "slot": "qari-b",
+        "clip": "imam-multi-qari/qari-b/imam-multi-qari__yunus__039-061-067__raw.wav",
+        "expected_first_lock": {
+          "surah": 39,
+          "ayah": 61
+        }
+      },
+      {
+        "slot": "qari-c",
+        "clip": "imam-multi-qari/qari-c/imam-multi-qari__fatir__035-001-008__raw.wav",
+        "expected_first_lock": {
+          "surah": 35,
+          "ayah": 1
+        }
+      }
+    ],
+    "imam-mid-ayah-pause": [],
+    "notes": "mid-ayah-pause still needs a labeled pause inside an ayah — not yet cut. Qunut at s9P8adOF7F0@4:56 is liturgy/dua, not Quran suite."
+  }
+}

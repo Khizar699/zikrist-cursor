@@ -38,7 +38,7 @@ Do **not** retune in the fill PR. Open a **separate** algorithm prompt (one fail
 
 ## Hard gate every session
 
-Mac: `npm run test:replay -- all` = **14/14** (Quran synthetic). Soft optional only: `prompts/nas-no-post-end-jump.md`.
+Mac: `npm run test:replay -- all` = **14/14** (Quran synthetic). Soft optional only: `prompts/nas-no-post-end-jump.md`. **Continuity docs:** bump `HANDOFF.md` tip in the same PR; update `VALIDATION.md` and queue status when they apply (`prompts/_SHARED-HANDOFF.md`).
 
 ## Verify
 
@@ -49,5 +49,7 @@ npm run test:replay -- all           # 14/14
 ```
 
 ## Deliverable
+
+Plus continuity docs: `HANDOFF.md` tip always; `VALIDATION.md` / queues when applicable (`prompts/_SHARED-HANDOFF.md`).
 
 Suite id, clip basename, Mac JSON snippet (`first_lock` / failureMode), confirm WAV stayed gitignored.

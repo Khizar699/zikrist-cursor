@@ -2,7 +2,11 @@
 
 **Depends on:** main `87f65f3`+ (01–04 landed). Manifest: `prompts/salah-liturgy/manifest.stub.json`.
 
-**Hard gate every session:** Mac `npm run test:replay -- all` = **14/14**. Soft optional only: `prompts/nas-no-post-end-jump.md`.
+**Hard gate every session:** Mac `npm run test:replay -- all` = **14/14**. Soft optional only: `prompts/nas-no-post-end-jump.md`. **Continuity docs:** bump `HANDOFF.md` tip in the same PR; update `VALIDATION.md` and queue status when they apply (`prompts/_SHARED-HANDOFF.md`).
+
+## HANDOFF.md (required every PR)
+
+Founder rule: update root `HANDOFF.md` **in the same PR** — what landed, open tracks, gates, restore cmds. A session PR without a HANDOFF bump is **incomplete**.
 
 **Rules**
 - **One suite per Cursor session** — do not mega-fill all clips
