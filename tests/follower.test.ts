@@ -6,6 +6,8 @@ import {
   FOLLOW_TRIGGER_SEC,
   FOLLOW_WINDOW_SEC,
   FOLLOW_LAST_AYAH_ACCUMULATE_SEC,
+  ACQUIRE_MAX_SEC,
+  ACQUIRE_AFTER_BASMALA_SEC,
   type TranscribeFn,
 } from '../src/core/follower';
 import type { RecognitionMessage } from '../src/core/types';
@@ -1008,6 +1010,301 @@ test('Ikhlas audio locks 112:1 even when the engine names Yunus 10:16', async ()
   const messages = await engine.feed(audio(1));
   assert.deepEqual(refs(messages), ['112:1']);
   assert.deepEqual(heard(messages), ['qul', 'huwa', 'allahu', 'ahad']);
+  assert.equal(engine.phase, 'following');
+});
+
+const muqattaat = [
+  verse(1, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم'], 'Al-Fatihah'),
+  {
+    ...verse(2, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'الم'], 'Al-Baqarah'),
+    text_uthmani: 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ الٓمٓ',
+  },
+  verse(2, 2, ['ذلك', 'الكتب', 'لا', 'ريب', 'فيه', 'هدي', 'للمتقين'], 'Al-Baqarah'),
+  verse(3, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'الم'], 'Al-Imran'),
+  verse(18, 46, ['المال', 'والبنون', 'زينه', 'الحيوه', 'الدنيا'], 'Al-Kahf'),
+  verse(55, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'الرحمن'], 'Ar-Rahman'),
+  verse(7, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'المص'], 'Al-Araf'),
+];
+
+function muqattaatChampion(surah: number, ayah: number, score: number, extra: Partial<QuranChampionMatch> = {}): QuranChampionMatch {
+  const found = muqattaat.find((item) => item.surah === surah && item.ayah === ayah)!;
+  return {
+    surah, ayah, text: found.phonemes_joined, phonemes_joined: found.phonemes_joined,
+    score, raw_score: score, bonus: 0, ...extra,
+  };
+}
+
+test('Asr 103:2 still advances when ASR prefixes الانسن as الا', async () => {
+  const local = [
+    verse(103, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'والعصر'], 'Al-Asr'),
+    verse(103, 2, ['ان', 'الانسن', 'لفي', 'خسر'], 'Al-Asr'),
+    verse(103, 3, ['الا', 'الذين', 'امنوا'], 'Al-Asr'),
+  ];
+  const one = local[0]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: one.phonemes_joined, rawPhonemes: one.phonemes_joined, championMatch: {
+          surah: 103, ayah: 1, text: one.phonemes_joined, phonemes_joined: one.phonemes_joined,
+          score: 0.92, raw_score: 0.92, bonus: 0,
+        },
+      },
+      { text: 'والعصر الا الانسن لفي خسر', rawPhonemes: 'والعصر الا الانسن لفي خسر' },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:1']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['103:2']);
+});
+
+test('ayah-1 body الم locks 2:1, not a longer lookalike such as 18:46 المال', async () => {
+  const spoken = 'بسم الله الرحمن الرحيم الم';
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: muqattaatChampion(18, 46, 0.83),
+  }]));
+  const messages = await engine.feed(audio(1));
+  assert.deepEqual(refs(messages), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('isolated الم without Basmala still locks 2:1', async () => {
+  const three = muqattaat.find((item) => item.surah === 3 && item.ayah === 1)!;
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'الم',
+    rawPhonemes: 'الم',
+    championMatch: muqattaatChampion(18, 46, 0.83, {
+      runners_up: [{
+        surah: 3, ayah: 1, score: 0.8, raw_score: 0.8, bonus: 0, phonemes_joined: three.phonemes_joined,
+      }],
+    }),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('ASR المي still locks 2:1 as ayah-1 body', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'المي',
+    rawPhonemes: 'المي',
+    championMatch: muqattaatChampion(3, 1, 0.7, {
+      runners_up: [{
+        surah: 2, ayah: 1, score: 0.69, raw_score: 0.69, bonus: 0, phonemes_joined: 'الم',
+      }],
+    }),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('ayah-1 الم still locks 2:1 when 3:1 is a close rival', async () => {
+  const two = muqattaat.find((item) => item.surah === 2 && item.ayah === 1)!;
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'الم المي',
+    rawPhonemes: 'الم المي',
+    championMatch: muqattaatChampion(3, 1, 0.7, {
+      runners_up: [{
+        surah: 2, ayah: 1, score: 0.69, raw_score: 0.69, bonus: 0, phonemes_joined: two.phonemes_joined,
+      }],
+    }),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('a window that still contains ayah-1 body prefers 2:1 over 2:2 already in the span', async () => {
+  const spoken = 'الم ذلك الكتب لا ريب فيه';
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: muqattaatChampion(2, 2, 0.88),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('2:2-only audio still first-locks 2:2 when ayah-1 body is absent', async () => {
+  const two = muqattaat.find((item) => item.surah === 2 && item.ayah === 2)!;
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: two.phonemes_joined,
+    rawPhonemes: two.phonemes_joined,
+    championMatch: muqattaatChampion(2, 2, 0.88),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:2']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('Basmala alone does not lock 2:1', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'بسم الله الرحمن الرحيم',
+    rawPhonemes: 'بسم الله الرحمن الرحيم',
+    championMatch: muqattaatChampion(2, 1, 0.9),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), []);
+  assert.equal(engine.phase, 'acquiring');
+});
+
+test('Basmala alone does not lock 55:1 from the shared الرحمن word', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'بسم الله الرحمن الرحيم',
+    rawPhonemes: 'بسم الله الرحمن الرحيم',
+    championMatch: muqattaatChampion(55, 1, 0.9),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), []);
+  assert.equal(engine.phase, 'acquiring');
+});
+
+test('a slid Basmala tail plus الم still locks 2:1 (Mac 4s window)', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'الرحمن الرحيم الم',
+    rawPhonemes: 'الرحمن الرحيم الم',
+    championMatch: muqattaatChampion(2, 2, 0.88, {
+      runners_up: [{
+        surah: 3, ayah: 1, score: 0.8, raw_score: 0.8, bonus: 0, phonemes_joined: 'الم',
+      }],
+    }),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('الرحيم الم after a dropped بسم still locks 2:1', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'الرحيم الم',
+    rawPhonemes: 'الرحيم الم',
+    championMatch: muqattaatChampion(18, 46, 0.83),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+});
+
+test('ASR الميم still locks 2:1, not المال', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'الميم',
+    rawPhonemes: 'الميم',
+    championMatch: muqattaatChampion(18, 46, 0.83),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+});
+
+test('recited letter names الف لام ميم lock 2:1, not 7:1', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'الف لام ميم',
+    rawPhonemes: 'الف لام ميم',
+    championMatch: muqattaatChampion(7, 1, 0.7, {
+      runners_up: [{
+        surah: 2, ayah: 1, score: 0.69, raw_score: 0.69, bonus: 0, phonemes_joined: 'الم',
+      }],
+    }),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+});
+
+test('Basmala tail plus letter names still locks 2:1', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'الرحمن الرحيم الف لام ميم',
+    rawPhonemes: 'الرحمن الرحيم الف لام ميم',
+    championMatch: muqattaatChampion(2, 2, 0.85),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+});
+
+test('المصدر still does not lock 7:1 from a substring', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'المصدر المدرس',
+    rawPhonemes: 'المصدر المدرس',
+    championMatch: muqattaatChampion(7, 1, 0.95),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), []);
+  assert.equal(engine.phase, 'acquiring');
+});
+
+test('first-lock acquire keeps 8s so a trailing ayah-1 body is not slid off', async () => {
+  const noise = { text: 'zzzz yyyy xxxx', rawPhonemes: 'zzzz yyyy xxxx' };
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([noise, noise]));
+  await engine.feed(audio(1));
+  resetRecognitionCycles();
+  await engine.feed(audio(5));
+  const cycle = lastRecognitionCycle();
+  assert.ok(cycle);
+  assert.ok(
+    cycle.windowSec > ACQUIRE_MAX_SEC,
+    `expected first-lock window > ${ACQUIRE_MAX_SEC}s, got ${cycle.windowSec}`,
+  );
+  assert.ok(cycle.windowSec <= ACQUIRE_AFTER_BASMALA_SEC + 0.05);
+  assert.equal(engine.phase, 'acquiring');
+});
+
+test('reacquire stays at the 4s cap', async () => {
+  const noise = { text: 'zzzz yyyy xxxx', rawPhonemes: 'zzzz yyyy xxxx' };
+  const engine = follower([
+    spoken(114, 4),
+    spoken(114, 5),
+    spoken(114, 6),
+    spoken(114, 6),
+    noise,
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['114:4']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['114:5']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['114:6']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.equal(engine.phase, 'reacquiring');
+  resetRecognitionCycles();
+  await engine.feed(audio(5));
+  const cycle = lastRecognitionCycle();
+  assert.ok(cycle);
+  assert.ok(
+    cycle.windowSec <= ACQUIRE_MAX_SEC + 0.05,
+    `reacquire window grew to ${cycle.windowSec}`,
+  );
+});
+
+test('a Mac-length mixed window with 2:2 champion still first-locks 2:1', async () => {
+  const spoken = 'الرحمن الرحيم الم ذلك الكتب لا ريب فيه';
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: muqattaatChampion(2, 2, 0.88),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('exact الم still first-locks 2:1 when locate returns no champion', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'الم',
+    rawPhonemes: 'الم',
+    locateAttempted: true,
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('a low-score champion still first-locks exact الم as 2:1', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'الم',
+    rawPhonemes: 'الم',
+    championMatch: muqattaatChampion(18, 46, 0.5),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('older-slice lookback recovers الم when a long window champions 2:2', async () => {
+  const two = muqattaat.find((item) => item.surah === 2 && item.ayah === 2)!;
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([
+    {
+      text: two.phonemes_joined,
+      rawPhonemes: two.phonemes_joined,
+      championMatch: muqattaatChampion(2, 2, 0.91),
+    },
+    {
+      text: 'الرحمن الرحيم الم',
+      rawPhonemes: 'الرحمن الرحيم الم',
+      championMatch: muqattaatChampion(2, 2, 0.8),
+    },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(6))), ['2:1']);
   assert.equal(engine.phase, 'following');
 });
 

@@ -150,3 +150,16 @@ test('a longer ayah-1 body still waits past the first post-Basmala word', () => 
   const unique = progress(106, 1, [4, 5], 6);
   assert.deepEqual(gate.accept([unique], 1200, true), [match(106, 1), unique]);
 });
+
+test('ayah-1 with only a post-Basmala body word confirms on that word', () => {
+  const gate = make();
+  assert.deepEqual(gate.accept([match(2, 1)], 1000, true), []);
+  const unique = progress(2, 1, [4], 5);
+  assert.deepEqual(gate.accept([unique], 1200, true), [match(2, 1), unique]);
+});
+
+test('pending ayah-1 then same-surah ayah-2 displays both in order', () => {
+  const gate = make();
+  assert.deepEqual(gate.accept([match(2, 1)], 1000, true), []);
+  assert.deepEqual(gate.accept([match(2, 2)], 2500, true), [match(2, 1), match(2, 2)]);
+});

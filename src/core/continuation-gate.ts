@@ -35,6 +35,18 @@ export class ContinuationGate {
           accepted.push(this.pending.message, message);
           this.current = message;
           this.pending = null;
+        } else if (
+          !this.current
+          && this.pending
+          && this.pending.message.ayah === 1
+          && !isFatihaBasmala(this.pending.message)
+          && message.surah === this.pending.message.surah
+          && message.ayah === 2
+        ) {
+          // Ayah-1 body was held; mushaf-next of the same surah disambiguates it.
+          accepted.push(this.pending.message, message);
+          this.current = message;
+          this.pending = null;
         } else if (!this.current && voiced && openingBasmalaWordCount(message) === 0) {
           this.current = message; this.pending = null; accepted.push(message);
         } else if (!this.pending || refKey(this.pending.message) !== refKey(message)) {
@@ -59,7 +71,7 @@ export class ContinuationGate {
     if (skip > 0) {
       const bodyHits = unique.filter((index) => index >= skip);
       if (!bodyHits.length) return false;
-      // A one-word ayah-1 body (العصر) has no later index to wait for.
+      // A one-word ayah-1 body (العصر, الم) has no later index to wait for.
       // Longer bodies still need a word after the first post-Basmala token
       // because that first token is often shared (قُلْ, إِنَّ).
       const bodyLen = Math.max(0, message.total_words - skip);
