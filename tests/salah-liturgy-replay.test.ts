@@ -54,8 +54,11 @@ test('salah liturgy harness reads the committed stub manifest, not a duplicate p
     [...LITURGY_SUITE_NAMES],
   );
   assert.equal(loadSalahLiturgyStubEntry('liturgy-takbeer').status, 'ready');
+  assert.equal(loadSalahLiturgyStubEntry('liturgy-thana').status, 'ready');
   assert.equal(
-    manifest.suites.filter((row) => row.suite_id !== 'liturgy-takbeer').every((row) => row.status === 'stub'),
+    manifest.suites
+      .filter((row) => row.suite_id !== 'liturgy-takbeer' && row.suite_id !== 'liturgy-thana')
+      .every((row) => row.status === 'stub'),
     true,
   );
   assert.equal(fs.existsSync(path.join(root, 'prompts/salah-liturgy/04-replay-suites.md')), true);
@@ -68,11 +71,11 @@ test('sample skip JSON is skipped/missing_fixture, not PASS', () => {
   assert.equal(sample.status, SKIPPED_PENDING);
   assert.equal(sample.failureMode, MISSING_FIXTURE);
   assert.equal(sample.phraseId, null);
-  assert.equal(sample.suite, 'liturgy-thana');
-  assert.deepEqual(sample.missingClips, suiteBlueprint('liturgy-thana').clips);
+  assert.equal(sample.suite, 'liturgy-ruku');
+  assert.deepEqual(sample.missingClips, suiteBlueprint('liturgy-ruku').clips);
 });
 
-test('ready liturgy-takbeer maps to a real clip_path; remaining suites stay stubs', () => {
+test('ready liturgy-takbeer and liturgy-thana map to real clip_paths; remaining suites stay stubs', () => {
   assert.equal(MISSING_FIXTURE, 'missing_fixture');
   assert.equal(SKIPPED_PENDING, 'skipped');
   const takbeer = loadSalahLiturgyStubEntry('liturgy-takbeer');
@@ -92,8 +95,23 @@ test('ready liturgy-takbeer maps to a real clip_path; remaining suites stay stub
   assert.match(takbeer.notes, /edge-tts/);
   assert.match(takbeer.notes, /-25%/);
   assert.equal(takbeer.license_status, 'unresolved');
+  const thana = loadSalahLiturgyStubEntry('liturgy-thana');
+  const thanaSuite = suiteBlueprint('liturgy-thana');
+  assert.equal(thana.status, 'ready');
+  assert.equal(thanaSuite.readiness, 'ready');
+  assert.equal(suiteSkipsWhenClipMissing(thanaSuite), false);
+  assert.equal(thanaSuite.gate, 'liturgy-phrase');
+  assert.deepEqual(thana.expect_phrase_ids, ['thana']);
+  assert.deepEqual(thana.expect_quran, []);
+  assert.deepEqual(thanaSuite.expectPhraseIds, ['thana']);
+  assert.deepEqual(thanaSuite.expect, []);
+  assert.equal(thana.clip_path, 'liturgy-thana/liturgy-thana__edge-tts__ar-SA-HamedNeural.wav');
+  assert.deepEqual(thanaSuite.clips, ['liturgy-thana/liturgy-thana__edge-tts__ar-SA-HamedNeural.wav']);
+  assert.match(thana.notes, /edge-tts/);
+  assert.match(thana.notes, /--engine say/);
+  assert.equal(thana.license_status, 'unresolved');
   for (const name of LITURGY_SUITE_NAMES) {
-    if (name === 'liturgy-takbeer') continue;
+    if (name === 'liturgy-takbeer' || name === 'liturgy-thana') continue;
     const entry = loadSalahLiturgyStubEntry(name);
     const blueprint = suiteBlueprint(name);
     assert.equal(entry.status, 'stub');
@@ -141,6 +159,14 @@ test('liturgy-phrase fails on Quran verse_match and missing phrase locks', () =>
   assert.equal(
     evaluateFailure([], suite, [phrase('thana')]),
     'phrase_break_at_0_got_thana_expected_takbeer',
+  );
+  const thana = suiteBlueprint('liturgy-thana');
+  assert.equal(evaluateFailure([], thana, [phrase('thana')]), null);
+  assert.equal(evaluateFailure([match(1, 2)], thana, [phrase('thana')]), 'verse_lock_1:2');
+  assert.equal(evaluateFailure([], thana, []), 'no_liturgy_lock');
+  assert.equal(
+    evaluateFailure([], thana, [phrase('takbeer')]),
+    'phrase_break_at_0_got_takbeer_expected_thana',
   );
 });
 

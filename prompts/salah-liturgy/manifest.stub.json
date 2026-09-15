@@ -16,12 +16,12 @@
     },
     {
       "suite_id": "liturgy-thana",
-      "status": "stub",
+      "status": "ready",
       "gate": "liturgy-phrase",
-      "clip_path": "_stubs/liturgy-thana__pending__STUB.txt",
+      "clip_path": "liturgy-thana/liturgy-thana__edge-tts__ar-SA-HamedNeural.wav",
       "expect_phrase_ids": ["thana"],
       "expect_quran": [],
-      "notes": "full thana",
+      "notes": "full Hanafi istiftah (thana); no verse_match. Evaluation TTS clip (not committed/redistributed): preferred edge-tts voice ar-SA-HamedNeural rate -25%; Mac fallback `say` + ffmpeg (Arabic voice e.g. Majed/Maged) writes the same dest. Spoken text is pack arabic_uthmani for phrase id thana. Generate on Mac: npm run liturgy:tts -- liturgy-thana. If edge-tts 403: npm run liturgy:tts -- liturgy-thana --engine say. Then npm run test:replay -- liturgy-thana (must PASS, not skip).",
       "license_status": "unresolved"
     },
     {

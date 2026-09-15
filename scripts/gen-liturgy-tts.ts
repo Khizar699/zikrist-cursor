@@ -5,14 +5,15 @@
  * for the suite's expected phrase id. Destination is the harness clip path from
  * `prompts/salah-liturgy/manifest.stub.json`. Never writes a silent placeholder.
  *
- * Mac (Bot / Sim QA) — liturgy-takbeer:
+ * Mac (Bot / Sim QA) — ready single-phrase suites (liturgy-takbeer, liturgy-thana):
  *   python3 -m pip install --user edge-tts
- *   npm run liturgy:tts -- liturgy-takbeer
- *   npm run test:replay -- liturgy-takbeer
+ *   npm run liturgy:tts -- liturgy-thana
+ *   npm run test:replay -- liturgy-thana
  *
- * Fallback when edge-tts is unavailable (macOS):
- *   npm run liturgy:tts -- liturgy-takbeer --engine say
- *   (needs `say` + ffmpeg; prefers an Arabic voice such as Maged)
+ * Fallback when edge-tts is unavailable or 403 (macOS):
+ *   npm run liturgy:tts -- liturgy-thana --engine say
+ *   (needs `say` + ffmpeg; prefers an Arabic voice such as Majed/Maged;
+ *    writes the same dest as clip_path — filename stays stable)
  *
  * Audio stays gitignored under artifacts/recitation/liturgy/. Do not commit WAV/MP3.
  */
@@ -258,7 +259,7 @@ function synthesizeEdgeTts(text: string, voice: string, destWav: string, rate = 
   if (!edge) {
     throw new Error(
       'edge-tts not found. On Mac: python3 -m pip install --user edge-tts\n'
-      + 'Or retry with: npm run liturgy:tts -- liturgy-takbeer --engine say',
+      + 'Or retry with: npm run liturgy:tts -- <suite> --engine say',
     );
   }
   const tmp = path.join(os.tmpdir(), `zikrist-liturgy-tts-${process.pid}.mp3`);
@@ -305,12 +306,14 @@ export function helpText(): string {
   return [
     'Usage:',
     '  npm run liturgy:tts -- liturgy-takbeer',
-    '  npm run liturgy:tts -- liturgy-takbeer --dry-run',
-    '  npm run liturgy:tts -- liturgy-takbeer --engine edge-tts --voice ar-SA-HamedNeural --rate=-25%',
-    '  npm run liturgy:tts -- liturgy-takbeer --engine say',
+    '  npm run liturgy:tts -- liturgy-thana',
+    '  npm run liturgy:tts -- liturgy-thana --dry-run',
+    '  npm run liturgy:tts -- liturgy-thana --engine edge-tts --voice ar-SA-HamedNeural --rate=-25%',
+    '  npm run liturgy:tts -- liturgy-thana --engine say',
     '',
     'Reads pack arabic_uthmani (not a hardcoded English string). Writes 16 kHz mono PCM16',
-    'to the suite clip_path. Audio is gitignored; do not commit WAV/MP3. Does not invent silence.',
+    'to the suite clip_path (stable filename; --engine say uses the same dest).',
+    'Audio is gitignored; do not commit WAV/MP3. Does not invent silence.',
   ].join('\n');
 }
 
@@ -342,8 +345,8 @@ export async function generateLiturgyTts(options: {
     } else {
       throw new Error(
         'No TTS engine. Mac: python3 -m pip install --user edge-tts\n'
-        + '  npm run liturgy:tts -- liturgy-takbeer\n'
-        + 'Or: npm run liturgy:tts -- liturgy-takbeer --engine say',
+        + `  npm run liturgy:tts -- ${options.suiteId}\n`
+        + `Or: npm run liturgy:tts -- ${options.suiteId} --engine say`,
       );
     }
     const bytes = fs.readFileSync(tmpOut);
@@ -381,7 +384,7 @@ async function main() {
     rms: result.rms ?? null,
     next: args.dryRun
       ? 'Re-run without --dry-run after installing edge-tts or using --engine say'
-      : 'npm run test:replay -- liturgy-takbeer',
+      : `npm run test:replay -- ${result.plan.suiteId}`,
   };
   console.log(JSON.stringify(payload, null, 2));
 }

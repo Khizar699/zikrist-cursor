@@ -1,5 +1,5 @@
 {
-  "suite": "liturgy-thana",
+  "suite": "liturgy-ruku",
   "status": "skipped",
   "gate": "liturgy-phrase",
   "failureMode": "missing_fixture",
@@ -7,10 +7,10 @@
   "audioSeconds": null,
   "phrases": [],
   "expectPhraseIds": [
-    "thana"
+    "ruku_tasbih"
   ],
   "missingClips": [
-    "liturgy-thana/liturgy-thana__pending__STUB.wav"
+    "liturgy-ruku/liturgy-ruku__pending__STUB.wav"
   ],
   "convertHints": [],
   "matches": [],
@@ -21,5 +21,5 @@
   "clipDir": "artifacts/recitation/liturgy",
   "quranClips": [],
   "expectedLocksPath": "prompts/salah-liturgy/manifest.stub.json",
-  "description": "full thana"
+  "description": "ruku tasbih"
 }
