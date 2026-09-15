@@ -1,33 +1,31 @@
-# Real-imam overnight pack (scaffold)
+# Real-imam overnight pack (scaffold only)
 
-**Not the Quran hard gate.** Mac `npm run test:replay -- all` stays the original **14/14** EveryAyah suites.
+**Parallel to salah liturgy** — do not block on clips. Founder will drop recitation videos into `~/Desktop/zikrist-imam-clips/` later.
 
-**Not salah liturgy.** Liturgy is a separate track (`prompts/salah-liturgy/`). This pack is live-tilawah / imam-recitation coverage once founder drops clips.
+**Hard gate every session:** Mac `npm run test:replay -- all` stays **14/14** (Quran synthetic fixtures). Soft optional: `prompts/nas-no-post-end-jump.md`.
 
-**No real audio in-repo yet.** Founder drops source media in `~/Desktop/zikrist-imam-clips/`. Convert into `fixtures/real-imam/clips/` (gitignored WAV/MP3). Do not invent silent STUB audio. Until files exist, `npm run test:replay -- real-imam` reports `missing_fixture`.
+**P0 elsewhere:** `prompts/salah-liturgy/` (01-corpus in flight). This pack is harness/docs prep only until clips exist.
 
-## Commands
+Launch **one session at a time**:
+
+1. `01-fixture-scaffold.md` — dirs, naming, empty stubs, manifest schema
+2. `02-mid-surah-cold-start.md` — suite + expectations (stub audio OK)
+3. `03-mid-ayah-pause-resume.md`
+4. `04-surah-switch.md`
+5. `05-noise-speaker-bleed.md`
+6. `06-multi-qari-placeholder.md`
+7. `07-live-feel-checklist.md` — manual Sim QA checklist (no new algorithm)
+
+Do not mega-merge algorithm retunes with harness scaffolding.
+
+## Harness registration (do not duplicate these prompts)
+
+Suite ids, naming, and `~/Desktop/zikrist-imam-clips/` are defined above and in `01-fixture-scaffold.md` / `FIXTURES.md`. The replay runner reads `prompts/real-imam/manifest.stub.json`.
 
 ```bash
-npm run test:replay -- all              # original 14 only (hard gate)
-npm run test:replay -- real-imam        # pending pack → missing_fixture until clips
-npm run test:replay -- --include-pending  # 14 + pending (will fail until clips)
-npm run test:replay -- --list
+npm run test:replay -- all           # hard gate: original 14 only
+npm run test:replay -- real-imam     # stub suites SKIP with missing_fixture (not PASS)
 ```
 
-Layout, clip ids, expected-locks schema, suite registration: `fixtures/real-imam/README.md`.
+Audio staging (gitignored): `artifacts/recitation/imam/<suite-id>/<qari-or-source>/`. No silent STUB WAVs.
 
-## Queue (one session at a time, after clips exist)
-
-Harness registration is in `prompts/real-imam-coverage-pack.md` (this scaffold). After WAV lands, launch **one** of:
-
-1. `02-mid-surah-cold-start.md`
-2. `03-mid-ayah-pause-resume.md`
-3. `04-surah-switch.md`
-4. `05-noise-speaker-bleed.md`
-5. `06-multi-qari-placeholder.md`
-6. `07-live-feel-checklist.md` — manual Sim QA / device, not an automated 15th suite
-
-Do not mega-merge follower retunes with dropping audio. Honest `failureMode` after a real clip is a valid result.
-
-`01-fixture-scaffold.md` is the layout contract (implemented under `fixtures/real-imam/`).

@@ -22,6 +22,6 @@ The Tilawa memory patch follows upstream PR 18 at commit `0856cd1491a08c3c437f52
 
 Manual development evaluation used Alafasy recordings served by EveryAyah (`SSSAAA` verse files, including Al-Fatihah, Al-Baqarah 2:1–5, Al-Asr, Quraysh, Al-Kawthar, Al-Ikhlas, Al-Falaq, and An-Nas). Those recordings are not bundled with the app and are ignored by Git under artifacts/. Restore locally with `npm run fixtures:recitation`. `english-negative.wav` is synthesized with espeak-ng when available, otherwise taken from the Open Speech Repository. An accessible recording URL is not permission to train or redistribute a dataset.
 
-Real-imam / live-tilawah evaluation clips, when the founder adds them under `fixtures/real-imam/clips/`, stay local and gitignored. They are not app assets. Rights for imam or bystander recordings remain unresolved until reviewed; dropping a file is not a redistribution or training grant.
+Real-imam / live-tilawah evaluation clips, when the founder adds them under `artifacts/recitation/imam/` (from `~/Desktop/zikrist-imam-clips/`), stay local and gitignored. They are not app assets. Rights for imam or bystander recordings remain unresolved until reviewed; dropping a file is not a redistribution or training grant.
 
 Future stories and explanations must have a separately permitted, attributable source. This build includes no fabricated verse histories, generated translations, or claims that every verse has an independently established revelation occasion.

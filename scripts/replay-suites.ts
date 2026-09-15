@@ -12,9 +12,10 @@ export const STALL_TRAILING_SILENCE_SECONDS = 4;
 export const COLD_START_TRIM_SECONDS = 0.75;
 export const ENGLISH_NEGATIVE_CLIP = 'english-negative.wav';
 export const DEFAULT_CLIP_DIR = 'artifacts/recitation';
-export const REAL_IMAM_CLIP_DIR = 'fixtures/real-imam/clips';
-export const REAL_IMAM_SUITES_DIR = 'fixtures/real-imam/suites';
+export const REAL_IMAM_CLIP_DIR = 'artifacts/recitation/imam';
+export const REAL_IMAM_MANIFEST = 'prompts/real-imam/manifest.stub.json';
 export const MISSING_FIXTURE = 'missing_fixture';
+export const SKIPPED_PENDING = 'skipped';
 
 export type VerseRef = { surah: number; ayah: number };
 export type MatchRow = { surah: number; ayah: number; audioSeconds: number; score: number };
@@ -44,23 +45,24 @@ export type SuiteBlueprint = {
   description: string;
 };
 
-export type RealImamSuiteSpec = {
-  suite: string;
-  clipId: string;
-  status: SuiteReadiness;
-  title: string;
-  description: string;
-  clips: string[];
-  expect: VerseRef[];
+export type RealImamStubEntry = {
+  suite_id: string;
+  status: 'stub' | 'ready' | 'pending';
+  clip_path: string | string[];
+  qari_slots?: string[];
   expected_first_lock: VerseRef | null;
-  gate: ReplayGate;
-  clipRunMode?: ClipRunMode;
-  trimStartSeconds?: number;
-  trailingSilenceSeconds?: number;
-  insertSilence?: SilenceInsert[];
-  notes: string[];
+  expected_sequence: VerseRef[];
+  notes: string;
   license_status: string;
-  source?: string;
+  gate?: ReplayGate;
+  clipRunMode?: ClipRunMode;
+};
+
+export type RealImamManifest = {
+  version: number;
+  clip_drop: string;
+  audio_root?: string;
+  suites: RealImamStubEntry[];
 };
 
 function verseFileName(surah: number, ayah: number): string {
@@ -128,29 +130,47 @@ export type SuiteName = ReadySuiteName | RealImamSuiteName;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-function loadRealImamSpec(name: RealImamSuiteName): RealImamSuiteSpec {
-  const file = path.join(repoRoot, REAL_IMAM_SUITES_DIR, `${name}.json`);
-  const spec = JSON.parse(fs.readFileSync(file, 'utf8')) as RealImamSuiteSpec;
-  if (spec.suite !== name) {
-    throw new Error(`real-imam spec ${file} suite "${spec.suite}" does not match ${name}`);
-  }
-  return spec;
+function stubWavName(clipPath: string): string {
+  const base = path.basename(clipPath);
+  if (base.toLowerCase().endsWith('.wav')) return base;
+  return base.replace(/\.txt$/i, '.wav');
 }
 
-function blueprintFromRealImamSpec(spec: RealImamSuiteSpec): SuiteBlueprint {
+function clipsFromStub(entry: RealImamStubEntry): string[] {
+  const slots = entry.qari_slots?.length ? entry.qari_slots : ['qari-a'];
+  const sources = Array.isArray(entry.clip_path) ? entry.clip_path : [entry.clip_path];
+  const names = sources.map(stubWavName);
+  const clips: string[] = [];
+  for (const slot of slots) {
+    for (const name of names) {
+      clips.push(`${entry.suite_id}/${slot}/${name}`);
+    }
+  }
+  return clips;
+}
+
+function loadRealImamManifest(): RealImamManifest {
+  const file = path.join(repoRoot, REAL_IMAM_MANIFEST);
+  return JSON.parse(fs.readFileSync(file, 'utf8')) as RealImamManifest;
+}
+
+function loadRealImamStub(name: RealImamSuiteName): RealImamStubEntry {
+  const entry = loadRealImamManifest().suites.find((row) => row.suite_id === name);
+  if (!entry) throw new Error(`Missing ${name} in ${REAL_IMAM_MANIFEST}`);
+  return entry;
+}
+
+function blueprintFromRealImamStub(entry: RealImamStubEntry): SuiteBlueprint {
   return {
-    label: spec.suite,
-    clips: spec.clips,
-    expect: spec.expect,
-    gate: spec.gate,
-    trimStartSeconds: spec.trimStartSeconds,
-    trailingSilenceSeconds: spec.trailingSilenceSeconds,
-    insertSilence: spec.insertSilence,
-    clipRunMode: spec.clipRunMode ?? 'concat',
+    label: entry.suite_id,
+    clips: clipsFromStub(entry),
+    expect: entry.expected_sequence,
+    gate: entry.gate ?? 'ordered-sequence',
+    clipRunMode: entry.clipRunMode ?? (entry.qari_slots && entry.qari_slots.length > 1 ? 'each-clip' : 'concat'),
     clipDir: REAL_IMAM_CLIP_DIR,
-    readiness: spec.status,
-    expectedLocksPath: `${REAL_IMAM_SUITES_DIR}/${spec.suite}.json`,
-    description: spec.description,
+    readiness: entry.status === 'ready' ? 'ready' : 'pending',
+    expectedLocksPath: REAL_IMAM_MANIFEST,
+    description: entry.notes,
   };
 }
 
@@ -258,7 +278,7 @@ const READY_SUITES: Record<ReadySuiteName, SuiteBlueprint> = {
 };
 
 const REAL_IMAM_SUITES = Object.fromEntries(
-  REAL_IMAM_SUITE_NAMES.map((name) => [name, blueprintFromRealImamSpec(loadRealImamSpec(name))]),
+  REAL_IMAM_SUITE_NAMES.map((name) => [name, blueprintFromRealImamStub(loadRealImamStub(name))]),
 ) as Record<RealImamSuiteName, SuiteBlueprint>;
 
 const SUITES: Record<SuiteName, SuiteBlueprint> = { ...READY_SUITES, ...REAL_IMAM_SUITES };
@@ -331,11 +351,15 @@ export function suiteClipDirectory(suite: Pick<SuiteBlueprint, 'clipDir'>): stri
   return suite.clipDir ?? DEFAULT_CLIP_DIR;
 }
 
-export function loadRealImamSuiteSpec(name: string): RealImamSuiteSpec {
+export function loadRealImamStubEntry(name: string): RealImamStubEntry {
   if (!isRealImamSuiteName(name)) {
     throw new Error(`Not a real-imam suite: ${name}`);
   }
-  return loadRealImamSpec(name);
+  return loadRealImamStub(name);
+}
+
+export function loadRealImamStubManifest(): RealImamManifest {
+  return loadRealImamManifest();
 }
 
 export function uniqueClipsForSuites(names: readonly string[]): string[] {
@@ -502,7 +526,7 @@ export function suiteHelpText(): string {
     'Ready (default all, 14 suites):',
     ...ready,
     '',
-    'Pending real-imam (missing clips → missing_fixture; not in default all):',
+    'Pending real-imam (skip with missing_fixture, not PASS; not in default all):',
     ...pending,
   ].join('\n');
 }

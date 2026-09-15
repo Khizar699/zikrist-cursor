@@ -163,16 +163,13 @@ Rebased onto main `810ed4c` (Prompt Smith sharper brief). 2:1 `text_clean` is `Ø
 
 ## Real-imam coverage pack (scaffold, no audio)
 
-Harness/docs only. **No founder/imam WAV or MP3 is committed.** Silent STUB audio was not invented. `RecitationFollower` was not retuned.
+Harness only. Prompt Smith already owns `prompts/real-imam/` (queue, fixture README, LIVE-FEEL, suite prompts, stub manifest). This change **registers** those suite ids in the replay runner instead of duplicating the briefs. **No founder/imam WAV or MP3 is committed.** Silent STUB audio was not invented. `RecitationFollower` was not retuned.
 
-- Layout: `fixtures/real-imam/` (README, `expected-locks.schema.json`, `manifest.json`, `suites/*.json`, empty `clips/qari-a` and `clips/qari-b`).
-- Overnight prompts: `prompts/real-imam/00-OVERNIGHT-QUEUE.md` (mid-surah cold start, mid-ayah pause/resume, surah switch, noise/bleed, multi-qari, live-feel checklist).
+- Manifest: `prompts/real-imam/manifest.stub.json` (`status: stub`). Founder drop: `~/Desktop/zikrist-imam-clips/`. Staging: `artifacts/recitation/imam/<suite-id>/<qari-or-source>/` (gitignored).
 - `npm run test:replay -- all` still resolves to the original **14** Quran suites (hard gate).
-- `npm run test:replay -- real-imam` (or `npm run test:replay:real-imam`) reports `failureMode: missing_fixture` for the five pending suites and does not load ONNX.
-- `--list` documents pending entries. `--include-pending` adds them to `all` and will fail until clips exist.
-- Salah liturgy remains a **separate** track (`prompts/salah-liturgy/`, data-only pack). Do not treat this scaffold as imam-ready or as liturgy coverage.
+- `npm run test:replay -- real-imam` **skips** the five stub suites with `failureMode: missing_fixture` and `status: skipped` (not PASS) and does not load ONNX.
+- `--include-pending` can list them next to `all`; stubs still skip until WAV exists, so they cannot fail the 14-suite gate.
+- Salah liturgy remains a **separate** track (`prompts/salah-liturgy/`).
 
-Drop 16 kHz mono PCM16 WAV under `fixtures/real-imam/clips/` using the clip ids in the suite JSON. Convert MP3/video with ffmpeg as documented in `fixtures/real-imam/README.md`. Founder source folder: `~/Desktop/zikrist-imam-clips/`. Imam/bystander recording rights stay unresolved; a local file is not a redistribution grant.
-
-This workspace (Linux/x64, no EveryAyah WAVs restored): `npm test` **151/151**; `npm run typecheck` pass; lint still reports the pre-existing unused `openingScore` warning. `npx tsx scripts/replay.ts --list` shows 14 ready + 5 pending. `npx tsx scripts/replay.ts real-imam` exited 1 with five `failureMode: missing_fixture` rows and did **not** load ONNX. `parseSuiteSelection(['all'])` is the original 14 names. Acoustic `npm run test:replay -- all` was **not** scored here. Not a physical-device, mosque, or imam-ready claim.
+This workspace (Linux/x64, no EveryAyah WAVs restored): `npm test` **150/150**; `npm run typecheck` pass. `npx tsx scripts/replay.ts real-imam` exited **0** with five skipped `missing_fixture` rows (not PASS) and did not load ONNX. Acoustic `npm run test:replay -- all` was **not** scored here. Not a physical-device, mosque, or imam-ready claim.
 

@@ -1,7 +1,0 @@
-# Evaluation audio only — never commit WAV/MP3/video here.
-*.wav
-*.mp3
-*.m4a
-*.mp4
-*.aac
-*.flac

@@ -129,13 +129,13 @@ npm run test:replay -- back-to-back # Asr then Quraysh
 npm run test:replay -- cold-start-mid
 npm run test:replay -- stall-after-lock
 npm run test:replay -- --list
-npm run test:replay -- real-imam           # pending imam pack; missing_fixture until WAV
-npm run test:replay -- --include-pending   # 14 + pending (fails while clips missing)
+npm run test:replay -- real-imam           # Prompt Smith stub suites; skip missing_fixture (not PASS)
+npm run test:replay -- --include-pending   # 14 + stubs (stubs skip until WAV exists)
 ```
 
 Each suite writes `artifacts/qa-runs/replay-<suite>.json` with `matches[{surah,ayah,audioSeconds,score}]`, `firstLockSeconds`, `clocks`, `failureMode`, `wrongSurahRate`, `wrongSurahCount`, and `firstLockWrongSurah`. `english-negative` PASSes only when no verse commits. `basmala-hold` PASSes only when `001001` alone locks neither 1:1 nor any other verse. Honest `failureMode` strings are expected when the current follower misses a suite — this harness does not retune acquire/follow.
 
-Default `npm run test:replay -- all` is the original **14** EveryAyah suites and remains the Quran regression gate. The **real-imam pack is a scaffold** (`fixtures/real-imam/`): no founder audio is committed, and `npm run test:replay -- real-imam` reports `missing_fixture` until 16 kHz mono WAV is dropped under `fixtures/real-imam/clips/`. Salah liturgy is a **separate** track (data pack only; no liturgy replay suites yet). See `fixtures/real-imam/README.md` and `prompts/real-imam/00-OVERNIGHT-QUEUE.md`. Manual live-feel rows: `prompts/real-imam/LIVE-FEEL.md`.
+Default `npm run test:replay -- all` is the original **14** EveryAyah suites and remains the Quran regression gate. The real-imam pack is a **scaffold** using Prompt Smith docs in `prompts/real-imam/` (queue, FIXTURES, LIVE-FEEL, suite prompts, `manifest.stub.json`). Founder drop path: `~/Desktop/zikrist-imam-clips/`. Staging (gitignored): `artifacts/recitation/imam/<suite-id>/<qari-or-source>/`. `npm run test:replay -- real-imam` **skips** stub suites with `missing_fixture` — it does not PASS. Salah liturgy is a **separate** track. See `prompts/real-imam/00-OVERNIGHT-QUEUE.md`.
 
 Requires `onnxruntime-node` (devDependency), pinned model assets (`npm run assets:download`), and the WAV fixtures. Cloud/Linux agents can unit-test gates without ONNX; acoustic scoring is for a machine that already has the model + clips (typically Sim QA on Mac). Quran `all` scoring still needs EveryAyah restore via `npm run fixtures:recitation`. Real-imam scoring needs founder clips and does not use that download script.
 

@@ -2,20 +2,18 @@
 
 ## Goal
 
-Committed **directory layout, clip-id convention, expected-locks schema, and pending suite registration** so Sim QA can plug WAV/MP3 later without renaming suites. No invented audio.
+Create the **directory layout, naming convention, and manifest schema** for real-imam / live-tilawah fixtures so Sim QA can plug WAV/MP3 later without renaming suites. Empty stubs + README only this session.
 
 ## Clip drop path (founder)
 
-- Incoming (not committed): `~/Desktop/zikrist-imam-clips/` (video or extracted audio)
-- Repo staging (gitignored audio): `fixtures/real-imam/clips/<qari-or-source>/<clip-id>.wav`
-- Canonical manifest: `fixtures/real-imam/manifest.json`
-- Per-suite expect JSON: `fixtures/real-imam/suites/<suite_id>.json`
-
-`artifacts/recitation/` remains EveryAyah/Alafasy 16 kHz clips for the 14 Quran suites. Do not download imam audio via `npm run fixtures:recitation`.
+- Incoming: `~/Desktop/zikrist-imam-clips/` (videos or extracted audio — not committed yet)
+- Repo staging (gitignored large audio, like existing `artifacts/recitation/`):  
+  `artifacts/recitation/imam/<suite-id>/<qari-or-source>/<clip-id>.wav`
+- Manifest: `artifacts/recitation/imam/manifest.json` (or per-suite `suite.json`)
 
 ## Naming convention
 
-Stable suite ids (replay CLI names):
+Suite ids (stable):
 
 | suite_id | intent |
 |----------|--------|
@@ -23,54 +21,36 @@ Stable suite ids (replay CLI names):
 | `imam-mid-ayah-pause` | pause mid-ayah then resume |
 | `imam-surah-switch` | switch surah mid-session |
 | `imam-noise-bleed` | background noise / speaker bleed |
-| `imam-multi-qari` | same expect, different qari folders (`each-clip`) |
+| `imam-multi-qari` | same ayah, different qari (placeholder) |
 
-Clip id: `{suite_id}__{clip_tag}__{span}.wav`  
-`clip_tag` is `pending` until a real source tag replaces it (date, masjid, or reciter slug).  
-`span` is `SSS-ayahStart-ayahEnd` or a short token such as `108-then-112`.
+File names: `{suite_id}__{clip_tag}__{surah}-{ayah_start}-{ayah_end}__{note}.wav`  
+Examples (stubs may be 0-byte or silent 0.1s placeholder marked `STUB`):
 
-Examples (files **not** created until founder drops audio):
+- `imam-mid-surah-cold__pending__002-255-255__STUB.wav`
+- `imam-surah-switch__pending__108-then-112__STUB.wav`
 
-- `qari-a/imam-mid-surah-cold__pending__002-255-256.wav`
-- `qari-a/imam-surah-switch__pending__108-then-112.wav`
-- `qari-a/imam-multi-qari__pending__112-1-4.wav` and `qari-b/…` (same expect)
-
-WAV must be 16 kHz mono PCM16 (same as Quran replay). MP3 is fine as a drop format; convert before replay:
-
-```bash
-ffmpeg -y -i SOURCE.mp3 -ar 16000 -ac 1 -c:a pcm_s16le fixtures/real-imam/clips/qari-a/CLIP.wav
-```
-
-From video:
-
-```bash
-ffmpeg -y -i ~/Desktop/zikrist-imam-clips/SOURCE.mp4 -ar 16000 -ac 1 -c:a pcm_s16le fixtures/real-imam/clips/qari-a/CLIP.wav
-```
-
-## Registering a suite
-
-1. Add `fixtures/real-imam/suites/<suite_id>.json` matching `expected-locks.schema.json`.
-2. Add `<suite_id>` to `REAL_IMAM_SUITE_NAMES` in `scripts/replay-suites.ts` (loader reads the JSON).
-3. List the suite in `fixtures/real-imam/manifest.json`.
-4. Drop audio at `clips/` + the `clips` paths in that JSON. No TS clip-path edits if the JSON already names the file.
-5. `npm run test:replay -- <suite_id>` then runs ONNX. Until the WAV exists, the same command is `missing_fixture`.
+Manifest fields (minimum): `suite_id`, `clip_path`, `status` (`stub`|`ready`), `expected_first_lock`, `expected_sequence`, `notes`, `source_url_or_file`, `license_status`.
 
 ## Out of scope
 
-- Algorithm / follower changes
-- Filling real audio or silent STUB WAVs
-- Salah liturgy matcher
-- Claiming live-imam accuracy
+- Algorithm / follower changes  
+- Filling real audio  
+- Salah liturgy matcher  
+- Claiming live-imam accuracy  
 
 ## Constraints
 
-- Offline MVP; large media gitignored
-- Hard gate: do not break existing 14 Quran replay suites
-- Stubs must skip / `missing_fixture`, never fake PASS
+- Offline MVP; large media gitignored  
+- Document how to import from `zikrist-imam-clips/` (ffmpeg extract notes OK)  
+- Hard gate: do not break existing 14 Quran replay suites  
 
 ## Success criteria
 
-1. Dirs + README + schema + suite JSON exist; clip folders empty of audio
-2. `npm run test:replay -- all` still the original 14 names
-3. `npm run test:replay -- real-imam` reports `missing_fixture` without ONNX
-4. Manifest/schema covered by `tests/real-imam-pack.test.ts`
+1. Dirs + README + stub entries exist  
+2. Manifest schema validated by a tiny unit/script test or documented JSON Schema  
+3. `npm run test:replay -- all` still 14/14 if touched  
+4. No fake “PASS” on stub suites — stubs must `skip` or `status:stub`  
+
+## Deliverable
+
+Paths, naming table, import notes, gitignore lines.

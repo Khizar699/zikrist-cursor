@@ -10,9 +10,5 @@ coverage/
 assets/model/*
 !assets/model/.gitkeep
 artifacts/
-fixtures/real-imam/clips/**/*.wav
-fixtures/real-imam/clips/**/*.mp3
-fixtures/real-imam/clips/**/*.m4a
-fixtures/real-imam/clips/**/*.mp4
 .tooling/
 *.log

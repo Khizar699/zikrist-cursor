@@ -104,7 +104,7 @@ test('real-imam selection is pending-only and stays out of default all', () => {
   );
   assert.deepEqual(parseSuiteSelection(['imam-mid-surah-cold']), ['imam-mid-surah-cold']);
   assert.equal(suiteBlueprint('imam-mid-surah-cold').readiness, 'pending');
-  assert.equal(suiteBlueprint('imam-mid-surah-cold').clipDir, 'fixtures/real-imam/clips');
+  assert.equal(suiteBlueprint('imam-mid-surah-cold').clipDir, 'artifacts/recitation/imam');
   assert.equal(suiteBlueprint('imam-multi-qari').clipRunMode, 'each-clip');
   assert.equal(MISSING_FIXTURE, 'missing_fixture');
 });

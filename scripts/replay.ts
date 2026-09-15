@@ -32,6 +32,7 @@ import {
   MISSING_FIXTURE,
   REAL_IMAM_SUITE_NAMES,
   SAMPLE_RATE,
+  SKIPPED_PENDING,
   evaluateFailure,
   isRealImamSuiteName,
   parseReplayCli,
@@ -109,7 +110,7 @@ function fixtureStatus(names: string[]) {
     return {
       suite: name,
       ready: missing.length === 0,
-      status: missing.length === 0 ? 'ready' : (suite.readiness ?? 'pending'),
+      status: missing.length === 0 ? 'ready' : (suite.readiness === 'pending' ? SKIPPED_PENDING : 'missing'),
       missing,
       clips: suite.clips,
       clipDir: suiteClipDirectory(suite),
@@ -260,7 +261,7 @@ function recordMissingFixture(suite: SuiteBlueprint, missing: string[]): ResultR
   const hints = missing.map((clip) => convertHint(suite, clip)).filter((hint): hint is string => Boolean(hint));
   const report = {
     suite: suite.label,
-    status: 'pending',
+    status: SKIPPED_PENDING,
     gate: suite.gate,
     failureMode: MISSING_FIXTURE,
     missingClips: missing,
@@ -275,13 +276,13 @@ function recordMissingFixture(suite: SuiteBlueprint, missing: string[]): ResultR
     description: suite.description,
   };
   const outPath = writeReport(suite.label, report);
-  console.error(`[${suite.label}] ${MISSING_FIXTURE} ${missing.join(', ')}${hints.length ? ` (${hints.join('; ')})` : ''}`);
+  console.error(`[${suite.label}] skip ${MISSING_FIXTURE} ${missing.join(', ')}${hints.length ? ` (${hints.join('; ')})` : ''} (not PASS)`);
   return {
     label: suite.label,
     outPath,
     failureMode: MISSING_FIXTURE,
     wrongSurahRate: 0,
-    status: 'pending',
+    status: SKIPPED_PENDING,
   };
 }
 
@@ -296,11 +297,11 @@ if (cli.list) {
     const suite = suiteBlueprint(name);
     console.log(`${name}\tready\t${suite.description}`);
   }
-  console.log('Pending real-imam (`npm run test:replay -- real-imam`; missing clips → missing_fixture):');
+  console.log('Pending real-imam (`npm run test:replay -- real-imam`; stubs skip with missing_fixture, not PASS):');
   for (const name of REAL_IMAM_SUITE_NAMES) {
     const suite = suiteBlueprint(name);
     const missing = missingClips(suite);
-    const status = missing.length ? 'pending' : 'ready';
+    const status = missing.length ? SKIPPED_PENDING : 'ready';
     console.log(`${name}\t${status}\t${suite.description}`);
   }
   process.exit(0);
@@ -321,15 +322,15 @@ if (cli.checkFixtures) {
     missingClips: missing,
     suites: status,
     restore: pendingOnly
-      ? 'Drop 16 kHz mono WAV under fixtures/real-imam/clips/ (see fixtures/real-imam/README.md)'
+      ? 'Drop 16 kHz mono WAV under artifacts/recitation/imam/<suite-id>/<qari>/ from ~/Desktop/zikrist-imam-clips/ (prompts/real-imam/FIXTURES.md)'
       : 'npm run fixtures:recitation',
   }, null, 2));
-  if (missing.length) {
-    console.error(
-      pendingOnly
-        ? `missing_fixture: ${missing.length} real-imam clip(s). See fixtures/real-imam/README.md`
-        : `Missing ${missing.length} fixture(s). Run npm run fixtures:recitation`,
-    );
+  const blocking = status.filter((row) => row.missing.length && row.status !== SKIPPED_PENDING);
+  if (pendingOnly && missing.length) {
+    console.error(`skip missing_fixture: ${missing.length} real-imam clip(s) (not PASS). See prompts/real-imam/FIXTURES.md`);
+  } else if (blocking.length) {
+    const blockingClips = [...new Set(blocking.flatMap((row) => row.missing))];
+    console.error(`Missing ${blockingClips.length} fixture(s). Run npm run fixtures:recitation`);
     process.exitCode = 1;
   }
   process.exit();
@@ -410,7 +411,11 @@ try {
 }
 
 console.log(JSON.stringify({ results }, null, 2));
-const failed = results.filter((row) => row.failureMode);
+const skipped = results.filter((row) => row.status === SKIPPED_PENDING);
+const failed = results.filter((row) => row.failureMode && row.status !== SKIPPED_PENDING);
+if (skipped.length) {
+  console.error('Skipped pending real-imam (missing_fixture, not PASS):', skipped.map((row) => row.label).join(', '));
+}
 if (failed.length) {
   console.error('Replay gate failed:', failed.map((row) => `${row.label}:${row.failureMode}`).join(', '));
   process.exitCode = 1;

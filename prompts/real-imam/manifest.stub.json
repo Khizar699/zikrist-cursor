@@ -1,4 +1,54 @@
 {
-  "moved_to": "fixtures/real-imam/manifest.json",
-  "note": "Canonical real-imam manifest lives next to clip drop dirs so adding WAV/MP3 is mechanical. This file is a pointer only."
+  "version": 1,
+  "clip_drop": "~/Desktop/zikrist-imam-clips/",
+  "audio_root": "artifacts/recitation/imam",
+  "suites": [
+    {
+      "suite_id": "imam-mid-surah-cold",
+      "status": "stub",
+      "clip_path": "_stubs/imam-mid-surah-cold__pending__STUB.txt",
+      "expected_first_lock": null,
+      "expected_sequence": [],
+      "notes": "Fill when clips arrive",
+      "license_status": "unresolved"
+    },
+    {
+      "suite_id": "imam-mid-ayah-pause",
+      "status": "stub",
+      "clip_path": "_stubs/imam-mid-ayah-pause__pending__STUB.txt",
+      "expected_first_lock": null,
+      "expected_sequence": [],
+      "notes": "Pause/resume mid-ayah",
+      "license_status": "unresolved"
+    },
+    {
+      "suite_id": "imam-surah-switch",
+      "status": "stub",
+      "clip_path": "_stubs/imam-surah-switch__pending__STUB.txt",
+      "expected_first_lock": null,
+      "expected_sequence": [],
+      "notes": "Natural cut between surahs",
+      "license_status": "unresolved"
+    },
+    {
+      "suite_id": "imam-noise-bleed",
+      "status": "stub",
+      "clip_path": "_stubs/imam-noise-bleed__pending__STUB.txt",
+      "expected_first_lock": null,
+      "expected_sequence": [],
+      "notes": "Ambient / second speaker",
+      "license_status": "unresolved"
+    },
+    {
+      "suite_id": "imam-multi-qari",
+      "status": "stub",
+      "clip_path": "_stubs/imam-multi-qari__pending__STUB.txt",
+      "qari_slots": ["qari-a", "qari-b"],
+      "clipRunMode": "each-clip",
+      "expected_first_lock": null,
+      "expected_sequence": [],
+      "notes": "Placeholder for qari-a / qari-b slots",
+      "license_status": "unresolved"
+    }
+  ]
 }
