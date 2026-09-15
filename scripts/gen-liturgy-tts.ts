@@ -5,15 +5,15 @@
  * for the suite's expected phrase id. Destination is the harness clip path from
  * `prompts/salah-liturgy/manifest.stub.json`. Never writes a silent placeholder.
  *
- * Mac (Bot / Sim QA) — ready single-phrase suites (liturgy-takbeer, liturgy-thana):
- *   python3 -m pip install --user edge-tts
- *   npm run liturgy:tts -- liturgy-thana
+ * Mac (Bot / Sim QA) — liturgy-thana after founder-Mac edge-tts 403:
+ *   export PATH="/tmp/ffmpeg-static:$PATH"   # or any ffmpeg on PATH
+ *   npm run liturgy:tts -- liturgy-thana --engine say
+ *   (macOS `say` voice Majed / ar_001; writes the suite clip_path dest —
+ *    filename stays liturgy-thana__edge-tts__ar-SA-HamedNeural.wav)
  *   npm run test:replay -- liturgy-thana
  *
- * Fallback when edge-tts is unavailable or 403 (macOS):
- *   npm run liturgy:tts -- liturgy-thana --engine say
- *   (needs `say` + ffmpeg; prefers an Arabic voice such as Majed/Maged;
- *    writes the same dest as clip_path — filename stays stable)
+ * edge-tts remains available when it is not 403:
+ *   npm run liturgy:tts -- liturgy-thana
  *
  * Audio stays gitignored under artifacts/recitation/liturgy/. Do not commit WAV/MP3.
  */
@@ -35,7 +35,7 @@ const PACK_PATH = path.join(root, 'assets/content/salah-liturgy.json');
 const DEFAULT_SUITE: LiturgySuiteName = 'liturgy-takbeer';
 const EDGE_TTS_VOICE = 'ar-SA-HamedNeural';
 const EDGE_TTS_RATE = '-25%';
-const SAY_VOICE_CANDIDATES = ['Maged', 'Majed', 'Laila', 'Tarik', 'Mona'];
+const SAY_VOICE_CANDIDATES = ['Majed', 'Maged', 'Laila', 'Tarik', 'Mona'];
 const MIN_DURATION_SECONDS = 0.25;
 const MIN_RMS = 0.01;
 
@@ -285,7 +285,7 @@ function pickSayVoice(requested?: string): string {
   const arabic = listed.split('\n').find((line) => /\bar[_-]/i.test(line) || /arabic/i.test(line));
   if (arabic) return arabic.trim().split(/\s+/)[0]!;
   throw new Error(
-    'No Arabic macOS say voice found (tried Maged/Laila/Tarik). Install an Arabic voice in System Settings, or use --engine edge-tts.',
+    'No Arabic macOS say voice found (tried Majed/Maged/Laila/Tarik). Install an Arabic voice in System Settings (Majed ar_001), or use --engine edge-tts.',
   );
 }
 
@@ -310,9 +310,10 @@ export function helpText(): string {
     '  npm run liturgy:tts -- liturgy-thana --dry-run',
     '  npm run liturgy:tts -- liturgy-thana --engine edge-tts --voice ar-SA-HamedNeural --rate=-25%',
     '  npm run liturgy:tts -- liturgy-thana --engine say',
+    '  export PATH="/tmp/ffmpeg-static:$PATH" && npm run liturgy:tts -- liturgy-thana --engine say',
     '',
     'Reads pack arabic_uthmani (not a hardcoded English string). Writes 16 kHz mono PCM16',
-    'to the suite clip_path (stable filename; --engine say uses the same dest).',
+    'to the suite clip_path (stable filename; --engine say / Majed ar_001 uses the same dest).',
     'Audio is gitignored; do not commit WAV/MP3. Does not invent silence.',
   ].join('\n');
 }

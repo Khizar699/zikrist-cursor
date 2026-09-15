@@ -781,7 +781,7 @@ export function suiteHelpText(): string {
     '  npm run test:replay -- --list',
     '  npm run test:replay -- artifacts/recitation/112001.wav ...',
     '  npm run liturgy:tts -- liturgy-takbeer',
-    '  npm run liturgy:tts -- liturgy-thana',
+    '  npm run liturgy:tts -- liturgy-thana --engine say',
     '',
     'Ready (default all, 14 suites):',
     ...ready,

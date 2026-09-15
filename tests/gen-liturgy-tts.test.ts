@@ -96,6 +96,7 @@ test('liturgy TTS parser defaults to liturgy-takbeer and refuses remaining stub 
   });
   assert.equal(parseLiturgyTtsArgs(['liturgy-takbeer', '--dry-run']).dryRun, true);
   assert.equal(parseLiturgyTtsArgs(['liturgy-thana', '--engine', 'say']).suiteId, 'liturgy-thana');
+  assert.equal(parseLiturgyTtsArgs(['liturgy-thana', '--engine', 'say', '--voice', 'Majed']).voice, 'Majed');
   assert.deepEqual(parseLiturgyTtsArgs(['--engine', 'say']), {
     help: false,
     dryRun: false,

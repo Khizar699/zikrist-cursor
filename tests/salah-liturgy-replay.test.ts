@@ -109,6 +109,8 @@ test('ready liturgy-takbeer and liturgy-thana map to real clip_paths; remaining 
   assert.deepEqual(thanaSuite.clips, ['liturgy-thana/liturgy-thana__edge-tts__ar-SA-HamedNeural.wav']);
   assert.match(thana.notes, /edge-tts/);
   assert.match(thana.notes, /--engine say/);
+  assert.match(thana.notes, /Majed/);
+  assert.match(thana.notes, /ar_001/);
   assert.equal(thana.license_status, 'unresolved');
   for (const name of LITURGY_SUITE_NAMES) {
     if (name === 'liturgy-takbeer' || name === 'liturgy-thana') continue;

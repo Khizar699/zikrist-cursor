@@ -16,4 +16,11 @@ Mac `test:replay -- liturgy-thana` PASS; `all` 14/14; no matcher retune.
 
 ## Mac
 
-If edge-tts 403: `npm run liturgy:tts -- liturgy-thana --engine say` (document voice). Verify `test:replay -- liturgy-thana` PASS + `all` 14/14 before merge.
+Founder Mac: `edge-tts` HTTP 403. Working path (same as takbeer):
+
+```sh
+export PATH="/tmp/ffmpeg-static:$PATH"   # or any ffmpeg on PATH
+npm run liturgy:tts -- liturgy-thana --engine say
+```
+
+Voice: **Majed** (`ar_001`). Manifest `clip_path` keeps a stable filename; `say` writes that dest. Verify `test:replay -- liturgy-thana` PASS + `all` 14/14 before merge.

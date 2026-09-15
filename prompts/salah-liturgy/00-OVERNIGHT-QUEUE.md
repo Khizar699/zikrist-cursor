@@ -25,4 +25,4 @@ Harness: `npm run test:replay -- liturgy` (alias `salah-liturgy`) skips remainin
 
 `01-takbeer.md`: suite `liturgy-takbeer` is manifest-ready. Mac generates WAV (`npm run liturgy:tts -- liturgy-takbeer`) then `npm run test:replay -- liturgy-takbeer` must PASS; `all` stays 14/14.
 
-`02-thana.md`: suite `liturgy-thana` is manifest-ready. Mac generates WAV (`npm run liturgy:tts -- liturgy-thana`; `--engine say` if edge-tts 403) then `npm run test:replay -- liturgy-thana` must PASS; `all` stays 14/14.
+`02-thana.md`: suite `liturgy-thana` is manifest-ready. Founder Mac: `export PATH="/tmp/ffmpeg-static:$PATH"` then `npm run liturgy:tts -- liturgy-thana --engine say` (Majed `ar_001`; same dest as clip_path). Then `npm run test:replay -- liturgy-thana` must PASS; `all` stays 14/14.
