@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import type { VerseMatchMessage } from '@tilawa/core';
 import {
+  liturgyFollowContextBeforeFeed,
   matcherFromPack,
   packFromUnknown,
   runLiturgyAgainstQuran,
@@ -129,6 +130,14 @@ test('liturgy windows drop Quran verse commits in the tested harness; Fatiha doe
   assert.equal(thana.liturgy?.phraseId, 'thana');
   assert.equal(thana.quran.some((message) => message.type === 'verse_match'), false);
 
+  const takbeer = runLiturgyAgainstQuran(
+    matcher(),
+    input(phraseTokens('takbeer'), { quranPhase: 'acquiring', quranLock: null }),
+    [verse(21, 57)],
+  );
+  assert.equal(takbeer.liturgy?.phraseId, 'takbeer');
+  assert.equal(takbeer.quran.some((message) => message.type === 'verse_match'), false);
+
   const fatiha = runLiturgyAgainstQuran(
     matcher(),
     input(['الحمد', 'لله', 'رب', 'العالمين']),
@@ -136,4 +145,27 @@ test('liturgy windows drop Quran verse commits in the tested harness; Fatiha doe
   );
   assert.equal(fatiha.liturgy, null);
   assert.deepEqual(fatiha.quran.map((message) => message.type === 'verse_match' ? `${message.surah}:${message.ayah}` : message.type), ['1:2']);
+});
+
+test('short liturgy uses follow state from before feed, not after a same-hop lock', () => {
+  const before = liturgyFollowContextBeforeFeed({
+    phase: 'acquiring',
+    lockedRef: null,
+    lockedAyahComplete: false,
+  });
+  assert.equal(before.quranPhase, 'acquiring');
+  assert.equal(before.quranLock, null);
+  const afterFalseLock = liturgyFollowContextBeforeFeed({
+    phase: 'following',
+    lockedRef: { surah: 21, ayah: 57 },
+    lockedAyahComplete: false,
+  });
+  assert.equal(
+    matcher().observe(input(phraseTokens('takbeer'), afterFalseLock)),
+    null,
+  );
+  assert.equal(
+    matcher().observe(input(phraseTokens('takbeer'), before))?.phraseId,
+    'takbeer',
+  );
 });

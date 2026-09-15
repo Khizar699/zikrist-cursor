@@ -414,6 +414,11 @@ export function isPendingReplaySuiteName(name: string): boolean {
   return isRealImamSuiteName(name) || isLiturgySuiteName(name);
 }
 
+/** Stubs skip missing_fixture. Ready liturgy/imam rows must not skip — they error until the WAV exists. */
+export function suiteSkipsWhenClipMissing(suite: Pick<SuiteBlueprint, 'readiness'>): boolean {
+  return suite.readiness === 'pending';
+}
+
 export function isSuiteName(name: string): name is SuiteName {
   return isReadySuiteName(name) || isRealImamSuiteName(name) || isLiturgySuiteName(name);
 }
@@ -757,7 +762,11 @@ export function wrongSurahStats(
 export function suiteHelpText(): string {
   const ready = ALL_SUITE_NAMES.map((name) => `  ${name.padEnd(22)} ${SUITES[name].description}`);
   const pending = REAL_IMAM_SUITE_NAMES.map((name) => `  ${name.padEnd(22)} [pending] ${SUITES[name].description}`);
-  const liturgy = LITURGY_SUITE_NAMES.map((name) => `  ${name.padEnd(22)} [pending] ${SUITES[name].description}`);
+  const liturgy = LITURGY_SUITE_NAMES.map((name) => {
+    const suite = SUITES[name];
+    const tag = suite.readiness === 'ready' ? '[ready — generate WAV then score]' : '[pending]';
+    return `  ${name.padEnd(22)} ${tag} ${suite.description}`;
+  });
   return [
     'Usage:',
     '  npm run test:replay',
@@ -771,6 +780,7 @@ export function suiteHelpText(): string {
     '  npm run test:replay -- --check-fixtures',
     '  npm run test:replay -- --list',
     '  npm run test:replay -- artifacts/recitation/112001.wav ...',
+    '  npm run liturgy:tts -- liturgy-takbeer',
     '',
     'Ready (default all, 14 suites):',
     ...ready,
@@ -778,7 +788,7 @@ export function suiteHelpText(): string {
     'Pending real-imam (skip with missing_fixture, not PASS; not in default all):',
     ...pending,
     '',
-    'Pending salah liturgy (skip with missing_fixture, not PASS; not in default all):',
+    'Salah liturgy (not in default all; stubs skip missing_fixture; ready suites need generated WAV):',
     ...liturgy,
   ].join('\n');
 }

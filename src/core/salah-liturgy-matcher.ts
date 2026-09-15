@@ -156,6 +156,19 @@ export function runLiturgyAgainstQuran(
   return { liturgy, quran };
 }
 
+/** Follow state from before `feed()`. Short liturgy must see the same hop as a first false Quran lock. */
+export function liturgyFollowContextBeforeFeed(follower: {
+  phase: FollowerPhase;
+  lockedRef: VerseRef | null;
+  lockedAyahComplete?: boolean;
+}): Pick<LiturgyObserveInput, 'quranPhase' | 'quranLock' | 'ayahComplete'> {
+  return {
+    quranPhase: follower.phase,
+    quranLock: follower.lockedRef,
+    ayahComplete: follower.lockedAyahComplete,
+  };
+}
+
 export function packFromUnknown(data: unknown): SalahLiturgyPack {
   assertSalahLiturgyPack(data);
   return data;

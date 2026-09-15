@@ -31,6 +31,7 @@ import {
 import { LIVE_STREAMING_CONFIG } from '../src/core/streaming';
 import {
   filterQuranMessagesForLiturgy,
+  liturgyFollowContextBeforeFeed,
   matcherFromPack,
   packFromUnknown,
   type SalahLiturgyMatcher,
@@ -45,7 +46,6 @@ import {
   SKIPPED_PENDING,
   evaluateFailure,
   isLiturgySuiteName,
-  isPendingReplaySuiteName,
   isRealImamSuiteName,
   parseReplayCli,
   parseSuiteSelection,
@@ -54,6 +54,7 @@ import {
   suiteClipDirectory,
   suiteClipRefs,
   suiteHelpText,
+  suiteSkipsWhenClipMissing,
   uniqueClipsForSuites,
   wrongSurahStats,
   type MatchRow,
@@ -136,7 +137,7 @@ function fixtureStatus(names: string[]) {
       ready: missing.length === 0 && missingQuran.length === 0,
       status: missing.length === 0
         ? (missingQuran.length === 0 ? 'ready' : 'missing')
-        : (suite.readiness === 'pending' ? SKIPPED_PENDING : 'missing'),
+        : (suiteSkipsWhenClipMissing(suite) ? SKIPPED_PENDING : 'missing'),
       missing,
       missingQuranClips: missingQuran,
       clips: suite.clips,
@@ -231,16 +232,15 @@ async function replaySuite(
     // Match live mic: do not feed unvoiced frames into the follower. Trailing
     // pad after the clip is still fed so a final flush / stall-after-lock can run.
     if (!voiced && index < audio.length) continue;
+    const prior = liturgyMatcher ? liturgyFollowContextBeforeFeed(follower) : null;
     const raw = await follower.feed(chunk);
     const audioSeconds = Math.round((Math.min(end, audio.length) / SAMPLE_RATE) * 1000) / 1000;
     let quran = raw;
-    if (liturgyMatcher) {
+    if (liturgyMatcher && prior) {
       const liturgy = liturgyMatcher.observe({
         tokens: follower.lastHeardTokens,
         atMs: audioSeconds * 1000,
-        quranPhase: follower.phase,
-        quranLock: follower.lockedRef,
-        ayahComplete: follower.lockedAyahComplete,
+        ...prior,
         voiced,
       });
       if (liturgy) {
@@ -381,11 +381,13 @@ if (cli.list) {
     const status = missing.length ? SKIPPED_PENDING : 'ready';
     console.log(`${name}\t${status}\t${suite.description}`);
   }
-  console.log('Pending salah liturgy (`npm run test:replay -- liturgy`; stubs skip with missing_fixture, not PASS):');
+  console.log('Salah liturgy (`npm run test:replay -- liturgy`; stubs skip missing_fixture; ready suites need generated WAV):');
   for (const name of LITURGY_SUITE_NAMES) {
     const suite = suiteBlueprint(name);
     const missing = missingClips(suite);
-    const status = missing.length ? SKIPPED_PENDING : 'ready';
+    const status = missing.length
+      ? (suiteSkipsWhenClipMissing(suite) ? SKIPPED_PENDING : 'missing')
+      : 'ready';
     console.log(`${name}\t${status}\t${suite.description}`);
   }
   process.exit(0);
@@ -399,11 +401,11 @@ if (cli.checkFixtures) {
   const names = selectedSuites.length ? selectedSuites : [...ALL_SUITE_NAMES];
   const status = fixtureStatus(names);
   const missing = [...new Set(status.flatMap((row) => row.missing))];
-  const pendingOnly = names.length > 0 && names.every((name) => isPendingReplaySuiteName(name));
+  const pendingOnly = names.length > 0 && names.every((name) => suiteSkipsWhenClipMissing(suiteBlueprint(name)));
   const liturgyOnly = names.length > 0 && names.every((name) => isLiturgySuiteName(name));
   const imamOnly = names.length > 0 && names.every((name) => isRealImamSuiteName(name));
   const restore = liturgyOnly
-    ? 'Drop 16 kHz mono WAV under artifacts/recitation/liturgy/<suite-id>/. Mixed suites reuse EveryAyah Fatiha WAVs from artifacts/recitation/ after npm run fixtures:recitation. Stubs skip missing_fixture, not PASS.'
+    ? 'Ready: npm run liturgy:tts -- liturgy-takbeer. Stubs skip missing_fixture until their fill session. Mixed suites reuse EveryAyah Fatiha WAVs from artifacts/recitation/ after npm run fixtures:recitation. Do not invent silent WAVs.'
     : imamOnly
       ? 'Drop 16 kHz mono WAV under artifacts/recitation/imam/<suite-id>/<qari>/ from ~/Desktop/zikrist-imam-clips/ (prompts/real-imam/FIXTURES.md)'
       : 'npm run fixtures:recitation';
@@ -433,11 +435,14 @@ for (const name of selectedSuites) {
   const suite = suiteBlueprint(name);
   const missing = missingClips(suite);
   if (missing.length) {
-    if (isPendingReplaySuiteName(name) || suite.readiness === 'pending') {
+    if (suiteSkipsWhenClipMissing(suite)) {
       results.push(recordMissingFixture(suite, missing));
       continue;
     }
-    throw new Error(`missing_clip:${missing.map((clip) => path.basename(clip)).join(',')}`);
+    const hint = suite.scoreLiturgy === true
+      ? `. Generate with: npm run liturgy:tts -- ${suite.label}`
+      : '';
+    throw new Error(`missing_clip:${missing.map((clip) => path.basename(clip)).join(',')}${hint}`);
   }
   const missingQuran = missingQuranClips(suite);
   if (missingQuran.length) {

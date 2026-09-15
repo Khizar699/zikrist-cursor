@@ -16,6 +16,7 @@ import {
   parseSuiteSelection,
   suiteBlueprint,
   suiteClipRefs,
+  suiteSkipsWhenClipMissing,
 } from '../scripts/replay-suites';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -52,28 +53,52 @@ test('salah liturgy harness reads the committed stub manifest, not a duplicate p
     manifest.suites.map((row) => row.suite_id),
     [...LITURGY_SUITE_NAMES],
   );
-  assert.equal(manifest.suites.every((row) => row.status === 'stub'), true);
+  assert.equal(loadSalahLiturgyStubEntry('liturgy-takbeer').status, 'ready');
+  assert.equal(
+    manifest.suites.filter((row) => row.suite_id !== 'liturgy-takbeer').every((row) => row.status === 'stub'),
+    true,
+  );
   assert.equal(fs.existsSync(path.join(root, 'prompts/salah-liturgy/04-replay-suites.md')), true);
 });
 
 test('sample skip JSON is skipped/missing_fixture, not PASS', () => {
   const sample = JSON.parse(
     fs.readFileSync(path.join(root, 'fixtures/salah-liturgy/sample-skip.json'), 'utf8'),
-  ) as { status: string; failureMode: string; phraseId: string | null; missingClips: string[] };
+  ) as { suite: string; status: string; failureMode: string; phraseId: string | null; missingClips: string[] };
   assert.equal(sample.status, SKIPPED_PENDING);
   assert.equal(sample.failureMode, MISSING_FIXTURE);
   assert.equal(sample.phraseId, null);
-  assert.deepEqual(sample.missingClips, suiteBlueprint('liturgy-takbeer').clips);
+  assert.equal(sample.suite, 'liturgy-thana');
+  assert.deepEqual(sample.missingClips, suiteBlueprint('liturgy-thana').clips);
 });
 
-test('stub liturgy suites map to artifacts/recitation/liturgy and skip, not PASS', () => {
+test('ready liturgy-takbeer maps to a real clip_path; remaining suites stay stubs', () => {
   assert.equal(MISSING_FIXTURE, 'missing_fixture');
   assert.equal(SKIPPED_PENDING, 'skipped');
+  const takbeer = loadSalahLiturgyStubEntry('liturgy-takbeer');
+  const takbeerSuite = suiteBlueprint('liturgy-takbeer');
+  assert.equal(takbeer.status, 'ready');
+  assert.equal(takbeerSuite.readiness, 'ready');
+  assert.equal(suiteSkipsWhenClipMissing(takbeerSuite), false);
+  assert.equal(takbeerSuite.gate, 'liturgy-phrase');
+  assert.deepEqual(takbeer.expect_phrase_ids, ['takbeer']);
+  assert.deepEqual(takbeer.expect_quran, []);
+  assert.deepEqual(takbeerSuite.expectPhraseIds, ['takbeer']);
+  assert.deepEqual(takbeerSuite.expect, []);
+  assert.equal(takbeer.clip_path, 'liturgy-takbeer/liturgy-takbeer__edge-tts__ar-SA-HamedNeural.wav');
+  assert.deepEqual(takbeerSuite.clips, ['liturgy-takbeer/liturgy-takbeer__edge-tts__ar-SA-HamedNeural.wav']);
+  assert.equal(takbeerSuite.clipDir, LITURGY_CLIP_DIR);
+  assert.equal(takbeerSuite.scoreLiturgy, true);
+  assert.match(takbeer.notes, /edge-tts/);
+  assert.match(takbeer.notes, /-25%/);
+  assert.equal(takbeer.license_status, 'unresolved');
   for (const name of LITURGY_SUITE_NAMES) {
+    if (name === 'liturgy-takbeer') continue;
     const entry = loadSalahLiturgyStubEntry(name);
     const blueprint = suiteBlueprint(name);
-    assert.equal(blueprint.clipDir, LITURGY_CLIP_DIR);
+    assert.equal(entry.status, 'stub');
     assert.equal(blueprint.readiness, 'pending');
+    assert.equal(suiteSkipsWhenClipMissing(blueprint), true);
     assert.equal(blueprint.expectedLocksPath, LITURGY_MANIFEST);
     assert.equal(blueprint.scoreLiturgy, true);
     assert.ok(blueprint.clips.length >= 1);
@@ -84,7 +109,6 @@ test('stub liturgy suites map to artifacts/recitation/liturgy and skip, not PASS
     const stubPath = path.join(root, LITURGY_CLIP_DIR, blueprint.clips[0]!);
     assert.equal(fs.existsSync(stubPath), false);
   }
-  assert.equal(suiteBlueprint('liturgy-takbeer').gate, 'liturgy-phrase');
   assert.equal(suiteBlueprint('liturgy-tashahhud').allowPartialLiturgy, true);
   assert.equal(suiteBlueprint('liturgy-english-negative').gate, 'no-quran-no-liturgy');
 });

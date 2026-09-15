@@ -1,5 +1,5 @@
 {
-  "suite": "liturgy-takbeer",
+  "suite": "liturgy-thana",
   "status": "skipped",
   "gate": "liturgy-phrase",
   "failureMode": "missing_fixture",
@@ -7,10 +7,10 @@
   "audioSeconds": null,
   "phrases": [],
   "expectPhraseIds": [
-    "takbeer"
+    "thana"
   ],
   "missingClips": [
-    "liturgy-takbeer/liturgy-takbeer__pending__STUB.wav"
+    "liturgy-thana/liturgy-thana__pending__STUB.wav"
   ],
   "convertHints": [],
   "matches": [],
@@ -21,5 +21,5 @@
   "clipDir": "artifacts/recitation/liturgy",
   "quranClips": [],
   "expectedLocksPath": "prompts/salah-liturgy/manifest.stub.json",
-  "description": "takbeer only; no verse_match"
+  "description": "full thana"
 }

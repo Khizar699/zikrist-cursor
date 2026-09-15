@@ -22,3 +22,5 @@ Harness: `npm run test:replay -- liturgy` (alias `salah-liturgy`) skips eight st
 
 ## Next: TTS / clip-fill (stubs → ready)
 `prompts/salah-liturgy/tts-fill/00-QUEUE.md` — one suite per session. No imam fill until founder labels locks. Soft: `nas-no-post-end-jump.md`.
+
+`01-takbeer.md`: suite `liturgy-takbeer` is manifest-ready. Mac generates WAV (`npm run liturgy:tts -- liturgy-takbeer`) then `npm run test:replay -- liturgy-takbeer` must PASS; `all` stays 14/14.

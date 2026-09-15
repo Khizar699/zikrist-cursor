@@ -14,7 +14,7 @@
 
 **Launch order**
 
-1. `01-takbeer.md`
+1. `01-takbeer.md` — **this session / landing:** manifest ready; Mac generates WAV then scores
 2. `02-thana.md`
 3. `03-ruku.md`
 4. `04-sujood.md`
