@@ -1308,3 +1308,155 @@ test('older-slice lookback recovers الم when a long window champions 2:2', as
   assert.equal(engine.phase, 'following');
 });
 
+const midSurahCold = [
+  verse(1, 2, ['الحمد', 'لله', 'رب', 'العلمين'], 'Al-Fatihah'),
+  verse(2, 120, ['ولن', 'ترضي', 'عنك', 'اليهود'], 'Al-Baqarah'),
+  verse(2, 188, ['ولا', 'تاكلوا', 'امولكم', 'بينكم'], 'Al-Baqarah'),
+  verse(4, 129, ['ولن', 'تستطيعوا', 'ان', 'تعدلوا', 'بين', 'النساء', 'ولو', 'حرصتم', 'فلا', 'تميلوا'], 'An-Nisa'),
+  verse(4, 130, ['وان', 'يتفرقا', 'يغن', 'الله', 'كلا', 'من', 'سعته'], 'An-Nisa'),
+  verse(35, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'الحمد', 'لله', 'فاطر', 'السموت', 'والارض'], 'Fatir'),
+  verse(35, 2, ['ما', 'يفتح', 'الله', 'للناس', 'من', 'رحمه'], 'Fatir'),
+  verse(36, 16, ['قالوا', 'ربنا', 'يعلم', 'انا', 'اليكم', 'لمرسلون'], 'Ya-Sin'),
+  verse(36, 17, ['وما', 'علينا', 'الا', 'البلغ', 'المبين'], 'Ya-Sin'),
+  verse(36, 18, ['قالوا', 'انا', 'تطيرنا', 'بكم'], 'Ya-Sin'),
+  verse(41, 34, ['ولا', 'تستوي', 'الحسنه', 'ولا', 'السيئه', 'ادفع', 'بالتي', 'هي', 'احسن'], 'Fussilat'),
+  verse(41, 35, ['وما', 'يلقاها', 'الا', 'الذين', 'صبروا'], 'Fussilat'),
+  verse(78, 4, ['كلا', 'سيعلمون'], 'An-Naba'),
+  verse(78, 5, ['ثم', 'كلا', 'سيعلمون'], 'An-Naba'),
+];
+
+function midChampion(surah: number, ayah: number, score: number, extra: Partial<QuranChampionMatch> = {}): QuranChampionMatch {
+  const found = midSurahCold.find((item) => item.surah === surah && item.ayah === ayah)!;
+  return {
+    surah, ayah, text: found.phonemes_joined, phonemes_joined: found.phonemes_joined,
+    score, raw_score: score, bonus: 0, ...extra,
+  };
+}
+
+test('An-Nisa 4:129 body does not first-lock Fussilat 41:34 from a shared ول-/تست- prefix', async () => {
+  const spoken = 'ولن تستطيعوا ان تعدلوا بين النساء';
+  const four = midSurahCold.find((item) => item.surah === 4 && item.ayah === 129)!;
+  const engine = new RecitationFollower(dbFrom(midSurahCold), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: midChampion(41, 34, 0.63, {
+      runners_up: [{
+        surah: 4, ayah: 129, score: 0.55, raw_score: 0.55, bonus: 0, phonemes_joined: four.phonemes_joined,
+      }],
+    }),
+  }]));
+  const messages = await engine.feed(audio(1));
+  assert.equal(refs(messages).includes('41:34'), false);
+  assert.deepEqual(refs(messages), ['4:129']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('a thin ول-/تست- window holds instead of crowning 41:34', async () => {
+  const spoken = 'ولن تستطيعوا';
+  const engine = new RecitationFollower(dbFrom(midSurahCold), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: midChampion(41, 34, 0.63),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), []);
+  assert.equal(engine.phase, 'acquiring');
+});
+
+test('Fussilat 41:34 still locks from its own الحسنه continuation', async () => {
+  const spoken = 'ولا تستوي الحسنه ولا السيئه';
+  const engine = new RecitationFollower(dbFrom(midSurahCold), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: midChampion(41, 34, 0.86),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['41:34']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('after 4:129, 4:130 still advances from its own words', async () => {
+  const nisa129 = midSurahCold.find((item) => item.surah === 4 && item.ayah === 129)!;
+  const nisa130 = midSurahCold.find((item) => item.surah === 4 && item.ayah === 130)!;
+  const engine = new RecitationFollower(dbFrom(midSurahCold), script([
+    {
+      text: nisa129.phonemes_joined, rawPhonemes: nisa129.phonemes_joined,
+      championMatch: midChampion(4, 129, 0.86),
+    },
+    { text: nisa130.phonemes_joined, rawPhonemes: nisa130.phonemes_joined },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['4:129']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['4:130']);
+});
+
+test('Ya-Sin 36:16 body does not first-lock short An-Naba 78:4 from a shared علم root', async () => {
+  const spoken = 'قالوا ربنا يعلم انا اليكم';
+  const yasin = midSurahCold.find((item) => item.surah === 36 && item.ayah === 16)!;
+  const engine = new RecitationFollower(dbFrom(midSurahCold), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: midChampion(78, 4, 0.85, {
+      runners_up: [{
+        surah: 36, ayah: 16, score: 0.7, raw_score: 0.7, bonus: 0, phonemes_joined: yasin.phonemes_joined,
+      }],
+    }),
+  }]));
+  const messages = await engine.feed(audio(1));
+  assert.equal(refs(messages).includes('78:4'), false);
+  assert.deepEqual(refs(messages), ['36:16']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('ربنا يعلم without قالوا still locates 36:16 instead of 78:4', async () => {
+  const spoken = 'ربنا يعلم انا اليكم';
+  const engine = new RecitationFollower(dbFrom(midSurahCold), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: midChampion(78, 4, 0.85),
+  }]));
+  const messages = await engine.feed(audio(1));
+  assert.equal(refs(messages).includes('78:4'), false);
+  assert.deepEqual(refs(messages), ['36:16']);
+});
+
+test('An-Naba 78:4 still locks from its own كلا opening', async () => {
+  const spoken = 'كلا سيعلمون';
+  const engine = new RecitationFollower(dbFrom(midSurahCold), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: midChampion(78, 4, 0.86),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['78:4']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('after 36:16, 36:17 then 36:18 still advance in order', async () => {
+  const yasin16 = midSurahCold.find((item) => item.surah === 36 && item.ayah === 16)!;
+  const yasin17 = midSurahCold.find((item) => item.surah === 36 && item.ayah === 17)!;
+  const yasin18 = midSurahCold.find((item) => item.surah === 36 && item.ayah === 18)!;
+  const engine = new RecitationFollower(dbFrom(midSurahCold), script([
+    {
+      text: yasin16.phonemes_joined, rawPhonemes: yasin16.phonemes_joined,
+      championMatch: midChampion(36, 16, 0.86),
+    },
+    { text: yasin17.phonemes_joined, rawPhonemes: yasin17.phonemes_joined },
+    { text: yasin18.phonemes_joined, rawPhonemes: yasin18.phonemes_joined },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['36:16']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['36:17']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['36:18']);
+});
+
+test('Fatir 35:1 still first-locks from فاطر after shared الحمد لله', async () => {
+  const spoken = 'الحمد لله فاطر السموت والارض';
+  const fatir = midSurahCold.find((item) => item.surah === 35 && item.ayah === 1)!;
+  const engine = new RecitationFollower(dbFrom(midSurahCold), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: {
+      surah: 35, ayah: 1, text: fatir.phonemes_joined, phonemes_joined: fatir.phonemes_joined,
+      score: 0.88, raw_score: 0.88, bonus: 0,
+    },
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['35:1']);
+  assert.equal(engine.phase, 'following');
+});
+
