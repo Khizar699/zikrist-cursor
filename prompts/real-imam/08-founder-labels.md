@@ -28,6 +28,7 @@ Docs and machine labels only. No matcher / follower threshold changes. No Quran 
 - `prompts/real-imam/FIXTURES.md` — ground truth, Mac baseline, staging path
 - `prompts/real-imam/MANIFEST-NOTE.md` — suites remain `stub` until algorithm fixes
 - Pointers in `fixtures/real-imam/README.md`, `00-OVERNIGHT-QUEUE.md`, `README.md`, `VALIDATION.md`
+- `tests/real-imam-pack.test.ts` — labels present; suites stay `stub`
 
 ## Architecture / security
 
@@ -42,9 +43,11 @@ Offline evaluation notes only. No audio committed. Rights for imam recordings re
 
 ## Checks
 
-- `npm run typecheck`
-- `npm test` (docs-only; expect no replay/follower regressions)
-- Confirm no `artifacts/` audio staged
+- `npm run typecheck` — pass
+- `npx tsx --test tests/real-imam-pack.test.ts` — 3/3
+- `npx tsx scripts/replay.ts real-imam` — five `missing_fixture` skips (not PASS)
+- Full `npm test` needs `assets/model/quran.json` (not restored here); two pre-existing ENOENT failures unrelated to labels
+- Confirm no `artifacts/` audio tracked
 
 ## Manual device tests
 

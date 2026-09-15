@@ -184,6 +184,12 @@ Harness only. Prompt Smith already owns `prompts/real-imam/` (queue, fixture REA
 
 This workspace (Linux/x64, no EveryAyah WAVs restored): `npm test` **150/150**; `npm run typecheck` pass. `npx tsx scripts/replay.ts real-imam` exited **0** with five skipped `missing_fixture` rows (not PASS) and did not load ONNX. Acoustic `npm run test:replay -- all` was **not** scored here. Not a physical-device, mosque, or imam-ready claim.
 
+## Founder-verified real-imam labels (2026-09-16)
+
+Docs only. `LABELS.md` + `labels.json` committed as ground truth. `manifest.stub.json` suites remain `stub`. No matcher/follower edits. No wavs committed. Mac probes: Fatir 35:1–8 OK; Subayyal expected 4:129 locked 41:34; Qiyam expected 36:16 locked 78:4. `imam-mid-ayah-pause` still empty. Qunut at s9P8adOF7F0@4:56 is liturgy/dua later.
+
+This workspace: `npm run typecheck` pass; `npx tsx --test tests/real-imam-pack.test.ts` 3/3; `npx tsx scripts/replay.ts real-imam` five skipped `missing_fixture` (not PASS). Full `npm test` 174/176 — two ENOENT on missing `assets/model/quran.json` (pre-existing, not this change). Lint still reports unused `openingScore`. Acoustic Quran `all` and physical-device probes were not scored here.
+
 ## Salah liturgy replay suites (stub-first, 2026-09-15)
 
 Harness only. Registers the eight suite ids from `prompts/salah-liturgy/04-replay-suites.md` + `manifest.stub.json`. **No liturgy WAV or MP3 is committed.** Silent STUB audio was not invented. Follower and liturgy matcher thresholds were not retuned. Default 14 Quran suites still do not run the liturgy matcher.
