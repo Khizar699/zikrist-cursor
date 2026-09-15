@@ -1,6 +1,6 @@
 # Shared: write continuity docs on every session PR
 
-**Founder dictation for successor bots.** Agents must **write** continuity docs in the **same PR** as the code/prompt change — not leave a chat-only handoff. Prompt Smith and cloud agents: hard process rule.
+**Founder dictation for successor bots.** **Write, do not only read.** Continuity docs go in the **same PR** as the code/prompt work. **Your session is incomplete without a `HANDOFF.md` tip bump.** CI already requires `HANDOFF.md` in the PR diff.
 
 ## Always (every PR to main)
 
@@ -13,7 +13,7 @@ Update root **`HANDOFF.md` tip** in the same PR:
 5. **Fixture restore** — `npm run fixtures:recitation` and `npm run fixtures:imam` (tag `imam-fixtures-v1` / `zikrist-imam-fixtures-v1.zip`); liturgy `npm run liturgy:tts -- <id> --engine say` with ffmpeg on `PATH`
 6. **Known fails** — at least Subayyal 4:129≠41:34 and Qiyam 36:16≠78:4 until those are Mac-green; never invent ayah labels
 
-A PR without a `HANDOFF.md` tip bump is **not mergeable**. CI: `.github/workflows/handoff-required.yml` fails PRs to `main` that omit `HANDOFF.md` from the diff.
+Follow this file **exactly**. A PR without a `HANDOFF.md` tip bump is **not mergeable**. CI: `.github/workflows/handoff-required.yml` fails PRs to `main` that omit `HANDOFF.md` from the diff.
 
 Bots: Tip → `AGENTS.md` → the one prompt Tip names (HANDOFF **Bot start protocol**). Do not load every `prompts/**` file up front.
 
@@ -21,7 +21,7 @@ Bots: Tip → `AGENTS.md` → the one prompt Tip names (HANDOFF **Bot start prot
 
 | Doc | When to update in the same PR |
 |---|---|
-| **`VALIDATION.md`** | Verify / gate / Mac replay results change (new pass/fail, suite ready, algorithm claim) |
+| **`VALIDATION.md`** | Mac/Linux verify paths change, or a new Mac-green result is recorded |
 | **Queue status** | Overnight or fill queue moves (e.g. `prompts/salah-liturgy/tts-fill/00-QUEUE.md`, `prompts/real-imam/label-fill/00-QUEUE.md`, pack `00-OVERNIGHT-QUEUE.md`) — mark done / held / next |
 
 ## Forbidden

@@ -9,15 +9,16 @@ Every PR that merges to `main` **must** update this file **in the same PR**: wha
 
 ## Dictation for successor bots
 
-Founder rule for **every** Cursor/session agent (Prompt Smith, cloud agents, recreations with no chat history):
+Binding obligation for **anyone continuing this repo** (friend + their Grok/Cursor bots, Prompt Smith, cloud agents). No chat history is not an excuse.
 
-1. **Write** continuity in the **same PR** — do not rely on chat memory.
-2. **Always** bump the **`HANDOFF.md` tip** (what landed, tip state, open tracks, gates, restore cmds, known fails).
-3. Update **`VALIDATION.md`** when verify / Mac gate results change.
-4. Update **queue status** files when a queue item finishes, holds, or the next prompt changes.
-5. Follow `prompts/_SHARED-HANDOFF.md` and the GitHub PR template checklist.
+**Write, do not only read.** Continuity docs go in the **same PR** as the code/prompt work:
 
-A PR that ships code or prompts without these writes is incomplete.
+1. **`HANDOFF.md` Tip state — always.** What landed, tip SHA/PR, open tracks, gates, known fails, restore cmds if changed.
+2. **`VALIDATION.md`** — when Mac/Linux verify paths change or you record a new Mac-green result.
+3. **Active prompt / queue status** — mark done/held/next in the relevant `prompts/**/00-QUEUE.md` (or session prompt) if the overnight queue tracks it.
+4. Follow `prompts/_SHARED-HANDOFF.md` **exactly**.
+
+**Your session is incomplete without a `HANDOFF.md` tip bump.** CI already requires `HANDOFF.md` in the PR diff (`.github/workflows/handoff-required.yml`).
 
 ## Bot start protocol
 
