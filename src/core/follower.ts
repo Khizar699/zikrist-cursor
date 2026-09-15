@@ -497,24 +497,20 @@ export class RecitationFollower {
       });
     }
 
+    const after = this.queryAfterCurrent(recognized, current);
     if (atSurahBoundary) {
-      const after = this.queryAfterCurrent(recognized, current);
-      const fromLeftover = this.lockFromNextSurahPool(after.text, after.recognized, current.surah);
-      const pooled = fromLeftover ?? this.lockFromNextSurahPool(text, recognized, current.surah);
-      const heard = fromLeftover ? after.recognized : recognized;
-      const pooledText = fromLeftover ? after.text : text;
-      // Basmala alone must not open the next surah.
-      if (
-        pooled
-        && !isBasmalaOnlyWindow(heard)
-        && !this.onlySharedOpening(heard, pooled)
-        && this.surahOpeningHeard(pooled, heard, pooledText)
-      ) {
+      const pooled = this.poolAfterFinishedAyah(after, text, recognized, current);
+      if (pooled) {
+        const heard = after.recognized.length ? after.recognized : recognized;
+        const pooledText = after.recognized.length ? after.text : text;
         return [...messages, ...this.commit(pooled, this.locationScore(pooledText, pooled), this.alignForCommit(heard, pooled))];
       }
     }
 
-    const locateQuery = atSurahBoundary ? this.queryAfterCurrent(recognized, current) : { recognized, text };
+    // Last-ayah-only audio must not locate (112:4 لم يكن ≠ 98:1). New leftover speech may.
+    const locateQuery = atSurahBoundary
+      ? (after.recognized.length ? after : { recognized: [], text: '' })
+      : { recognized, text };
     const located = locate || atSurahBoundary ? this.matchFromTranscript(result, atSurahBoundary && !locate) : null;
     const locatedVerse = located ? this.locateAyah(located, locateQuery.text, locateQuery.recognized) : undefined;
     const locatedScore = locatedVerse ? this.locationScore(locateQuery.text, locatedVerse) : 0;
@@ -535,6 +531,7 @@ export class RecitationFollower {
       && (!this.shortLastAyahFollow(current) || locatedVerse.surah === current.surah)
       // Mysterious-letter ayahs need a whole-word token, not المصدر/المدرس noise.
       && this.canLock(located, locatedVerse, locateQuery.text, locateQuery.recognized)
+      && (!this.preferSurahOpening || this.nextSurahUnusedEvidence(locatedVerse, locateQuery.recognized, current))
     );
 
     if (jump && located && locatedVerse) {
@@ -553,12 +550,10 @@ export class RecitationFollower {
     }
 
     if (complete && !next) {
-      const after = this.queryAfterCurrent(recognized, current);
-      const fromLeftover = this.lockFromNextSurahPool(after.text, after.recognized, current.surah);
-      const pooled = fromLeftover ?? this.lockFromNextSurahPool(text, recognized, current.surah);
+      const pooled = this.poolAfterFinishedAyah(after, text, recognized, current);
       if (pooled) {
-        const heard = fromLeftover ? after.recognized : recognized;
-        const pooledText = fromLeftover ? after.text : text;
+        const heard = after.recognized.length ? after.recognized : recognized;
+        const pooledText = after.recognized.length ? after.text : text;
         return [...messages, ...this.commit(pooled, this.locationScore(pooledText, pooled), this.alignForCommit(heard, pooled))];
       }
       this.startReacquire();
@@ -1074,6 +1069,7 @@ export class RecitationFollower {
         if (this.sameRef(verse, this.lock ?? undefined)) continue;
         if (surah === fromSurah && verse.ayah > 1) continue;
         if (!this.surahOpeningHeard(verse, recognized, text)) continue;
+        if (this.lock && !this.nextSurahUnusedEvidence(verse, recognized, this.lock)) continue;
         const score = this.locationScore(text, verse);
         pool.push({
           verse,
@@ -1104,8 +1100,49 @@ export class RecitationFollower {
 
   private queryAfterCurrent(recognized: string[], current: QuranVerse): { recognized: string[]; text: string } {
     const leftover = leftoverAfterHeard(recognized, verseAlignWords(current).words);
-    const words = leftover.length ? leftover : recognized;
-    return { recognized: words, text: words.join(' ') };
+    if (!leftover.length) return { recognized: [], text: '' };
+    const currentBody = verseAlignWords(current).words;
+    const onlyCurrent = leftover.every((token) => currentBody.some((word) => (
+      wordsMatch(word, token) || relatedStem(word, token) || softTokenMatch(word, token)
+    )));
+    if (onlyCurrent) return { recognized: [], text: '' };
+    return { recognized: leftover, text: leftover.join(' ') };
+  }
+
+  /** Do not score a finished ayah’s own tokens as the next surah (112:4 لم يكن ≠ 98:1). */
+  private poolAfterFinishedAyah(
+    after: { recognized: string[]; text: string },
+    text: string,
+    recognized: string[],
+    current: QuranVerse,
+  ): QuranVerse | undefined {
+    const fromLeftover = after.recognized.length
+      ? this.lockFromNextSurahPool(after.text, after.recognized, current.surah)
+      : undefined;
+    if (fromLeftover) return fromLeftover;
+    // Mixed leftover already tried. Last-ayah-only audio must not pool.
+    if (!after.recognized.length) return undefined;
+    if (after.recognized.join(' ') === recognized.join(' ')) return undefined;
+    return this.lockFromNextSurahPool(text, recognized, current.surah);
+  }
+
+  /** Next-surah evidence must include a token the finished ayah does not use. */
+  private nextSurahUnusedEvidence(verse: QuranVerse, recognized: string[], current: QuranVerse): boolean {
+    const currentBody = verseAlignWords(current).words;
+    const unused = (token: string) => !currentBody.some((word) => (
+      wordsMatch(word, token) || relatedStem(word, token) || softTokenMatch(word, token)
+    ));
+    const { words, basmala } = verseAlignWords(verse);
+    const from = Math.max(0, this.uniqueOpeningSkip(verse) - basmala);
+    const distinctive = words
+      .slice(from)
+      .filter((token) => token.length >= 3 && !isAmbiguousAdvanceOpening(token) && unused(token));
+    if (!distinctive.length) {
+      return heardDistinct(recognized, verse, this.distinctSkip(verse, current));
+    }
+    return distinctive.some((token) => (
+      recognized.some((word) => wordsMatch(word, token) || relatedStem(word, token) || softTokenMatch(word, token))
+    ));
   }
 
   /** After a finished surah, lock ayah 1 of the newly located surah when that
@@ -1135,6 +1172,7 @@ export class RecitationFollower {
     const verse = this.firstUsableOpening(surah);
     if (!verse || this.sameRef(verse, this.lock ?? undefined)) return undefined;
     if (!this.surahOpeningHeard(verse, recognized, text)) return undefined;
+    if (this.lock && !this.nextSurahUnusedEvidence(verse, recognized, this.lock)) return undefined;
     const score = Math.max(this.locationScore(text, verse), LOCK_SCORE);
     const match: QuranChampionMatch = {
       surah: verse.surah,

@@ -205,6 +205,40 @@ test('An-Nas ayah 3 can lock while Falaq stays a close rival', async () => {
   assert.equal(engine.phase, 'following');
 });
 
+test('finishing Ikhlas leftover لم يكن does not first-lock a 98:1 lookalike', async () => {
+  const ikhlas4 = verse(112, 4, ['walam', 'yakun', 'lahu', 'kufuwan', 'ahad'], 'Al-Ikhlas');
+  const bayyina1 = verse(98, 1, ['lam', 'yakun', 'alladhina', 'kafaru', 'min', 'ahli', 'alkitabi'], 'Al-Bayyina');
+  const local = [
+    ikhlas4,
+    verse(113, 1, ['qul', 'audhu', 'birabbi', 'alfalaq'], 'Al-Falaq'),
+    bayyina1,
+  ];
+  const engine = new RecitationFollower(
+    new QuranDB(local.map((item) => ({ ...item, phoneme_words: [...item.phoneme_words] }))),
+    script([
+      {
+        text: ikhlas4.phonemes_joined,
+        rawPhonemes: ikhlas4.phonemes_joined,
+        championMatch: {
+          surah: 112, ayah: 4, text: ikhlas4.phonemes_joined, phonemes_joined: ikhlas4.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      {
+        text: ikhlas4.phonemes_joined,
+        rawPhonemes: ikhlas4.phonemes_joined,
+        championMatch: {
+          surah: 98, ayah: 1, text: bayyina1.phonemes_joined, phonemes_joined: bayyina1.phonemes_joined,
+          score: 0.9, raw_score: 0.9, bonus: 0,
+        },
+      },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:4']);
+  assert.deepEqual(refs(await engine.feed(audio(FOLLOW_TRIGGER_SEC))), []);
+  assert.equal(engine.phase, 'following');
+});
+
 test('finishing Ikhlas does not advance into Falaq from Basmala alone', async () => {
   const local = [
     verse(112, 4, ['walam', 'yakun', 'lahu', 'kufuwan', 'ahad'], 'Al-Ikhlas'),
