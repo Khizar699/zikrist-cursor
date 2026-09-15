@@ -15,6 +15,10 @@ const ACQUIRE_MIN_SEC = 0.9;
 const ACQUIRE_MAX_SEC = 4;
 export const FOLLOW_WINDOW_SEC = 1.2;
 export const FOLLOW_TRIGGER_SEC = 0.4;
+/** Grow the follow window only for a short last ayah of the current surah. */
+export const FOLLOW_LAST_AYAH_ACCUMULATE_SEC = 5;
+export const SHORT_LAST_AYAH_WORDS = 4;
+const LAST_AYAH_SEED_SEC = 0.3;
 const KEEP_AFTER_COMMIT_SEC = 1.0;
 const LOCK_SCORE = 0.62;
 const LOCK_CLEAR_SCORE = 0.72;
@@ -273,6 +277,7 @@ export class RecitationFollower {
   private wordIndex = -1;
   private queueTimings: FeedTimings = {};
   private bodyPrefixCounts: Map<string, number> | null = null;
+  private trimmedForShortLast = false;
   private readonly transcribe: TranscribeFn;
 
   constructor(private readonly db: QuranDB, transcribe: TranscribeFn | TilawaSession) {
@@ -288,6 +293,7 @@ export class RecitationFollower {
     this.priorSurah = null;
     this.wordIndex = -1;
     this.queueTimings = {};
+    this.trimmedForShortLast = false;
   }
 
   async feed(samples: Float32Array, timings: FeedTimings = {}): Promise<RecognitionMessage[]> {
@@ -295,7 +301,7 @@ export class RecitationFollower {
     this.queueTimings = timings;
     this.window = concatAudio(this.window, samples);
     this.fresh += samples.length;
-    const maxSec = this.phase === 'following' ? FOLLOW_WINDOW_SEC : ACQUIRE_MAX_SEC;
+    const maxSec = this.followMaxSec();
     if (this.window.length > samplesFor(maxSec)) this.window = keepLast(this.window, maxSec);
     if (this.phase === 'following') return this.follow();
     return this.acquire();
@@ -368,18 +374,38 @@ export class RecitationFollower {
     return this.unconfirmedMessages(recognized, ranked, candidates);
   }
 
+  private followMaxSec(): number {
+    if (this.phase !== 'following' || !this.lock) return ACQUIRE_MAX_SEC;
+    return this.shortLastAyahFollow(this.lock) ? FOLLOW_LAST_AYAH_ACCUMULATE_SEC : FOLLOW_WINDOW_SEC;
+  }
+
+  /** Next ayah is the last of this surah and short enough that a 1.2 s
+   * follow slice often decodes as garbage (stretched 114:6, 108:3). */
+  private shortLastAyahFollow(current: QuranVerse): boolean {
+    const next = this.db.getNextVerse(current.surah, current.ayah);
+    if (!next || next.surah !== current.surah) return false;
+    if (this.db.getNextVerse(next.surah, next.ayah)) return false;
+    return verseAlignWords(next).words.length <= SHORT_LAST_AYAH_WORDS;
+  }
+
+  private ayahComplete(verse: QuranVerse): boolean {
+    if (!verse.phoneme_words.length || this.wordIndex < 0) return false;
+    return this.wordIndex >= verse.phoneme_words.length - 1
+      || (this.wordIndex + 1) / verse.phoneme_words.length >= TRACKING_COMPLETION_COVERAGE;
+  }
+
   private async follow(): Promise<RecognitionMessage[]> {
     if (!this.lock || this.fresh < samplesFor(FOLLOW_TRIGGER_SEC)) return [];
-    this.fresh = 0;
     const current = this.lock;
     const next = this.db.getNextVerse(current.surah, current.ayah);
-    const coverage = current.phoneme_words.length
-      ? (this.wordIndex + 1) / current.phoneme_words.length
-      : 0;
-    const alreadyComplete = current.phoneme_words.length > 0 && (
-      this.wordIndex >= current.phoneme_words.length - 1
-      || coverage >= TRACKING_COMPLETION_COVERAGE
-    );
+    const alreadyComplete = this.ayahComplete(current);
+    // Drop the penultimate tail once so the last ayah can accumulate as its
+    // own utterance instead of sliding 1.2 s crumbs through leftover audio.
+    if (alreadyComplete && this.shortLastAyahFollow(current) && !this.trimmedForShortLast) {
+      this.window = keepLast(this.window, LAST_AYAH_SEED_SEC);
+      this.trimmedForShortLast = true;
+    }
+    this.fresh = 0;
     const atSurahBoundary = Boolean(alreadyComplete && next && next.surah !== current.surah);
     const locate = this.mismatches > 0;
     const result = await this.transcribe(this.window, locate);
@@ -447,6 +473,8 @@ export class RecitationFollower {
       && locatedScore >= neighborhood + SURAH_MARGIN
       // Mid-surah: refuse weak cross-surah jumps (was leaping to 7:1 on garbage windows).
       && (!stillInSurah || locatedVerse.surah === current.surah || locatedScore >= 0.92)
+      // While waiting for a short last ayah, do not jump to another surah at all.
+      && (!this.shortLastAyahFollow(current) || locatedVerse.surah === current.surah)
       // Mysterious-letter ayahs need a whole-word token, not المصدر/المدرس noise.
       && this.canLock(located, locatedVerse, text, recognized)
     );
@@ -468,10 +496,13 @@ export class RecitationFollower {
       return messages;
     }
 
+    const fillingLastAyah = this.shortLastAyahFollow(current)
+      && this.window.length < samplesFor(FOLLOW_LAST_AYAH_ACCUMULATE_SEC);
     if ((!advanced || sharedPrefixOnly) && neighborhood < NEIGHBORHOOD_KEEP) {
       this.mismatches++;
       const reacquireAfter = stillInSurah ? MISMATCH_LIMIT + 3 : MISMATCH_LIMIT;
-      if (this.mismatches >= reacquireAfter) {
+      // Keep accumulating a short last ayah; still locate so a real jump can recover.
+      if (!fillingLastAyah && this.mismatches >= reacquireAfter) {
         this.startReacquire(false);
         const acquired = this.lockFromTranscript(result, false);
         const filtered = acquired.filter((message) => {
@@ -518,6 +549,11 @@ export class RecitationFollower {
       .slice(from)
       .filter((token) => token.length >= 3 && unused(token) && !isAmbiguousAdvanceOpening(token));
     const hits = distinctive.filter((token) => query.some((word) => softTokenMatch(word, token)));
+    // Accumulated last-ayah audio may decode the short ayah as a whole even if
+    // the leftover opening was missed.
+    if (this.shortLastAyahFollow(current) && this.locationScore(spoken, next) >= LOCK_CLEAR_SCORE) {
+      return true;
+    }
     if (!hits.length) return false;
     // Ambiguous openings still need a strong location score so leftover رب≠14:40.
     if (isAmbiguousAdvanceOpening(opening)) {
@@ -551,6 +587,7 @@ export class RecitationFollower {
     this.phase = 'following';
     this.mismatches = 0;
     this.wordIndex = matched.length ? matched[matched.length - 1]! : -1;
+    this.trimmedForShortLast = false;
     this.window = keepLast(this.window, KEEP_AFTER_COMMIT_SEC);
     this.fresh = 0;
     const prefix = displayBodyWords(verse).slice(0, matched.length);
@@ -738,12 +775,12 @@ export class RecitationFollower {
     if (!this.hasVerseEvidence(text, verse, recognized)) return false;
     // Reject locks that only hear a shared prefix (قل اعوذ برب / Basmala) with no unique body word.
     if (this.onlySharedOpening(recognized, verse)) return false;
-    // Isolated mysterious-letter ayahs (e.g. 7:1 المص) need that token as a word —
-    // substring hits like المصدر / المدرس must not lock.
+    // Isolated mysterious-letter ayahs (e.g. 7:1 المص) need that token as a whole
+    // word — fuzzy/stem hits like المصدر / المدرس must not lock.
     const body = displayBodyWords(verse);
     if (body.length === 1 && body[0]!.length <= 5) {
-      const token = body[0]!;
-      const heard = recognized.some((word) => wordsMatch(word, token) || compact(word) === compact(token));
+      const token = compact(body[0]!);
+      const heard = recognized.some((word) => compact(word) === token);
       if (!heard) return false;
     }
     const skip = openingBasmalaWordCount(verse);

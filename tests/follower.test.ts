@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { QuranDB, type QuranVerse, type QuranChampionMatch, type TranscribeResult } from '@tilawa/core';
-import { RecitationFollower, FOLLOW_TRIGGER_SEC, FOLLOW_WINDOW_SEC, type TranscribeFn } from '../src/core/follower';
+import {
+  RecitationFollower,
+  FOLLOW_TRIGGER_SEC,
+  FOLLOW_WINDOW_SEC,
+  FOLLOW_LAST_AYAH_ACCUMULATE_SEC,
+  type TranscribeFn,
+} from '../src/core/follower';
 import type { RecognitionMessage } from '../src/core/types';
 import { lastRecognitionCycle, resetRecognitionCycles } from '../src/core/recognition-clocks';
 
@@ -23,6 +29,7 @@ const corpus = [
   verse(1, 7, ['sirata', 'alladhina', 'anamta', 'alayhim', 'ghayri', 'almaghdubi', 'alayhim', 'wala', 'alddallin'], 'Al-Fatihah'),
   verse(2, 1, ['bismi', 'allahi', 'alrahman', 'alrahim', 'alif', 'lam', 'meem'], 'Al-Baqarah'),
   verse(2, 126, ['rabbi', 'ijal', 'hadha', 'baladan'], 'Al-Baqarah'),
+  verse(7, 1, ['المص'], 'Al-Araf'),
   verse(14, 39, ['alhamdu', 'lillahi', 'alladhi', 'wahaba', 'li', 'ala', 'alkibar', 'ismail', 'waishaq'], 'Ibrahim'),
   verse(14, 40, ['rabbi', 'ijalni', 'muqima', 'alsalah', 'wamin', 'dhurriyyati', 'rabbana', 'wataqabbal', 'dua'], 'Ibrahim'),
   verse(14, 41, ['rabbana', 'ighfir', 'li', 'waliwalidayya'], 'Ibrahim'),
@@ -490,6 +497,78 @@ test('after the neighborhood fails, a new ayah can still take over from its open
 
 test('follow overlap stays at most three windows of audio per second of recitation', () => {
   assert.ok(FOLLOW_WINDOW_SEC / FOLLOW_TRIGGER_SEC <= 3.01);
+});
+
+test('after the penultimate ayah is complete, follow accumulates a longer last-ayah window', async () => {
+  const noise = { text: 'zzzz yyyy xxxx', rawPhonemes: 'zzzz yyyy xxxx' };
+  const engine = follower([spoken(114, 5), noise, noise, noise, noise, noise]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['114:5']);
+  resetRecognitionCycles();
+  await engine.feed(hop());
+  await engine.feed(hop());
+  await engine.feed(audio(FOLLOW_LAST_AYAH_ACCUMULATE_SEC - FOLLOW_TRIGGER_SEC));
+  const cycle = lastRecognitionCycle();
+  assert.ok(cycle);
+  assert.ok(
+    cycle.windowSec > FOLLOW_WINDOW_SEC,
+    `expected last-ayah window > ${FOLLOW_WINDOW_SEC}s, got ${cycle.windowSec}`,
+  );
+  assert.ok(cycle.windowSec <= FOLLOW_LAST_AYAH_ACCUMULATE_SEC + 0.05);
+});
+
+test('mid-surah follow keeps the default window even after extra audio', async () => {
+  const noise = { text: 'zzzz yyyy xxxx', rawPhonemes: 'zzzz yyyy xxxx' };
+  const engine = follower([spoken(112, 1), noise, noise, noise]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:1']);
+  resetRecognitionCycles();
+  await engine.feed(audio(2));
+  const cycle = lastRecognitionCycle();
+  assert.ok(cycle);
+  assert.ok(cycle.windowSec <= FOLLOW_WINDOW_SEC + 0.05, `mid-surah window grew to ${cycle.windowSec}`);
+});
+
+test('a short last ayah still advances from a unique body token when the opening is missed', async () => {
+  const engine = follower([
+    spoken(114, 5),
+    { text: 'aljinnati walnnas', rawPhonemes: 'aljinnati walnnas' },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['114:5']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['114:6']);
+});
+
+test('a garbage follow window cannot jump to a mysterious-letter ayah from a substring', async () => {
+  const noise = {
+    text: 'المصدر المدرس',
+    rawPhonemes: 'المصدر المدرس',
+    championMatch: champion(7, 1, 0.95),
+  };
+  const engine = follower([spoken(112, 1), noise, noise, noise, noise]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:1']);
+  const jumped: string[] = [];
+  for (let hopIndex = 0; hopIndex < 4; hopIndex++) {
+    jumped.push(...refs(await engine.feed(hop())));
+  }
+  assert.deepEqual(jumped, []);
+  assert.ok(engine.phase === 'following' || engine.phase === 'reacquiring');
+});
+
+test('after An-Nas ayah 5, a garbage window cannot jump to 7:1', async () => {
+  const noise = {
+    text: 'المصدر المدرس',
+    rawPhonemes: 'المصدر المدرس',
+    championMatch: champion(7, 1, 0.95),
+  };
+  const engine = follower([
+    spoken(114, 5),
+    noise, noise, noise, noise, noise, noise, noise, noise, noise, noise,
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['114:5']);
+  const jumped: string[] = [];
+  jumped.push(...refs(await engine.feed(audio(FOLLOW_LAST_AYAH_ACCUMULATE_SEC))));
+  for (let hopIndex = 0; hopIndex < 8; hopIndex++) {
+    jumped.push(...refs(await engine.feed(hop())));
+  }
+  assert.ok(!jumped.includes('7:1'), `false mysterious-letter lock: ${jumped.join(',')}`);
 });
 
 test('a locate window does not call bestJoint03Match again when a champion is already present', async () => {

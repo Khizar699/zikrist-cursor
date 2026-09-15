@@ -71,7 +71,7 @@ See [VALIDATION.md](VALIDATION.md) for observed results and remaining tests. A s
 
 - `src/services/listening.ts`: one capture owner, lifecycle, interruptions, native background notification, recognition and display coordination.
 - `src/services/model.ts`: lazy native assets, ONNX runtime, replaceable Tilawa adapter.
-- `src/core/follower.ts`: live acquire / follow / reacquire. Tilawa supplies transcription and the Quran index; it does not own following. Follow uses a 1.2 s window and a 0.4 s hop. Shared openings can emit heard Arabic words without a verse claim.
+- `src/core/follower.ts`: live acquire / follow / reacquire. Tilawa supplies transcription and the Quran index; it does not own following. Follow uses about 1.2 s of audio every 0.4 s (about 3× overlap). After a short last ayah of the current surah (≤ 4 body words), follow grows to about 5 s so that ayah can accumulate as one utterance. Shared openings can emit heard Arabic words without a verse claim.
 - `src/core/salah-prior.ts`: editable salah ranking file. Tie-break only; predictions are not translations.
 - `src/core/recognition-clocks.ts`: in-memory ONNX / decode / locate / queue timings. Not shown in the UI; not sent anywhere.
 - `src/core/`: bounded audio queue, capture/pause policy, continuation guard, sequential helpers, passage window, confirmed-match timeline, pack policy, SQLite schema.
