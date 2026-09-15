@@ -25,13 +25,14 @@
 ## Inspected (after Nas #3 on main)
 
 - `src/core/follower.ts` last-ayah path: `shortLastAyahFollow` / 5 s accumulate apply while **waiting for** a short last ayah of the current surah (114:5→114:6). They do not fire on 103:3, whose mushaf-next is 104:1.
-- 103:3 can lock before 82% coverage (replay: 9.25 s of a 12.5 s clip), so `alreadyComplete` is false when 106:1 starts. Mid-surah mismatch then waits six hops and misses the short 106:1 clip.
-- Mushaf-next after 103:3 is 104:1, not 106:1. Shared Basmala leftover must not lock Humazah.
+- 103:3 can lock before 82% coverage. Linux: 103:3@9.25 s of a 12.5 s clip. Mac Sim QA: 103:1@1, 103:2@5.75, 103:3@8.25, then `stall_missing_106:1_after_3_matches`. 106:1 audio starts at ~19.96 s. A Linux-only leftover pass is not enough.
+- Requiring leftover to be 100% unexplained fails when the 1.2 s window still has any 103:3 token (interior word, or a tail token after 106:1 in CTC order). Filter unexplained tokens and pool/locate those.
+- Mushaf-next after 103:3 is 104:1, not 106:1. Shared Basmala leftover must not lock Humazah. Keep Fatiha, Basmala-echo 55:1, and short-surah greens.
 
 ## Files
 
-- `src/core/follower.ts` — leftover after a last-ayah suffix; unexplained leftover on a last ayah pools/locates even before 82% coverage; keep-window reacquire onto the 4 s acquire window when leftover cannot lock yet. Nas last-ayah window and jump guard left intact.
-- `tests/follower.test.ts` — leftover 106:1 after 103:3; aged-out opening; Basmala leftover does not lock 104:1; leftover that cannot lock yet cold-starts acquire.
+- `src/core/follower.ts` — last-ayah leftover is unexplained tokens in the follow window (not a 100%-clean suffix); pool/locate those even before 82% coverage; keep-window reacquire onto the 4 s acquire window when leftover cannot lock yet. Nas last-ayah window and jump guard left intact.
+- `tests/follower.test.ts` — leftover 106:1 after 103:3; interior 103:3 token mixed with 106:1; 106:1 tokens before a 103:3 tail token; aged-out opening; Basmala leftover does not lock 104:1; leftover that cannot lock yet cold-starts acquire.
 - `README.md`, `VALIDATION.md`, this prompt.
 
 ## Architecture / security

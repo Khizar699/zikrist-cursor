@@ -200,23 +200,14 @@ function remainingAfterCurrent(recognized: string[], verseWords: string[]): stri
   return recognized.slice(last.spoken + 1);
 }
 
-/** Tokens after a suffix of the completed last ayah. Interior coincidences
- * (هو in 108:3 and 112:1) must not strip the new surah’s opening. Openings
- * that aged out of the 1.2 s window still yield leftover after the tail. */
-function remainingAfterTail(recognized: string[], verseWords: string[]): string[] {
-  if (!recognized.length || !verseWords.length) return recognized;
-  const maxSuffix = Math.min(verseWords.length, recognized.length);
-  for (let length = maxSuffix; length >= 1; length--) {
-    const suffix = verseWords.slice(-length);
-    for (let start = 0; start + length <= recognized.length; start++) {
-      const matches = suffix.every((word, index) => {
-        const spoken = recognized[start + index]!;
-        return wordsMatch(spoken, word) || relatedStem(spoken, word);
-      });
-      if (matches) return recognized.slice(start + length);
-    }
-  }
-  return recognized;
+/** Tokens the current last-ayah body does not explain. A leftover suffix is
+ * not required: a 103:3 interior word or a tail token after 106:1 in CTC
+ * order must not hide Quraysh. Interior coincidences such as هو in 108:3
+ * are dropped without stripping الله احد. */
+function leftoverNewTokens(recognized: string[], verseWords: string[]): string[] {
+  return recognized.filter((token) => (
+    !verseWords.some((word) => wordsMatch(token, word) || relatedStem(token, word))
+  ));
 }
 
 function leftoverIsNewRecitation(leftover: string[]): boolean {
@@ -455,9 +446,8 @@ export class RecitationFollower {
       : 0;
     const heardNext = Boolean(next && heardDistinct(recognized, next, this.distinctSkip(next, current)));
     const currentBody = verseAlignWords(current).words;
-    const leftover = remainingAfterTail(recognized, currentBody);
-    const leftoverUnexplained = leftoverIsNewRecitation(leftover)
-      && !leftover.some((token) => currentBody.some((word) => wordsMatch(token, word) || relatedStem(token, word)));
+    const leftover = leftoverNewTokens(recognized, currentBody);
+    const leftoverUnexplained = leftoverIsNewRecitation(leftover);
     const matchedBody = alignWords(recognized, currentBody);
     const matched = matchedBody.map((index) => index + verseAlignWords(current).basmala);
     const wordIndex = matched.length ? matched[matched.length - 1]! : this.wordIndex;

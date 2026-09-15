@@ -703,6 +703,54 @@ test('after Asr last ayah, leftover Quraysh tokens still lock 106:1 when the 103
   assert.deepEqual(refs(await engine.feed(hop())), ['106:1']);
 });
 
+test('after Asr last ayah, a 103:3 interior token mixed with Quraysh still locks 106:1', async () => {
+  const local = [
+    verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
+    verse(104, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'ويل', 'لكل', 'همزة', 'لمزة'], 'Al-Humazah'),
+    verse(106, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'لايلاف', 'قريش'], 'Quraysh'),
+  ];
+  const three = local[0]!;
+  const mixed = ['الذين', 'لايلاف', 'قريش'].join(' ');
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 103, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: mixed, rawPhonemes: mixed },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['106:1']);
+});
+
+test('after Asr last ayah, Quraysh tokens before a 103:3 tail token still lock 106:1', async () => {
+  const local = [
+    verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
+    verse(104, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'ويل', 'لكل', 'همزة', 'لمزة'], 'Al-Humazah'),
+    verse(106, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'لايلاف', 'قريش'], 'Quraysh'),
+  ];
+  const three = local[0]!;
+  const mixed = ['لايلاف', 'قريش', 'بالصبر'].join(' ');
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 103, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: mixed, rawPhonemes: mixed },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['106:1']);
+});
+
 test('after Asr last ayah, leftover that cannot lock yet cold-starts so the next surah can acquire', async () => {
   const local = [
     verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
