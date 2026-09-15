@@ -4,8 +4,11 @@ import { readFile } from 'node:fs/promises';
 import { DatabaseSync } from 'node:sqlite';
 import { TextCTCDecoder, adaptQuranTextData, validateCtcTokenRoundTrip } from '@tilawa/core';
 
+import { verifySalahLiturgyPack } from './verify-salah-liturgy.mjs';
+
 const json = async (file) => JSON.parse(await readFile(file, 'utf8'));
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
+await verifySalahLiturgyPack();
 for (const asset of (await json('assets/manifest.json')).filter((asset) => !asset.archive)) {
   const bytes = await readFile(asset.path);
   assert.equal(bytes.length, asset.bytes, asset.path);

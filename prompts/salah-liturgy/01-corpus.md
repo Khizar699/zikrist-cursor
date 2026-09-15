@@ -57,3 +57,19 @@ Each row: `id`, `category`, `arabic_uthmani`, `arabic_recognition_normalized`, `
 ## Deliverable
 
 File paths, phrase count, deferred list, verify command.
+
+## v1 pin (this pack)
+
+- Pack: `assets/content/salah-liturgy.json` (18 phrases, `kind: salah_liturgy`, `english_kind: liturgy_gloss`).
+- Schema/hash: `src/core/salah-liturgy.ts`. Verify: `npm run liturgy:verify` (also first step of `npm run assets:verify`). Units: `tests/salah-liturgy.test.ts`.
+- Edition: Hanafi / common Sunni mosque liturgy. Tashahhud = Ibn Masʿūd (Bukhari 831 / Muslim 402). Thana = Hanafi istiftah. Darood = Bukhari 3370 / Muslim 406 ṣalli+bārik without `في العالمين`.
+- Deferred: `basmala_liturgy`, `dua_qunoot`, `sitting_between_sujood`, `istiftah_wajjahtu`, `darood_ibrahim_fil_alamin`, `istiadha_samee_aleem`.
+- No matcher/UI/`follower.ts` changes in this session.
+
+### Adding a phrase (data only)
+
+1. Append a `phrases[]` row: snake_case `id`, v1 `category`, vocalized `arabic_uthmani`, liturgy-gloss `english`, `source_note`, `license_status`.
+2. Set `arabic_recognition_normalized` to `normalizeLiturgyArabic(arabic_uthmani)` (strip harakat; keep hamza letters; `ٱ` → `ا`).
+3. Set `sha256` to hex SHA-256 of UTF-8 `id\ncategory\narabic_uthmani\narabic_recognition_normalized\nenglish\nsource_note\nlicense_status`.
+4. Contested formulas go in `deferred`, not as fake Quran surahs.
+5. Run `npm run liturgy:verify` and `npm test`. Headless audio fixtures are session `04-replay-suites.md`.

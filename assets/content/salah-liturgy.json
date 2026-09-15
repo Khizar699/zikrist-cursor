@@ -1,0 +1,225 @@
+{
+  "pack_id": "salah-liturgy",
+  "version": 1,
+  "kind": "salah_liturgy",
+  "english_kind": "liturgy_gloss",
+  "english_label": "Prayer/liturgy English gloss for on-screen display. Not a Quran translation edition.",
+  "license_status": "arabic_traditional_salah_formulas; english_zikrist_editorial_gloss; commercial_redistribution_unreviewed; release_blocker_until_rights_review",
+  "edition": {
+    "id": "zikrist-salah-liturgy-v1",
+    "label": "Hanafi / common Sunni mosque liturgy v1",
+    "madhhab_basis": "Stable Hanafi and widely used Sunni salah formulas. Not a claim to include every madhhab variant.",
+    "tashahhud": "Ibn Masʿūd attahiyyat used in Hanafi salah (Sahih al-Bukhari 831 / Sahih Muslim 402). Not the Shafiʿi wording that adds mubarakat after al-tayyibat.",
+    "thana": "Hanafi opening thana (subḥānaka llāhumma…). Not Quran 2:32. Not the Shafiʿi wajjahtu istiftah (Quran 6:79).",
+    "darood": "Ibrahimiyyah core lines as in Sahih al-Bukhari 3370 / Sahih Muslim 406 (Kaʿb ibn ʿUjrah): ṣalli then bārik, each with Ibrāhīm and āl Ibrāhīm, without fī l-ʿālamīn.",
+    "corpus_assumption": "Spoken salah formulas heard around Hafs ʿan ʿĀṣim recitation. Vocalized Arabic for display uses explicit alefs (not Tanzil dagger-alef Quran bytes). Recognition text is the same letters with marks stripped."
+  },
+  "deferred": [
+    {
+      "id": "basmala_liturgy",
+      "reason": "Not a distinct liturgy row. Opening Basmala stays on the Quran display/hold path (Tanzil 1:1 and ayah-1 headers)."
+    },
+    {
+      "id": "dua_qunoot",
+      "reason": "Witr qunoot (Hanafi: allāhumma innā nastaʿīnuka…) and Fajr qunoot (Shafiʿi: allāhumma hdina…) are contested for a single v1 pin. Unresolved; not shipped."
+    },
+    {
+      "id": "sitting_between_sujood",
+      "reason": "رَبِّ اغْفِرْ لِي is common between sujood but is not in the v1 required set."
+    },
+    {
+      "id": "istiftah_wajjahtu",
+      "reason": "Shafiʿi opening overlaps Quran 6:79. v1 pins the Hanafi thana instead of stuffing a Quran ayah as liturgy."
+    },
+    {
+      "id": "darood_ibrahim_fil_alamin",
+      "reason": "Some Maliki/Shafiʿi recitations add فِي الْعَالَمِينَ. v1 pins the Bukhari wording without that clause."
+    },
+    {
+      "id": "istiadha_samee_aleem",
+      "reason": "Longer أعوذ بالله السميع العليم من الشيطان الرجيم is attested; v1 ships the short mosque form only."
+    }
+  ],
+  "phrases": [
+    {
+      "id": "takbeer",
+      "category": "takbeer",
+      "arabic_uthmani": "اللَّهُ أَكْبَرُ",
+      "arabic_recognition_normalized": "الله أكبر",
+      "english": "Allah is the Greatest.",
+      "source_note": "Common salah takbeer. Two-word liturgy formula, not a Quran ayah. A later matcher must require strong evidence so Quranic الله does not false-lock.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "999dcdb2639f86c3fac95eaabb9b596936a960691004c60c3ec5658322457f7b"
+    },
+    {
+      "id": "thana",
+      "category": "thana",
+      "arabic_uthmani": "سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ وَتَبَارَكَ اسْمُكَ وَتَعَالَى جَدُّكَ وَلَا إِلَهَ غَيْرُكَ",
+      "arabic_recognition_normalized": "سبحانك اللهم وبحمدك وتبارك اسمك وتعالى جدك ولا إله غيرك",
+      "english": "Glory is to You, O Allah, and praise. Blessed is Your Name, exalted is Your majesty, and there is no god besides You.",
+      "source_note": "Hanafi opening thana (dua al-istiftah). Liturgy, not Tanzil Quran text.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "aac5d7c34903a4fc67a3499aa65cefbf402a9d095f128caea29f3af67dc5a7d6"
+    },
+    {
+      "id": "istiadha",
+      "category": "istiadha",
+      "arabic_uthmani": "أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ",
+      "arabic_recognition_normalized": "أعوذ بالله من الشيطان الرجيم",
+      "english": "I seek refuge in Allah from the accursed Satan.",
+      "source_note": "Spoken istiʿadha before recitation in salah. Distinct from Quran 16:98 (instruction to seek refuge, not this first-person formula). Not Tanzil bytes.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "3aa9c87e7d3df9ded1ac9941cc3c3775c6b4d7b2ef862315f070865c27df4b43"
+    },
+    {
+      "id": "ruku_tasbih",
+      "category": "ruku_tasbih",
+      "arabic_uthmani": "سُبْحَانَ رَبِّيَ الْعَظِيمِ",
+      "arabic_recognition_normalized": "سبحان ربي العظيم",
+      "english": "Glory be to my Lord, the Most Great.",
+      "source_note": "Ruku tasbih. Common short form without وبحمده.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "2f200469c1086e49054323294b72a703208b0820c1c3391458cceffe4f82baf0"
+    },
+    {
+      "id": "ruku_tasbih_wabihamdihi",
+      "category": "ruku_tasbih",
+      "arabic_uthmani": "سُبْحَانَ رَبِّيَ الْعَظِيمِ وَبِحَمْدِهِ",
+      "arabic_recognition_normalized": "سبحان ربي العظيم وبحمده",
+      "english": "Glory be to my Lord, the Most Great, and praise belongs to Him.",
+      "source_note": "Ruku tasbih with optional وبحمده, heard in some recitations.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "51207be028f49e89b585220b1f176efa75ab8d50689006c6882c09c93c3896c5"
+    },
+    {
+      "id": "sujood_tasbih",
+      "category": "sujood_tasbih",
+      "arabic_uthmani": "سُبْحَانَ رَبِّيَ الْأَعْلَى",
+      "arabic_recognition_normalized": "سبحان ربي الأعلى",
+      "english": "Glory be to my Lord, the Most High.",
+      "source_note": "Sujood tasbih. Common short form without وبحمده.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "af72802ea06d2b0da85aac13f348a71728147cafba07f19e5c77e57a8c04b1ec"
+    },
+    {
+      "id": "sujood_tasbih_wabihamdihi",
+      "category": "sujood_tasbih",
+      "arabic_uthmani": "سُبْحَانَ رَبِّيَ الْأَعْلَى وَبِحَمْدِهِ",
+      "arabic_recognition_normalized": "سبحان ربي الأعلى وبحمده",
+      "english": "Glory be to my Lord, the Most High, and praise belongs to Him.",
+      "source_note": "Sujood tasbih with optional وبحمده.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "c607c813ad892d45672eac21aa3f9cb5e56c63487636b9d965f84fc31e736bcc"
+    },
+    {
+      "id": "sami_allahu_liman_hamidah",
+      "category": "jami_bayn",
+      "arabic_uthmani": "سَمِعَ اللَّهُ لِمَنْ حَمِدَهُ",
+      "arabic_recognition_normalized": "سمع الله لمن حمده",
+      "english": "Allah hears those who praise Him.",
+      "source_note": "Imam/standing formula on rising from ruku (jamiʿ bayn).",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "278351a44375f1cf7454eed1c18659e3f49d00192bb960d65ac65b5804b3be10"
+    },
+    {
+      "id": "rabbana_wa_lakal_hamd",
+      "category": "jami_bayn",
+      "arabic_uthmani": "رَبَّنَا وَلَكَ الْحَمْدُ",
+      "arabic_recognition_normalized": "ربنا ولك الحمد",
+      "english": "Our Lord, and to You is all praise.",
+      "source_note": "Response after سمع الله لمن حمده. Common form with و.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "f31b2613ad204656599f6eb590b1903411e2fff544bd484ff2107213f767a704"
+    },
+    {
+      "id": "rabbana_lakal_hamd",
+      "category": "jami_bayn",
+      "arabic_uthmani": "رَبَّنَا لَكَ الْحَمْدُ",
+      "arabic_recognition_normalized": "ربنا لك الحمد",
+      "english": "Our Lord, to You is all praise.",
+      "source_note": "Rising-from-ruku variant without و.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "3d39de3324bae46d44c4261ef30995bf6e394bee360efcb8fd2eb26a9e47df34"
+    },
+    {
+      "id": "allahumma_rabbana_wa_lakal_hamd",
+      "category": "jami_bayn",
+      "arabic_uthmani": "اللَّهُمَّ رَبَّنَا وَلَكَ الْحَمْدُ",
+      "arabic_recognition_normalized": "اللهم ربنا ولك الحمد",
+      "english": "O Allah, our Lord, and to You is all praise.",
+      "source_note": "Rising-from-ruku variant opening with اللهم.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "acf8e0862ec015c2e659ef58ef98309208640719e581f7aed3f30fd904cb1d81"
+    },
+    {
+      "id": "tashahhud",
+      "category": "tashahhud",
+      "arabic_uthmani": "التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ السَّلَامُ عَلَيْكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللَّهِ الصَّالِحِينَ أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ",
+      "arabic_recognition_normalized": "التحيات لله والصلوات والطيبات السلام عليك أيها النبي ورحمة الله وبركاته السلام علينا وعلى عباد الله الصالحين أشهد أن لا إله إلا الله وأشهد أن محمدا عبده ورسوله",
+      "english": "All greetings, prayers, and pure words are for Allah. Peace be upon you, O Prophet, and the mercy of Allah and His blessings. Peace be upon us and upon the righteous servants of Allah. I bear witness that there is no god but Allah, and I bear witness that Muhammad is His servant and messenger.",
+      "source_note": "Hanafi / Ibn Masʿūd attahiyyat (Bukhari 831, Muslim 402). Full sitting tashahhud. Liturgy gloss, not a Quran translation.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "4b346ede7fdb19d0f447aadbb689b66bdbade8f107738bc62bd9dc0b658815c5"
+    },
+    {
+      "id": "darood_ibrahim_salat",
+      "category": "darood_ibrahim",
+      "arabic_uthmani": "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ",
+      "arabic_recognition_normalized": "اللهم صل على محمد وعلى آل محمد كما صليت على إبراهيم وعلى آل إبراهيم إنك حميد مجيد",
+      "english": "O Allah, send salah upon Muhammad and upon the family of Muhammad, as You sent salah upon Ibrahim and upon the family of Ibrahim. Indeed You are Praiseworthy, Glorious.",
+      "source_note": "First Ibrahimiyyah core line (ṣalli). Bukhari 3370 / Muslim 406.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "797992f1776874e5f155c09bcab784dd5b039b61e646f68a399619353e73c64f"
+    },
+    {
+      "id": "darood_ibrahim_barik",
+      "category": "darood_ibrahim",
+      "arabic_uthmani": "اللَّهُمَّ بَارِكْ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا بَارَكْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ",
+      "arabic_recognition_normalized": "اللهم بارك على محمد وعلى آل محمد كما باركت على إبراهيم وعلى آل إبراهيم إنك حميد مجيد",
+      "english": "O Allah, send barakah upon Muhammad and upon the family of Muhammad, as You sent barakah upon Ibrahim and upon the family of Ibrahim. Indeed You are Praiseworthy, Glorious.",
+      "source_note": "Second Ibrahimiyyah core line (bārik). Bukhari 3370 / Muslim 406.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "2ef48110c6852a952593402a2babef3ab51d7babdc3fae3c260bdad7a5273998"
+    },
+    {
+      "id": "darood_ibrahim",
+      "category": "darood_ibrahim",
+      "arabic_uthmani": "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ اللَّهُمَّ بَارِكْ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا بَارَكْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ",
+      "arabic_recognition_normalized": "اللهم صل على محمد وعلى آل محمد كما صليت على إبراهيم وعلى آل إبراهيم إنك حميد مجيد اللهم بارك على محمد وعلى آل محمد كما باركت على إبراهيم وعلى آل إبراهيم إنك حميد مجيد",
+      "english": "O Allah, send salah upon Muhammad and upon the family of Muhammad, as You sent salah upon Ibrahim and upon the family of Ibrahim. Indeed You are Praiseworthy, Glorious. O Allah, send barakah upon Muhammad and upon the family of Muhammad, as You sent barakah upon Ibrahim and upon the family of Ibrahim. Indeed You are Praiseworthy, Glorious.",
+      "source_note": "Both Ibrahimiyyah core lines as commonly recited together after tashahhud. Without fī l-ʿālamīn.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "ea2aa8121d3d33bcd7223383313ad80fc6d8380498f17a7c9dae0d8c1aa2bc5c"
+    },
+    {
+      "id": "amin",
+      "category": "amin",
+      "arabic_uthmani": "آمِينَ",
+      "arabic_recognition_normalized": "آمين",
+      "english": "Ameen.",
+      "source_note": "Congregation response after Al-Fatihah. Liturgy particle, not Quran 1:7 and not Tanzil text.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "68768e9c7676cc445acd5cc4d21b203adf8e1e48f182c02f8763fc75ba0c4a0a"
+    },
+    {
+      "id": "assalamu_alaikum_warahmatullah",
+      "category": "tasleem",
+      "arabic_uthmani": "السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللَّهِ",
+      "arabic_recognition_normalized": "السلام عليكم ورحمة الله",
+      "english": "Peace be upon you and the mercy of Allah.",
+      "source_note": "Closing tasleem. Common mosque form without وَبَرَكَاتُهُ.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "dc9e032b4f45ac25dcdb3000105237a688af2acbf98442dff8b0715264132d6a"
+    },
+    {
+      "id": "assalamu_alaikum_warahmatullah_wabarakatuh",
+      "category": "tasleem",
+      "arabic_uthmani": "السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ",
+      "arabic_recognition_normalized": "السلام عليكم ورحمة الله وبركاته",
+      "english": "Peace be upon you and the mercy of Allah and His blessings.",
+      "source_note": "Closing tasleem with optional وَبَرَكَاتُهُ.",
+      "license_status": "traditional_formula; english_editorial_liturgy_gloss; commercial_clearance_unreviewed",
+      "sha256": "b84ab75248b072a4a6fcc14cf0267566bf0450599d513555d618658448dacc2b"
+    }
+  ]
+}
