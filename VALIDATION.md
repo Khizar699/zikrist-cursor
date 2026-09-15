@@ -63,7 +63,7 @@ Event API (not a Quran `verse_match`; English gloss stays on the pack row, match
 { kind: 'salah_liturgy'; phraseId: string; category: string; atMs: number; confidence?: number }
 ```
 
-`confidence` is a token-similarity score in 0–1, not calibrated probability and not shown as percent certainty. Basmala stays on the Quran hold path. Short takbeer / amin / jamiʿ bayn need an isolated window and are refused while a Quran ayah is mid-follow. When liturgy locks, listening drops that hop’s `verse_match` / `word_progress` / `heard_words` and resets follower+gate so liturgy cannot become a displayed ayah. `scripts/replay.ts` still runs follower+gate only (Quran 14/14 gate). No liturgy WAV fixtures (`04-replay-suites`). Matcher thresholds were not retuned for the display pass.
+`confidence` is a token-similarity score in 0–1, not calibrated probability and not shown as percent certainty. Basmala stays on the Quran hold path. Short takbeer / amin / jamiʿ bayn need an isolated window and are refused while a Quran ayah is mid-follow. When liturgy locks, listening drops that hop’s `verse_match` / `word_progress` / `heard_words` and resets follower+gate so liturgy cannot become a displayed ayah. Default `npm run test:replay -- all` still runs follower+gate only (Quran 14/14 gate). Liturgy suites (`npm run test:replay -- liturgy`) attach the matcher on the same PCM → `lastHeardTokens` path as live listening **when audio exists**; stubs skip with `missing_fixture` (not PASS). Matcher thresholds were not retuned for this harness pass.
 
 Open risks: takbeer is two tokens — mosque/ASR `الله أكبر` inside Quran 29:45 or a noisy mid-ayah decode could still false-lock on-device despite isolation rules (unmeasured). Amin is one token. Romanized long-phrase ASR is untested; units use corpus Arabic. Follower locate thresholds were not retuned.
 
@@ -179,7 +179,21 @@ Harness only. Prompt Smith already owns `prompts/real-imam/` (queue, fixture REA
 - `npm run test:replay -- all` still resolves to the original **14** Quran suites (hard gate).
 - `npm run test:replay -- real-imam` **skips** the five stub suites with `failureMode: missing_fixture` and `status: skipped` (not PASS) and does not load ONNX.
 - `--include-pending` can list them next to `all`; stubs still skip until WAV exists, so they cannot fail the 14-suite gate.
-- Salah liturgy remains a **separate** track (`prompts/salah-liturgy/`).
+- Salah liturgy replay is a **separate** pending pack (`prompts/salah-liturgy/`). See the liturgy replay section below.
 
 This workspace (Linux/x64, no EveryAyah WAVs restored): `npm test` **150/150**; `npm run typecheck` pass. `npx tsx scripts/replay.ts real-imam` exited **0** with five skipped `missing_fixture` rows (not PASS) and did not load ONNX. Acoustic `npm run test:replay -- all` was **not** scored here. Not a physical-device, mosque, or imam-ready claim.
+
+## Salah liturgy replay suites (stub-first, 2026-09-15)
+
+Harness only. Registers the eight suite ids from `prompts/salah-liturgy/04-replay-suites.md` + `manifest.stub.json`. **No liturgy WAV or MP3 is committed.** Silent STUB audio was not invented. Follower and liturgy matcher thresholds were not retuned. Default 14 Quran suites still do not run the liturgy matcher.
+
+- Manifest: `prompts/salah-liturgy/manifest.stub.json` (`status: stub`). Staging: `artifacts/recitation/liturgy/<suite-id>/` (gitignored).
+- `npm run test:replay -- all` still resolves to the original **14** Quran suite names (hard gate).
+- `npm run test:replay -- liturgy` and `salah-liturgy` **skip** the eight stubs with `failureMode: missing_fixture` and `status: skipped` (not PASS) and do not load ONNX.
+- Mixed suites list EveryAyah Fatiha `001001`–`001007` for the Quran half only; liturgy clips remain stubs so the suite still skips until phrase audio exists.
+- Chosen scoring path when audio later exists: PCM through `RecitationFollower` + `SalahLiturgyMatcher` (same as `listening.ts`). Token-fixtures are not registered because they could PASS without acoustic evidence. Matcher units already cover token locks.
+- JSON skip shape: `fixtures/salah-liturgy/sample-skip.json` (`phraseId`/`audioSeconds` null; `failureMode: missing_fixture`).
+- Phrases still lacking audio: suite targets `takbeer`, `thana`, `ruku_tasbih`, `sujood_tasbih`, `tashahhud`; remaining shipped pack rows (`istiadha`, tasbih-with-hamd variants, jamiʿ bayn, darood lines, amin, tasleem) have no suite yet; `liturgy-english-negative` needs its own non-Arabic clip.
+
+This workspace (Linux/x64, no EveryAyah WAVs, no ONNX model): `npm test` **172/172**; `npm run typecheck` pass; lint still reports the pre-existing unused `openingScore` warning. `npx tsx scripts/replay.ts liturgy` and `salah-liturgy` exited **0** with eight skipped `missing_fixture` rows (not PASS) and did not load ONNX. `parseSuiteSelection(['all'])` is the original 14 Quran names. Acoustic `npm run test:replay -- all` was **not** scored here. Shared replay helpers were touched. **Mac must re-verify `npm run test:replay -- all` = 14/14.** Linux ONNX is not that gate. Not a physical-device, mosque, or imam-ready claim.
 

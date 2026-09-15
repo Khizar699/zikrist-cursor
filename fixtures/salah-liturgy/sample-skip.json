@@ -1,0 +1,25 @@
+{
+  "suite": "liturgy-takbeer",
+  "status": "skipped",
+  "gate": "liturgy-phrase",
+  "failureMode": "missing_fixture",
+  "phraseId": null,
+  "audioSeconds": null,
+  "phrases": [],
+  "expectPhraseIds": [
+    "takbeer"
+  ],
+  "missingClips": [
+    "liturgy-takbeer/liturgy-takbeer__pending__STUB.wav"
+  ],
+  "convertHints": [],
+  "matches": [],
+  "firstLockSeconds": null,
+  "wrongSurahCount": 0,
+  "wrongSurahRate": 0,
+  "firstLockWrongSurah": false,
+  "clipDir": "artifacts/recitation/liturgy",
+  "quranClips": [],
+  "expectedLocksPath": "prompts/salah-liturgy/manifest.stub.json",
+  "description": "takbeer only; no verse_match"
+}

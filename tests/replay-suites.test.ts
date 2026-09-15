@@ -5,6 +5,7 @@ import {
   CORE_SUITE_NAMES,
   COLD_START_TRIM_SECONDS,
   ENGLISH_NEGATIVE_CLIP,
+  LITURGY_SUITE_NAMES,
   MISSING_FIXTURE,
   REAL_IMAM_SUITE_NAMES,
   SAMPLE_RATE,
@@ -96,7 +97,7 @@ test('real-imam selection is pending-only and stays out of default all', () => {
   assert.deepEqual(parseSuiteSelection(['real-imam']), [...REAL_IMAM_SUITE_NAMES]);
   assert.deepEqual(
     parseSuiteSelection(['all'], { includePending: true }),
-    [...ALL_SUITE_NAMES, ...REAL_IMAM_SUITE_NAMES],
+    [...ALL_SUITE_NAMES, ...REAL_IMAM_SUITE_NAMES, ...LITURGY_SUITE_NAMES],
   );
   assert.deepEqual(
     parseSuiteSelection(['all', 'real-imam']),
@@ -119,6 +120,34 @@ test('parseReplayCli extracts include-pending and list flags', () => {
     namedArgs: ['real-imam'],
   });
   assert.equal(parseReplayCli(['all', '--include-pending']).includePending, true);
+  assert.deepEqual(parseReplayCli(['--list', 'liturgy']).namedArgs, ['liturgy']);
+});
+
+test('salah liturgy selection is pending-only and stays out of default all', () => {
+  assert.deepEqual([...LITURGY_SUITE_NAMES], [
+    'liturgy-takbeer',
+    'liturgy-thana',
+    'liturgy-ruku',
+    'liturgy-sujood',
+    'liturgy-tashahhud',
+    'liturgy-then-fatiha',
+    'fatiha-then-takbeer',
+    'liturgy-english-negative',
+  ]);
+  assert.equal(ALL_SUITE_NAMES.length, 14);
+  assert.deepEqual(parseSuiteSelection(['all']), [...ALL_SUITE_NAMES]);
+  assert.equal(parseSuiteSelection(['all']).some((name) => name.startsWith('liturgy-')), false);
+  assert.equal(parseSuiteSelection(['all']).includes('fatiha-then-takbeer'), false);
+  assert.deepEqual(parseSuiteSelection(['liturgy']), [...LITURGY_SUITE_NAMES]);
+  assert.deepEqual(parseSuiteSelection(['salah-liturgy']), [...LITURGY_SUITE_NAMES]);
+  assert.deepEqual(
+    parseSuiteSelection(['all', 'liturgy']),
+    [...ALL_SUITE_NAMES, ...LITURGY_SUITE_NAMES],
+  );
+  assert.deepEqual(parseSuiteSelection(['liturgy-takbeer']), ['liturgy-takbeer']);
+  assert.equal(suiteBlueprint('liturgy-takbeer').readiness, 'pending');
+  assert.equal(suiteBlueprint('liturgy-takbeer').scoreLiturgy, true);
+  assert.equal(suiteBlueprint('fatiha').scoreLiturgy, undefined);
 });
 
 test('english-negative is an inverted gate: PASS only when no verse commits', () => {

@@ -16,3 +16,5 @@ Do not mega-merge corpus + matcher + UI in one Cursor session.
 
 ## After 03-display
 `04-replay-suites.md` + `manifest.stub.json` — stub liturgy replay pack (skip not PASS); Quran all stays 14.
+
+Harness: `npm run test:replay -- liturgy` (alias `salah-liturgy`) skips eight stubs with `missing_fixture` (not PASS). Default `all` stays 14. Staging: `artifacts/recitation/liturgy/<suite-id>/`. Do not commit evaluation audio.

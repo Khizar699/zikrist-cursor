@@ -11,6 +11,8 @@
  *   npm run test:replay -- --check-fixtures
  *   npm run test:replay -- --list
  *   npm run test:replay -- real-imam
+ *   npm run test:replay -- liturgy
+ *   npm run test:replay -- salah-liturgy
  *   npm run test:replay -- --include-pending
  *   npm run test:replay -- artifacts/recitation/112001.wav ...
  */
@@ -28,22 +30,34 @@ import {
 } from '../src/core/recognition-clocks';
 import { LIVE_STREAMING_CONFIG } from '../src/core/streaming';
 import {
+  filterQuranMessagesForLiturgy,
+  matcherFromPack,
+  packFromUnknown,
+  type SalahLiturgyMatcher,
+} from '../src/core/salah-liturgy-matcher';
+import {
   ALL_SUITE_NAMES,
+  DEFAULT_CLIP_DIR,
+  LITURGY_SUITE_NAMES,
   MISSING_FIXTURE,
   REAL_IMAM_SUITE_NAMES,
   SAMPLE_RATE,
   SKIPPED_PENDING,
   evaluateFailure,
+  isLiturgySuiteName,
+  isPendingReplaySuiteName,
   isRealImamSuiteName,
   parseReplayCli,
   parseSuiteSelection,
   prepareSuiteAudio,
   suiteBlueprint,
   suiteClipDirectory,
+  suiteClipRefs,
   suiteHelpText,
   uniqueClipsForSuites,
   wrongSurahStats,
   type MatchRow,
+  type PhraseLockRow,
   type SuiteBlueprint,
 } from './replay-suites';
 
@@ -78,12 +92,21 @@ function readWav(file: string): Float32Array {
   return Float32Array.from({ length: data.length / 2 }, (_, index) => data!.readInt16LE(index * 2) / 32768);
 }
 
-function clipPath(clip: string, suite?: Pick<SuiteBlueprint, 'clipDir'>): string {
-  return path.join(root, suiteClipDirectory(suite ?? {}), clip);
+function clipPath(clip: string, suite?: Pick<SuiteBlueprint, 'clipDir'>, dir?: string): string {
+  return path.join(root, dir ?? suiteClipDirectory(suite ?? {}), clip);
 }
 
 function missingClips(suite: SuiteBlueprint): string[] {
   return suite.clips.filter((clip) => !fs.existsSync(clipPath(clip, suite)));
+}
+
+function missingQuranClips(suite: SuiteBlueprint): string[] {
+  const dir = suite.quranClipDir ?? DEFAULT_CLIP_DIR;
+  return (suite.quranClips ?? []).filter((clip) => !fs.existsSync(clipPath(clip, suite, dir)));
+}
+
+function runnableFiles(suite: SuiteBlueprint): string[] {
+  return suiteClipRefs(suite).map((ref) => clipPath(ref.file, suite, ref.dir));
 }
 
 function convertHint(suite: SuiteBlueprint, wavClip: string): string | undefined {
@@ -107,13 +130,19 @@ function fixtureStatus(names: string[]) {
   return names.map((name) => {
     const suite = suiteBlueprint(name);
     const missing = missingClips(suite);
+    const missingQuran = missingQuranClips(suite);
     return {
       suite: name,
-      ready: missing.length === 0,
-      status: missing.length === 0 ? 'ready' : (suite.readiness === 'pending' ? SKIPPED_PENDING : 'missing'),
+      ready: missing.length === 0 && missingQuran.length === 0,
+      status: missing.length === 0
+        ? (missingQuran.length === 0 ? 'ready' : 'missing')
+        : (suite.readiness === 'pending' ? SKIPPED_PENDING : 'missing'),
       missing,
+      missingQuranClips: missingQuran,
       clips: suite.clips,
+      quranClips: suite.quranClips ?? [],
       clipDir: suiteClipDirectory(suite),
+      expectPhraseIds: suite.expectPhraseIds ?? [],
       description: suite.description,
     };
   });
@@ -161,6 +190,11 @@ async function createSession() {
 
 type Engine = Awaited<ReturnType<typeof createSession>>;
 
+function createLiturgyMatcher(): SalahLiturgyMatcher {
+  const data: unknown = JSON.parse(fs.readFileSync(path.join(root, 'assets/content/salah-liturgy.json'), 'utf8'));
+  return matcherFromPack(packFromUnknown(data));
+}
+
 async function replaySuite(
   suite: SuiteBlueprint,
   files: string[],
@@ -177,8 +211,12 @@ async function replaySuite(
   resetRecognitionCycles();
   const follower = new RecitationFollower(engine.session.db, engine.session);
   const gate = new ContinuationGate((ref) => engine.session.db.getNextVerse(ref.surah, ref.ayah));
+  // Default 14 Quran suites keep follower+gate only. Liturgy suites use the same
+  // PCM → lastHeardTokens → SalahLiturgyMatcher path as live listening.
+  const liturgyMatcher = suite.scoreLiturgy === true ? createLiturgyMatcher() : null;
 
   const matches: MatchRow[] = [];
+  const phrases: PhraseLockRow[] = [];
   let voicedMs = 0;
   const processing = performance.now();
 
@@ -194,22 +232,52 @@ async function replaySuite(
     // pad after the clip is still fed so a final flush / stall-after-lock can run.
     if (!voiced && index < audio.length) continue;
     const raw = await follower.feed(chunk);
-    const accepted = gate.accept(raw, voicedMs, voiced);
-    if (process.env.ZIKRIST_TRACE === '1' && (raw.length || accepted.length)) {
+    const audioSeconds = Math.round((Math.min(end, audio.length) / SAMPLE_RATE) * 1000) / 1000;
+    let quran = raw;
+    if (liturgyMatcher) {
+      const liturgy = liturgyMatcher.observe({
+        tokens: follower.lastHeardTokens,
+        atMs: audioSeconds * 1000,
+        quranPhase: follower.phase,
+        quranLock: follower.lockedRef,
+        ayahComplete: follower.lockedAyahComplete,
+        voiced,
+      });
+      if (liturgy) {
+        const lastPhrase = phrases.at(-1);
+        if (!lastPhrase || lastPhrase.phraseId !== liturgy.phraseId) {
+          phrases.push({
+            phraseId: liturgy.phraseId,
+            audioSeconds,
+            confidence: liturgy.confidence,
+          });
+          console.log(`[${suite.label}] liturgy`, {
+            phraseId: liturgy.phraseId,
+            audioSeconds,
+            confidence: liturgy.confidence,
+          });
+        }
+        quran = filterQuranMessagesForLiturgy(raw);
+        follower.reset();
+        gate.reset();
+      }
+    }
+    const accepted = gate.accept(quran, voicedMs, voiced);
+    if (process.env.ZIKRIST_TRACE === '1' && (raw.length || accepted.length || phrases.length)) {
       console.log(JSON.stringify({
         t: end / SAMPLE_RATE,
         rms,
         raw: raw.map((message) => message.type + (message.type === 'verse_match' ? `:${message.surah}:${message.ayah}` : '')),
         accepted: accepted.map((message) => message.type + (message.type === 'verse_match' ? `:${message.surah}:${message.ayah}` : '')),
+        liturgy: phrases.at(-1)?.phraseId ?? null,
       }));
     }
-    const audioSeconds = Math.min(end, audio.length) / SAMPLE_RATE;
     for (const message of accepted) {
       if (message.type === 'verse_match') {
         const row = {
           surah: message.surah,
           ayah: message.ayah,
-          audioSeconds: Math.round(audioSeconds * 1000) / 1000,
+          audioSeconds,
           score: message.confidence,
         };
         const last = matches.at(-1);
@@ -221,8 +289,9 @@ async function replaySuite(
     }
   }
 
-  const failureMode = evaluateFailure(matches, suite);
+  const failureMode = evaluateFailure(matches, suite, phrases);
   const stats = wrongSurahStats(matches, suite.expect, suite.gate);
+  const lastPhrase = phrases.at(-1);
   const report = {
     suite: suite.label,
     gate: suite.gate,
@@ -233,6 +302,9 @@ async function replaySuite(
     loadMs,
     processingMs: performance.now() - processing,
     matches,
+    phrases,
+    phraseId: lastPhrase?.phraseId ?? null,
+    audioSeconds: lastPhrase?.audioSeconds ?? null,
     firstLockSeconds: matches[0]?.audioSeconds ?? null,
     clocks: {
       recent: recentRecognitionCycles(),
@@ -264,6 +336,10 @@ function recordMissingFixture(suite: SuiteBlueprint, missing: string[]): ResultR
     status: SKIPPED_PENDING,
     gate: suite.gate,
     failureMode: MISSING_FIXTURE,
+    phraseId: null,
+    audioSeconds: null,
+    phrases: [] as PhraseLockRow[],
+    expectPhraseIds: suite.expectPhraseIds ?? [],
     missingClips: missing,
     convertHints: hints,
     matches: [],
@@ -272,6 +348,7 @@ function recordMissingFixture(suite: SuiteBlueprint, missing: string[]): ResultR
     wrongSurahRate: 0,
     firstLockWrongSurah: false,
     clipDir: suiteClipDirectory(suite),
+    quranClips: suite.quranClips ?? [],
     expectedLocksPath: suite.expectedLocksPath ?? null,
     description: suite.description,
   };
@@ -304,6 +381,13 @@ if (cli.list) {
     const status = missing.length ? SKIPPED_PENDING : 'ready';
     console.log(`${name}\t${status}\t${suite.description}`);
   }
+  console.log('Pending salah liturgy (`npm run test:replay -- liturgy`; stubs skip with missing_fixture, not PASS):');
+  for (const name of LITURGY_SUITE_NAMES) {
+    const suite = suiteBlueprint(name);
+    const missing = missingClips(suite);
+    const status = missing.length ? SKIPPED_PENDING : 'ready';
+    console.log(`${name}\t${status}\t${suite.description}`);
+  }
   process.exit(0);
 }
 
@@ -315,19 +399,25 @@ if (cli.checkFixtures) {
   const names = selectedSuites.length ? selectedSuites : [...ALL_SUITE_NAMES];
   const status = fixtureStatus(names);
   const missing = [...new Set(status.flatMap((row) => row.missing))];
-  const pendingOnly = names.length > 0 && names.every((name) => isRealImamSuiteName(name));
+  const pendingOnly = names.length > 0 && names.every((name) => isPendingReplaySuiteName(name));
+  const liturgyOnly = names.length > 0 && names.every((name) => isLiturgySuiteName(name));
+  const imamOnly = names.length > 0 && names.every((name) => isRealImamSuiteName(name));
+  const restore = liturgyOnly
+    ? 'Drop 16 kHz mono WAV under artifacts/recitation/liturgy/<suite-id>/. Mixed suites reuse EveryAyah Fatiha WAVs from artifacts/recitation/ after npm run fixtures:recitation. Stubs skip missing_fixture, not PASS.'
+    : imamOnly
+      ? 'Drop 16 kHz mono WAV under artifacts/recitation/imam/<suite-id>/<qari>/ from ~/Desktop/zikrist-imam-clips/ (prompts/real-imam/FIXTURES.md)'
+      : 'npm run fixtures:recitation';
   console.log(JSON.stringify({
     recitationDir: path.relative(root, recitationDir),
     uniqueClips: uniqueClipsForSuites(names),
     missingClips: missing,
     suites: status,
-    restore: pendingOnly
-      ? 'Drop 16 kHz mono WAV under artifacts/recitation/imam/<suite-id>/<qari>/ from ~/Desktop/zikrist-imam-clips/ (prompts/real-imam/FIXTURES.md)'
-      : 'npm run fixtures:recitation',
+    restore,
   }, null, 2));
   const blocking = status.filter((row) => row.missing.length && row.status !== SKIPPED_PENDING);
   if (pendingOnly && missing.length) {
-    console.error(`skip missing_fixture: ${missing.length} real-imam clip(s) (not PASS). See prompts/real-imam/FIXTURES.md`);
+    const pack = liturgyOnly ? 'salah-liturgy' : imamOnly ? 'real-imam' : 'pending';
+    console.error(`skip missing_fixture: ${missing.length} ${pack} clip(s) (not PASS).`);
   } else if (blocking.length) {
     const blockingClips = [...new Set(blocking.flatMap((row) => row.missing))];
     console.error(`Missing ${blockingClips.length} fixture(s). Run npm run fixtures:recitation`);
@@ -343,13 +433,17 @@ for (const name of selectedSuites) {
   const suite = suiteBlueprint(name);
   const missing = missingClips(suite);
   if (missing.length) {
-    if (isRealImamSuiteName(name) || suite.readiness === 'pending') {
+    if (isPendingReplaySuiteName(name) || suite.readiness === 'pending') {
       results.push(recordMissingFixture(suite, missing));
       continue;
     }
     throw new Error(`missing_clip:${missing.map((clip) => path.basename(clip)).join(',')}`);
   }
-  runnable.push({ suite, files: suite.clips.map((clip) => clipPath(clip, suite)) });
+  const missingQuran = missingQuranClips(suite);
+  if (missingQuran.length) {
+    throw new Error(`missing_clip:${missingQuran.map((clip) => path.basename(clip)).join(',')}`);
+  }
+  runnable.push({ suite, files: runnableFiles(suite) });
 }
 
 const needsEngine = cli.wavArgs.length > 0 || runnable.length > 0;
@@ -414,7 +508,7 @@ console.log(JSON.stringify({ results }, null, 2));
 const skipped = results.filter((row) => row.status === SKIPPED_PENDING);
 const failed = results.filter((row) => row.failureMode && row.status !== SKIPPED_PENDING);
 if (skipped.length) {
-  console.error('Skipped pending real-imam (missing_fixture, not PASS):', skipped.map((row) => row.label).join(', '));
+  console.error('Skipped pending (missing_fixture, not PASS):', skipped.map((row) => row.label).join(', '));
 }
 if (failed.length) {
   console.error('Replay gate failed:', failed.map((row) => `${row.label}:${row.failureMode}`).join(', '));

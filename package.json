@@ -19,6 +19,7 @@
     "test:replay:core": "tsx scripts/replay.ts core",
     "test:replay:all": "tsx scripts/replay.ts all",
     "test:replay:real-imam": "tsx scripts/replay.ts real-imam",
+    "test:replay:liturgy": "tsx scripts/replay.ts liturgy",
     "fixtures:recitation": "tsx scripts/download-recitation-fixtures.ts",
     "benchmark": "tsx scripts/replay.ts"
   },

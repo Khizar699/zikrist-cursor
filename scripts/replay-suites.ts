@@ -14,21 +14,29 @@ export const ENGLISH_NEGATIVE_CLIP = 'english-negative.wav';
 export const DEFAULT_CLIP_DIR = 'artifacts/recitation';
 export const REAL_IMAM_CLIP_DIR = 'artifacts/recitation/imam';
 export const REAL_IMAM_MANIFEST = 'prompts/real-imam/manifest.stub.json';
+export const LITURGY_CLIP_DIR = 'artifacts/recitation/liturgy';
+export const LITURGY_MANIFEST = 'prompts/salah-liturgy/manifest.stub.json';
 export const MISSING_FIXTURE = 'missing_fixture';
 export const SKIPPED_PENDING = 'skipped';
 
 export type VerseRef = { surah: number; ayah: number };
 export type MatchRow = { surah: number; ayah: number; audioSeconds: number; score: number };
+export type PhraseLockRow = { phraseId: string; audioSeconds: number; confidence?: number };
 
 export type ReplayGate =
   | 'ordered-sequence'
   | 'no-verse-locks'
   | 'basmala-hold'
-  | 'stall-after-lock';
+  | 'stall-after-lock'
+  | 'liturgy-phrase'
+  | 'liturgy-then-quran'
+  | 'quran-then-liturgy'
+  | 'no-quran-no-liturgy';
 
 export type ClipRunMode = 'concat' | 'each-clip';
 export type SuiteReadiness = 'ready' | 'pending';
 export type SilenceInsert = { atAudioSeconds: number | null; durationSeconds: number };
+export type QuranClipPlacement = 'before' | 'after';
 
 export type SuiteBlueprint = {
   label: string;
@@ -43,6 +51,12 @@ export type SuiteBlueprint = {
   readiness?: SuiteReadiness;
   expectedLocksPath?: string;
   description: string;
+  expectPhraseIds?: string[];
+  allowPartialLiturgy?: boolean;
+  quranClips?: string[];
+  quranClipDir?: string;
+  quranClipPlacement?: QuranClipPlacement;
+  scoreLiturgy?: boolean;
 };
 
 export type RealImamStubEntry = {
@@ -63,6 +77,27 @@ export type RealImamManifest = {
   clip_drop: string;
   audio_root?: string;
   suites: RealImamStubEntry[];
+};
+
+export type SalahLiturgyStubEntry = {
+  suite_id: string;
+  status: 'stub' | 'ready' | 'pending';
+  expect_phrase_ids: string[];
+  expect_quran: VerseRef[];
+  notes: string;
+  license_status: string;
+  clip_path?: string | string[];
+  gate?: ReplayGate;
+  allow_partial_liturgy?: boolean;
+  quran_clip_placement?: QuranClipPlacement;
+};
+
+export type SalahLiturgyManifest = {
+  version: number;
+  kind: string;
+  audio_root?: string;
+  clip_drop_notes?: string;
+  suites: SalahLiturgyStubEntry[];
 };
 
 function verseFileName(surah: number, ayah: number): string {
@@ -124,9 +159,24 @@ export const REAL_IMAM_SUITE_NAMES = [
   'imam-multi-qari',
 ] as const;
 
+/** Pending salah liturgy pack. Not part of default / `all`. No liturgy WAV until dropped. */
+export const LITURGY_SUITE_NAMES = [
+  'liturgy-takbeer',
+  'liturgy-thana',
+  'liturgy-ruku',
+  'liturgy-sujood',
+  'liturgy-tashahhud',
+  'liturgy-then-fatiha',
+  'fatiha-then-takbeer',
+  'liturgy-english-negative',
+] as const;
+
+export const LITURGY_SELECTION_ALIASES = ['liturgy', 'salah-liturgy'] as const;
+
 export type ReadySuiteName = (typeof ALL_SUITE_NAMES)[number];
 export type RealImamSuiteName = (typeof REAL_IMAM_SUITE_NAMES)[number];
-export type SuiteName = ReadySuiteName | RealImamSuiteName;
+export type LiturgySuiteName = (typeof LITURGY_SUITE_NAMES)[number];
+export type SuiteName = ReadySuiteName | RealImamSuiteName | LiturgySuiteName;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -171,6 +221,63 @@ function blueprintFromRealImamStub(entry: RealImamStubEntry): SuiteBlueprint {
     readiness: entry.status === 'ready' ? 'ready' : 'pending',
     expectedLocksPath: REAL_IMAM_MANIFEST,
     description: entry.notes,
+  };
+}
+
+function defaultLiturgyClipPath(suiteId: string): string {
+  return `_stubs/${suiteId}__pending__STUB.txt`;
+}
+
+function clipsFromLiturgyStub(entry: SalahLiturgyStubEntry): string[] {
+  const sources = entry.clip_path
+    ? (Array.isArray(entry.clip_path) ? entry.clip_path : [entry.clip_path])
+    : [defaultLiturgyClipPath(entry.suite_id)];
+  return sources.map((clip) => `${entry.suite_id}/${stubWavName(clip)}`);
+}
+
+function liturgyGate(entry: SalahLiturgyStubEntry): ReplayGate {
+  if (entry.gate) return entry.gate;
+  if (entry.suite_id === 'liturgy-english-negative') return 'no-quran-no-liturgy';
+  if (entry.suite_id === 'liturgy-then-fatiha') return 'liturgy-then-quran';
+  if (entry.suite_id === 'fatiha-then-takbeer') return 'quran-then-liturgy';
+  return 'liturgy-phrase';
+}
+
+function mixedQuranClips(entry: SalahLiturgyStubEntry): string[] | undefined {
+  if (!entry.expect_quran.length) return undefined;
+  const first = entry.expect_quran[0];
+  if (first?.surah === 1 && first.ayah === 2) return FATIHA_CLIPS;
+  return entry.expect_quran.map((ref) => verseFileName(ref.surah, ref.ayah));
+}
+
+function loadLiturgyManifest(): SalahLiturgyManifest {
+  const file = path.join(repoRoot, LITURGY_MANIFEST);
+  return JSON.parse(fs.readFileSync(file, 'utf8')) as SalahLiturgyManifest;
+}
+
+function loadLiturgyStub(name: LiturgySuiteName): SalahLiturgyStubEntry {
+  const entry = loadLiturgyManifest().suites.find((row) => row.suite_id === name);
+  if (!entry) throw new Error(`Missing ${name} in ${LITURGY_MANIFEST}`);
+  return entry;
+}
+
+function blueprintFromLiturgyStub(entry: SalahLiturgyStubEntry): SuiteBlueprint {
+  const quranClips = mixedQuranClips(entry);
+  return {
+    label: entry.suite_id,
+    clips: clipsFromLiturgyStub(entry),
+    expect: entry.expect_quran,
+    gate: liturgyGate(entry),
+    clipDir: LITURGY_CLIP_DIR,
+    readiness: entry.status === 'ready' ? 'ready' : 'pending',
+    expectedLocksPath: LITURGY_MANIFEST,
+    description: entry.notes,
+    expectPhraseIds: entry.expect_phrase_ids,
+    allowPartialLiturgy: entry.allow_partial_liturgy === true,
+    quranClips,
+    quranClipDir: quranClips?.length ? DEFAULT_CLIP_DIR : undefined,
+    quranClipPlacement: entry.quran_clip_placement ?? (quranClips?.length ? 'after' : undefined),
+    scoreLiturgy: true,
   };
 }
 
@@ -281,7 +388,11 @@ const REAL_IMAM_SUITES = Object.fromEntries(
   REAL_IMAM_SUITE_NAMES.map((name) => [name, blueprintFromRealImamStub(loadRealImamStub(name))]),
 ) as Record<RealImamSuiteName, SuiteBlueprint>;
 
-const SUITES: Record<SuiteName, SuiteBlueprint> = { ...READY_SUITES, ...REAL_IMAM_SUITES };
+const LITURGY_SUITES = Object.fromEntries(
+  LITURGY_SUITE_NAMES.map((name) => [name, blueprintFromLiturgyStub(loadLiturgyStub(name))]),
+) as Record<LiturgySuiteName, SuiteBlueprint>;
+
+const SUITES: Record<SuiteName, SuiteBlueprint> = { ...READY_SUITES, ...REAL_IMAM_SUITES, ...LITURGY_SUITES };
 
 export function isReadySuiteName(name: string): name is ReadySuiteName {
   return (ALL_SUITE_NAMES as readonly string[]).includes(name);
@@ -291,14 +402,26 @@ export function isRealImamSuiteName(name: string): name is RealImamSuiteName {
   return (REAL_IMAM_SUITE_NAMES as readonly string[]).includes(name);
 }
 
+export function isLiturgySuiteName(name: string): name is LiturgySuiteName {
+  return (LITURGY_SUITE_NAMES as readonly string[]).includes(name);
+}
+
+export function isLiturgySelectionAlias(name: string): boolean {
+  return (LITURGY_SELECTION_ALIASES as readonly string[]).includes(name);
+}
+
+export function isPendingReplaySuiteName(name: string): boolean {
+  return isRealImamSuiteName(name) || isLiturgySuiteName(name);
+}
+
 export function isSuiteName(name: string): name is SuiteName {
-  return isReadySuiteName(name) || isRealImamSuiteName(name);
+  return isReadySuiteName(name) || isRealImamSuiteName(name) || isLiturgySuiteName(name);
 }
 
 export function suiteBlueprint(name: string): SuiteBlueprint {
   if (!isSuiteName(name)) {
     throw new Error(
-      `Unknown suite "${name}". Use ${ALL_SUITE_NAMES.join(' | ')} | core | all | real-imam | ${REAL_IMAM_SUITE_NAMES.join(' | ')} | wav paths.`,
+      `Unknown suite "${name}". Use ${ALL_SUITE_NAMES.join(' | ')} | core | all | real-imam | ${REAL_IMAM_SUITE_NAMES.join(' | ')} | liturgy | salah-liturgy | ${LITURGY_SUITE_NAMES.join(' | ')} | wav paths.`,
     );
   }
   return SUITES[name];
@@ -326,10 +449,10 @@ export function parseSuiteSelection(args: string[], options?: { includePending?:
   const names = args.filter((arg) => !arg.startsWith('--') && !arg.endsWith('.wav') && !arg.endsWith('.WAV'));
   const includePending = Boolean(options?.includePending);
   if (!names.length || names.includes('all')) {
-    if (includePending || names.includes('real-imam')) {
-      return [...ALL_SUITE_NAMES, ...REAL_IMAM_SUITE_NAMES];
-    }
-    return [...ALL_SUITE_NAMES];
+    const extra: string[] = [];
+    if (includePending || names.includes('real-imam')) extra.push(...REAL_IMAM_SUITE_NAMES);
+    if (includePending || names.some((name) => isLiturgySelectionAlias(name))) extra.push(...LITURGY_SUITE_NAMES);
+    return extra.length ? [...ALL_SUITE_NAMES, ...extra] : [...ALL_SUITE_NAMES];
   }
   const resolved: string[] = [];
   for (const name of names) {
@@ -339,6 +462,10 @@ export function parseSuiteSelection(args: string[], options?: { includePending?:
     }
     if (name === 'real-imam') {
       resolved.push(...REAL_IMAM_SUITE_NAMES);
+      continue;
+    }
+    if (isLiturgySelectionAlias(name)) {
+      resolved.push(...LITURGY_SUITE_NAMES);
       continue;
     }
     suiteBlueprint(name);
@@ -360,6 +487,34 @@ export function loadRealImamStubEntry(name: string): RealImamStubEntry {
 
 export function loadRealImamStubManifest(): RealImamManifest {
   return loadRealImamManifest();
+}
+
+export function loadSalahLiturgyStubEntry(name: string): SalahLiturgyStubEntry {
+  if (!isLiturgySuiteName(name)) {
+    throw new Error(`Not a salah liturgy suite: ${name}`);
+  }
+  return loadLiturgyStub(name);
+}
+
+export function loadSalahLiturgyStubManifest(): SalahLiturgyManifest {
+  return loadLiturgyManifest();
+}
+
+export type SuiteClipRef = { file: string; dir: string; role: 'liturgy' | 'quran' };
+
+export function suiteClipRefs(suite: Pick<SuiteBlueprint, 'clips' | 'clipDir' | 'quranClips' | 'quranClipDir' | 'quranClipPlacement'>): SuiteClipRef[] {
+  const liturgy = suite.clips.map((file) => ({
+    file,
+    dir: suiteClipDirectory(suite),
+    role: 'liturgy' as const,
+  }));
+  const quran = (suite.quranClips ?? []).map((file) => ({
+    file,
+    dir: suite.quranClipDir ?? DEFAULT_CLIP_DIR,
+    role: 'quran' as const,
+  }));
+  if (suite.quranClipPlacement === 'before') return [...quran, ...liturgy];
+  return [...liturgy, ...quran];
 }
 
 export function uniqueClipsForSuites(names: readonly string[]): string[] {
@@ -414,6 +569,93 @@ export function insertSilenceAt(
   return out;
 }
 
+export function isLiturgyGate(gate: ReplayGate): boolean {
+  return gate === 'liturgy-phrase'
+    || gate === 'liturgy-then-quran'
+    || gate === 'quran-then-liturgy'
+    || gate === 'no-quran-no-liturgy';
+}
+
+function phraseExpectationFailure(
+  phrases: readonly PhraseLockRow[],
+  expected: readonly string[],
+  allowPartial: boolean,
+): string | null {
+  if (!expected.length) {
+    return phrases.length ? `liturgy_lock_${phrases[0]!.phraseId}` : null;
+  }
+  if (!phrases.length) return 'no_liturgy_lock';
+  if (allowPartial) {
+    for (const id of expected) {
+      if (!phrases.some((row) => row.phraseId === id)) return `missing_phrase_${id}`;
+    }
+    return null;
+  }
+  for (let index = 0; index < expected.length; index++) {
+    const want = expected[index]!;
+    const got = phrases[index];
+    if (!got) return `missing_phrase_${want}`;
+    if (got.phraseId !== want) {
+      return `phrase_break_at_${index}_got_${got.phraseId}_expected_${want}`;
+    }
+  }
+  return null;
+}
+
+export function evaluateLiturgyFailure(
+  matches: MatchRow[],
+  phrases: readonly PhraseLockRow[],
+  suite: Pick<SuiteBlueprint, 'expect' | 'gate' | 'expectPhraseIds' | 'allowPartialLiturgy'>,
+): string | null {
+  const expectedPhrases = suite.expectPhraseIds ?? [];
+  if (suite.gate === 'no-quran-no-liturgy') {
+    if (matches.length) {
+      const first = matches[0]!;
+      return `verse_lock_${first.surah}:${first.ayah}`;
+    }
+    if (phrases.length) return `liturgy_lock_${phrases[0]!.phraseId}`;
+    return null;
+  }
+  if (suite.gate === 'liturgy-phrase') {
+    if (matches.length) {
+      const first = matches[0]!;
+      return `verse_lock_${first.surah}:${first.ayah}`;
+    }
+    return phraseExpectationFailure(phrases, expectedPhrases, suite.allowPartialLiturgy === true);
+  }
+  if (suite.gate === 'liturgy-then-quran') {
+    const phraseFail = phraseExpectationFailure(phrases, expectedPhrases, false);
+    if (phraseFail) return phraseFail;
+    const firstQuran = matches[0];
+    const firstPhrase = phrases[0];
+    if (firstQuran && firstPhrase && firstQuran.audioSeconds + 1e-9 < firstPhrase.audioSeconds) {
+      return `quran_before_liturgy_${firstQuran.surah}:${firstQuran.ayah}`;
+    }
+    return evaluateFailure(matches, { expect: suite.expect, gate: 'ordered-sequence' });
+  }
+  if (suite.gate === 'quran-then-liturgy') {
+    const quranFail = evaluateFailure(
+      matches.slice(0, suite.expect.length),
+      { expect: suite.expect, gate: 'ordered-sequence' },
+    );
+    if (quranFail) return quranFail;
+    if (matches.length > suite.expect.length) {
+      const extra = matches[suite.expect.length]!;
+      return `verse_after_quran_${extra.surah}:${extra.ayah}`;
+    }
+    const lastQuran = matches[suite.expect.length - 1];
+    const liturgyAfter = lastQuran
+      ? phrases.filter((row) => row.audioSeconds + 1e-9 >= lastQuran.audioSeconds)
+      : phrases;
+    return phraseExpectationFailure(
+      liturgyAfter.length ? liturgyAfter : phrases,
+      expectedPhrases,
+      false,
+    );
+  }
+  return 'missing_liturgy_gate';
+}
+
 export function prepareSuiteAudio(
   clips: Float32Array[],
   suite: Pick<SuiteBlueprint, 'trimStartSeconds' | 'trailingSilenceSeconds' | 'insertSilence'>,
@@ -434,8 +676,12 @@ export function prepareSuiteAudio(
 
 export function evaluateFailure(
   matches: MatchRow[],
-  suite: Pick<SuiteBlueprint, 'expect' | 'gate'>,
+  suite: Pick<SuiteBlueprint, 'expect' | 'gate' | 'expectPhraseIds' | 'allowPartialLiturgy'>,
+  phrases: readonly PhraseLockRow[] = [],
 ): string | null {
+  if (isLiturgyGate(suite.gate)) {
+    return evaluateLiturgyFailure(matches, phrases, suite);
+  }
   if (suite.gate === 'no-verse-locks') {
     if (!matches.length) return null;
     const first = matches[0]!;
@@ -489,7 +735,7 @@ export function wrongSurahStats(
   expect: VerseRef[],
   gate: ReplayGate,
 ): { wrongSurahCount: number; wrongSurahRate: number; firstLockWrongSurah: boolean } {
-  if (gate === 'no-verse-locks' || gate === 'basmala-hold') {
+  if (gate === 'no-verse-locks' || gate === 'basmala-hold' || gate === 'no-quran-no-liturgy' || gate === 'liturgy-phrase') {
     const count = matches.length;
     return {
       wrongSurahCount: count,
@@ -511,12 +757,15 @@ export function wrongSurahStats(
 export function suiteHelpText(): string {
   const ready = ALL_SUITE_NAMES.map((name) => `  ${name.padEnd(22)} ${SUITES[name].description}`);
   const pending = REAL_IMAM_SUITE_NAMES.map((name) => `  ${name.padEnd(22)} [pending] ${SUITES[name].description}`);
+  const liturgy = LITURGY_SUITE_NAMES.map((name) => `  ${name.padEnd(22)} [pending] ${SUITES[name].description}`);
   return [
     'Usage:',
     '  npm run test:replay',
     '  npm run test:replay -- all',
     '  npm run test:replay -- core',
     '  npm run test:replay -- real-imam',
+    '  npm run test:replay -- liturgy',
+    '  npm run test:replay -- salah-liturgy',
     '  npm run test:replay -- --include-pending',
     '  npm run test:replay -- <suite>',
     '  npm run test:replay -- --check-fixtures',
@@ -528,5 +777,8 @@ export function suiteHelpText(): string {
     '',
     'Pending real-imam (skip with missing_fixture, not PASS; not in default all):',
     ...pending,
+    '',
+    'Pending salah liturgy (skip with missing_fixture, not PASS; not in default all):',
+    ...liturgy,
   ].join('\n');
 }
