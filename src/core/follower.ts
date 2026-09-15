@@ -88,6 +88,17 @@ function relatedStem(left: string, right: string): boolean {
   return longer.endsWith(shorter) || longer.startsWith(shorter);
 }
 
+/** Advance/follow soft match: نفاث ≈ النفثت, الجنة ≈ الجنه. */
+function softTokenMatch(left: string, right: string): boolean {
+  if (wordsMatch(left, right) || relatedStem(left, right)) return true;
+  const strip = (word: string) => compact(word).replace(/^ال/, '').replace(/^[وف]/, '');
+  const a = strip(left);
+  const b = strip(right);
+  if (a.length < 3 || b.length < 3) return false;
+  if (a.includes(b) || b.includes(a)) return true;
+  return levRatio(a, b) >= 0.72;
+}
+
 function openingWordMatch(left: string, right: string): boolean {
   return left === right || relatedStem(left, right);
 }
@@ -424,6 +435,8 @@ export class RecitationFollower {
       && locatedScore >= neighborhood + SURAH_MARGIN
       // Mid-surah: refuse weak cross-surah jumps (was leaping to 7:1 on garbage windows).
       && (!stillInSurah || locatedVerse.surah === current.surah || locatedScore >= 0.92)
+      // Mysterious-letter ayahs need a whole-word token, not المصدر/المدرس noise.
+      && this.canLock(located, locatedVerse, text, recognized)
     );
 
     if (jump && located && locatedVerse) {
@@ -479,9 +492,21 @@ export class RecitationFollower {
     const skip = Math.max(overlap, needUnique);
     if (heardDistinct(query, next, skip)) return true;
     const spoken = query.join(' ');
-    if (this.locationScore(spoken, next) < LOCK_CLEAR_SCORE) return false;
-    const unused = (token: string) => !currentBody.some((word) => wordsMatch(word, token) || relatedStem(word, token));
-    return words.slice(1).some((token) => unused(token) && query.some((word) => wordsMatch(word, token)));
+    const unused = (token: string) => !currentBody.some((word) => softTokenMatch(word, token));
+    // Distinctive later tokens (النفثت / الجنه) may arrive without the shared ومن/من
+    // opening in a short follow window. Require a real unique body token — not just
+    // a shared رب/rabbi leftover from Fatiha after Ibrahim 14:39.
+    const distinctive = words
+      .slice(Math.max(1, skip > basmala ? skip - basmala : 1))
+      .filter((token) => token.length >= 4 && unused(token));
+    const hits = distinctive.filter((token) => query.some((word) => softTokenMatch(word, token)));
+    if (!hits.length) return false;
+    // Ambiguous openings still need a strong location score so leftover رب≠14:40.
+    if (isAmbiguousAdvanceOpening(opening)) {
+      return this.locationScore(spoken, next) >= LOCK_CLEAR_SCORE && hits.length >= 1
+        && hits.some((token) => !isAmbiguousAdvanceOpening(token) && token.length >= 5);
+    }
+    return this.locationScore(spoken, next) >= 0.55;
   }
 
 
