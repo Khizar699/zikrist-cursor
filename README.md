@@ -97,10 +97,12 @@ Read [AGENTS.md](AGENTS.md) before extending the implementation. The focused cle
 Headless faster-than-live fixture replay through the live follower path (not phone mic latency):
 
 ```bash
-npm run test:replay           # fatiha + ikhlas + nas
+npm run test:replay           # fatiha + ikhlas + nas + kawthar + falaq + asr + quraysh
 npm run test:replay -- fatiha
 npm run test:replay -- ikhlas
-npm run test:replay -- nas
+npm run test:replay -- asr
+npm run test:replay -- kawthar
+npm run test:replay -- quraysh
 ```
 
 Writes `artifacts/qa-runs/replay-<suite>.json`. Requires `onnxruntime-node` (devDependency) and 16 kHz mono WAV fixtures under `artifacts/recitation/`.
