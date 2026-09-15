@@ -130,11 +130,12 @@ Remaining suites were not scored here. Overnight locate+follow scoring is still 
 
 ## Ayah-1 body evidence (Al-Baqarah start)
 
-Rebased onto main `eacf963` (Basmala-echo guard so `001001` cannot first-lock 55:1) / `8f176d4`. Acquire treats post-Basmala ayah-1 **body** as lock evidence (not Basmala, not a longer prefix lookalike such as `المال` for `الم`). Opening align uses a tight stem so `الم` cannot lock `المال`; follow leftover matching still allows ASR `الا` to hit `الانسن` (Asr 103:2). `ContinuationGate` confirms a one-word ayah-1 body on that phoneme token (`الم`, not Uthmani `الٓمٓ`). Linux/x64 `onnxruntime-node` 1.24.3 headless replay on this workspace (not a phone):
+Rebased onto main `802bc66` (Nas 114:6 last-ayah seed-trim-before-append). Acquire treats post-Basmala ayah-1 **body** as lock evidence (not Basmala, not a longer prefix lookalike such as `المال` for `الم`). Opening align uses a tight stem so `الم` cannot lock `المال`; follow leftover matching still allows ASR `الا` to hit `الانسن` (Asr 103:2). Mysterious-letter `canLock` keeps main’s exact compact phoneme token (no 7:1). `ContinuationGate` confirms a one-word ayah-1 body on that phoneme token (`الم`, not Uthmani `الٓمٓ`). Linux/x64 `onnxruntime-node` 1.24.3 headless replay on this workspace (not a phone). **Mac `npm run test:replay -- longer` is the acceptance bar.**
 
 | Suite | Result |
 | --- | --- |
 | `longer` | PASS — 2:1@6s → 2:2@8.5 → 2:3@17.5 → 2:4@29 → 2:5@30.5; `failureMode` null. Extra 2:6–2:11 after the gated prefix (follow overshoot, out of this start-slice). |
+| `nas` | PASS — 114:1@4 → 114:2@6.5 → 114:3@12.5 → 114:4@20 → 114:5@25.75 → 114:6@33.75; `wrongSurahRate` 0 (no 7:1) |
 | `fatiha` | PASS — 1:2@9 → 1:7@35 |
 | `ikhlas` | PASS — 112:1–4 |
 | `falaq` | PASS — 113:1–5 |
@@ -146,4 +147,4 @@ Rebased onto main `eacf963` (Basmala-echo guard so `001001` cannot first-lock 55
 | `kawthar` | PASS — 108:1@7.75 → 108:2@8.75 → 108:3@10.25 |
 | `quraysh` | PASS — 106:1@2 → 106:2@7.5 → 106:3@11 → 106:4@20.5 |
 
-Rebased onto main `802bc66` (Nas 114:6 last-ayah seed-trim-before-append). Nas, Fatiha, and short-surah `asr` / `kawthar` / `quraysh` must stay green. Mac `npm run test:replay -- longer` is the acceptance bar; Linux numbers below are this workspace, not a phone.
+`npm test` 119/119. Nas, Fatiha, and short-surah `asr` / `kawthar` / `quraysh` stayed green. Not a physical-device accuracy claim.
