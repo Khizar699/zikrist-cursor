@@ -11,7 +11,7 @@
 - `cold-start-mid` GREEN: trimmed `002002` still locates 2:2 (no 2:1 body in the window).
 - Linux ONNX on this workspace also first-locked **18:46** (`المال`) from 2:1 `الم` via `relatedStem` prefix, then stuck. Same slice: ayah-1 body is not a license to name a longer lookalike.
 
-Mandatory regression gates: **nas**, fatiha, ikhlas, falaq, english-negative, basmala-hold, cold-start-mid, stall-after-lock, **asr**, **kawthar**, **quraysh**. Main `802bc66` merged Nas 114:6 (seed-trim-before-append, no 7:1); `eacf963` Basmala-echo must keep `001001` from first-locking 55:1. Mac `npm run test:replay -- longer` is the acceptance bar.
+Mandatory regression gates: **nas**, fatiha, ikhlas, falaq, english-negative, basmala-hold, cold-start-mid, stall-after-lock, **asr**, **kawthar**, **quraysh**, **back-to-back**. Main `11759a9` merged back-to-back Asr→Quraysh reacquire (#5); `802bc66` Nas 114:6 (seed-trim-before-append, no 7:1); `eacf963` Basmala-echo must keep `001001` from first-locking 55:1. Mac `npm run test:replay -- longer` is the acceptance bar.
 
 ## Inspected
 
@@ -38,12 +38,12 @@ Ayah-1 **body** after the shared Basmala is lock evidence. Basmala is not. A lon
 
 ## Out of scope
 
-UI, model retune, Baqarah-only special case. Do not retune Nas last-ayah or Asr/Kawthar/Quraysh; they are regression gates after rebase onto `802bc66`.
+UI, model retune, Baqarah-only special case. Do not retune Nas last-ayah, Asr leftover, Kawthar/Quraysh, or back-to-back Asr→Quraysh leftover crumbs; they are regression gates after rebase onto `11759a9`.
 
 ## Acceptance
 
 1. Mac `npm run test:replay -- longer` → 2:1–5, `failureMode` null; never 18:46 first lock. Linux replay on this workspace is supporting evidence only.
 2. `basmala-hold` still no locks; `cold-start-mid` still 2:2.
-3. The named regression gates stay green: nas, fatiha, asr, kawthar, quraysh, ikhlas, falaq.
+3. The named regression gates stay green: nas, fatiha, asr, kawthar, quraysh, ikhlas, falaq, back-to-back.
 4. `npm test`, typecheck, lint pass.
-5. Unit tests encode 2:1 body vs `المال`, mixed 2:1+2:2 preferring 2:1, 2:2-only cold start, Basmala-only not locking 2:1, gate confirm on index 4 of 5, Ikhlas still needing a word after `قل`, Asr `الا`/`الانسن` leftover, and Nas last-ayah tests from main.
+5. Unit tests encode 2:1 body vs `المال`, mixed 2:1+2:2 preferring 2:1, 2:2-only cold start, Basmala-only not locking 2:1, gate confirm on index 4 of 5, Ikhlas still needing a word after `قل`, Asr `الا`/`الانسن` leftover, Nas last-ayah tests from main, and back-to-back leftover crumbs that must not re-lock 103:1.
