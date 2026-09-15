@@ -143,4 +143,4 @@ Acquire now treats post-Basmala ayah-1 **body** as lock evidence (not Basmala, n
 | `cold-start-mid` | PASS — 2:2 |
 | `stall-after-lock` | PASS — 112:2, no silence jump |
 
-`npm test` 108/108. Not a physical-device accuracy claim. Nas 114:6 and Asr/Kawthar/Quraysh were not retuned in this slice.
+Rebased onto main `eacf963` (Basmala-echo guard for 55:1) / `8f176d4`. Fatiha and short-surah `asr` / `kawthar` / `quraysh` must stay green; this slice does not retune those followers. Nas 114:6 is owned elsewhere. Not a physical-device accuracy claim. Post-rebase Linux replay numbers are recorded after the verification run.

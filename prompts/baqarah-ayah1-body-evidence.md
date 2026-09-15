@@ -11,7 +11,7 @@
 - `cold-start-mid` GREEN: trimmed `002002` still locates 2:2 (no 2:1 body in the window).
 - Linux ONNX on this workspace also first-locked **18:46** (`المال`) from 2:1 `الم` via `relatedStem` prefix, then stuck. Same slice: ayah-1 body is not a license to name a longer lookalike.
 
-Mandatory regression gates: fatiha, ikhlas, falaq, english-negative, basmala-hold, cold-start-mid, stall-after-lock. Nas 114:6 and Asr/Kawthar/Quraysh belong to other agents.
+Mandatory regression gates: fatiha, ikhlas, falaq, english-negative, basmala-hold, cold-start-mid, stall-after-lock, **asr**, **kawthar**, **quraysh**. Main `eacf963` added the Basmala-echo guard so `001001` cannot first-lock 55:1; rebase onto that and do not regress Fatiha or those short-surah wins. Nas 114:6 is owned elsewhere.
 
 ## Inspected
 
@@ -38,12 +38,12 @@ Ayah-1 **body** after the shared Basmala is lock evidence. Basmala is not. A lon
 
 ## Out of scope
 
-Nas last-ayah, Asr/Kawthar/Quraysh, UI, model retune, Baqarah-only special case.
+Nas last-ayah, UI, model retune, Baqarah-only special case. Do not retune Asr/Kawthar/Quraysh; they are regression gates.
 
 ## Acceptance
 
 1. `npm run test:replay -- longer` → 2:1–5, `failureMode` null; never 18:46 first lock.
 2. `basmala-hold` still no locks; `cold-start-mid` still 2:2.
-3. The 7 named regression gates stay green.
+3. The named regression gates stay green, including Fatiha and asr/kawthar/quraysh.
 4. `npm test`, typecheck, lint pass.
 5. Unit tests encode 2:1 body vs `المال`, mixed 2:1+2:2 preferring 2:1, 2:2-only cold start, Basmala-only not locking 2:1, gate confirm on index 4 of 5, Ikhlas still needing a word after `قل`.
