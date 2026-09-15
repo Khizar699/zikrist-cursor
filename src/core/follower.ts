@@ -299,6 +299,18 @@ export class RecitationFollower {
   async feed(samples: Float32Array, timings: FeedTimings = {}): Promise<RecognitionMessage[]> {
     if (!samples.length) return [];
     this.queueTimings = timings;
+    // Trim leftover penultimate audio before appending so a large first
+    // last-ayah batch is kept, not collapsed to LAST_AYAH_SEED_SEC after concat.
+    if (
+      this.phase === 'following'
+      && this.lock
+      && this.ayahComplete(this.lock)
+      && this.shortLastAyahFollow(this.lock)
+      && !this.trimmedForShortLast
+    ) {
+      this.window = keepLast(this.window, LAST_AYAH_SEED_SEC);
+      this.trimmedForShortLast = true;
+    }
     this.window = concatAudio(this.window, samples);
     this.fresh += samples.length;
     const maxSec = this.followMaxSec();
@@ -399,12 +411,6 @@ export class RecitationFollower {
     const current = this.lock;
     const next = this.db.getNextVerse(current.surah, current.ayah);
     const alreadyComplete = this.ayahComplete(current);
-    // Drop the penultimate tail once so the last ayah can accumulate as its
-    // own utterance instead of sliding 1.2 s crumbs through leftover audio.
-    if (alreadyComplete && this.shortLastAyahFollow(current) && !this.trimmedForShortLast) {
-      this.window = keepLast(this.window, LAST_AYAH_SEED_SEC);
-      this.trimmedForShortLast = true;
-    }
     this.fresh = 0;
     const atSurahBoundary = Boolean(alreadyComplete && next && next.surah !== current.surah);
     const locate = this.mismatches > 0;

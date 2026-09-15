@@ -21,7 +21,7 @@
 When mushaf-next is the last ayah of the current surah and has ≤ 4 body words:
 
 1. Grow the follow window to 5 s so the last ayah can accumulate as one utterance.
-2. Once the penultimate ayah is acoustically complete, trim to a 0.3 s seed so the penultimate tail does not dominate.
+2. Once the penultimate ayah is acoustically complete, trim leftover audio to a 0.3 s seed **before appending** the next batch so a large first last-ayah batch is not collapsed to 0.3 s.
 3. Do not reacquire while that window is still filling; locate can still recover a wrong lock.
 4. Mysterious-letter `canLock` uses **phoneme body** tokens and requires an exact whole word (`المص`).
 5. While waiting for that short last ayah, refuse a cross-surah jump.

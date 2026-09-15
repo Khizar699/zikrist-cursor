@@ -564,8 +564,16 @@ test('after An-Nas ayah 5, a garbage window cannot jump to 7:1', async () => {
     noise, noise, noise, noise, noise, noise, noise, noise, noise, noise,
   ]);
   assert.deepEqual(refs(await engine.feed(audio(1))), ['114:5']);
+  resetRecognitionCycles();
   const jumped: string[] = [];
   jumped.push(...refs(await engine.feed(audio(FOLLOW_LAST_AYAH_ACCUMULATE_SEC))));
+  const cycle = lastRecognitionCycle();
+  assert.ok(cycle);
+  assert.ok(
+    cycle.windowSec >= FOLLOW_LAST_AYAH_ACCUMULATE_SEC - 0.05,
+    `first last-ayah batch collapsed to ${cycle.windowSec}s`,
+  );
+  assert.ok(cycle.windowSec <= FOLLOW_LAST_AYAH_ACCUMULATE_SEC + 0.05);
   for (let hopIndex = 0; hopIndex < 8; hopIndex++) {
     jumped.push(...refs(await engine.feed(hop())));
   }
