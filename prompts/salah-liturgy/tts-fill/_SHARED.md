@@ -22,3 +22,8 @@ Existing harness: PCM → follower heard tokens → `SalahLiturgyMatcher`. Do no
 - Marking `ready` while still skipping
 - Imam / mosque clip work
 - Expanding deferred pack phrases
+
+## Mac TTS note (from 01-takbeer)
+
+- Prefer `npm run liturgy:tts -- <suite>` (edge-tts). On Mac, if edge-tts returns **403**, use `--engine say` (e.g. Majed) — same 16 kHz mono path; document voice in suite `notes`.
+- Always regenerate the gitignored WAV on the Mac that will score `test:replay`.
