@@ -116,13 +116,20 @@ JSON path: `artifacts/qa-runs/replay-<suite>.json`. Fields include `matches`, `f
 
 Fixture-ready after `npm run fixtures:recitation` (ffmpeg required; EveryAyah Alafasy MP3 → 16 kHz mono WAV). Composed suites reuse those clips. Evaluation audio stays gitignored. An EveryAyah URL is not a redistribution grant.
 
-Gate contracts are covered by `tests/replay-suites.test.ts` (`npm test` 99/99). After `npm run fixtures:recitation`, `--check-fixtures` reported all 14 suites ready. A Linux/x64 `onnxruntime-node` smoke on this workspace (not a phone, not Sim QA overnight):
+Gate contracts are covered by `tests/replay-suites.test.ts`. After `npm run fixtures:recitation`, `--check-fixtures` reported all 14 suites ready. A Linux/x64 `onnxruntime-node` replay on this workspace (not a phone, not mosque evidence):
 
 | Suite | Result |
 | --- | --- |
+| `jump` | PASS — 108:1–3 then 112:1–4; first Ikhlas lock 112:1@16.75s, not 112:4 |
+| `kawthar` | PASS — 108:1–3 |
+| `ikhlas` | PASS — 112:1–4 |
+| `fatiha` | PASS — 1:2–1:7 |
+| `falaq` | PASS — 113:1–5 |
+| `asr` | PASS — 103:1–3 |
+| `quraysh` | PASS — 106:1–4 |
 | `english-negative` | PASS — no verse locks; `wrongSurahRate` 0 |
 | `basmala-hold` | PASS — `001001` alone locked nothing; `wrongSurahRate` 0 |
+| `cold-start-mid` | PASS — first lock 2:2 |
 | `stall-after-lock` | PASS — first lock 112:2, no jump during 4 s fed silence |
-| `kawthar` | `failureMode` `stall_missing_108:3_after_2_matches` (108:1 then 108:2; `wrongSurahRate` 0) |
 
-Remaining suites were not scored here. Overnight locate+follow scoring is still for Sim QA on Mac (or any machine with the model + WAVs). Honest `failureMode` is a valid harness result, not a reason to retune the follower in this change.
+JSON under `artifacts/qa-runs/replay-<suite>.json` (gitignored evaluation audio). This is not a physical-device accuracy claim. Overnight locate+follow scoring on a phone remains separate.
