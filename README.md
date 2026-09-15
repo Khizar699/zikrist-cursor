@@ -94,14 +94,39 @@ Read [AGENTS.md](AGENTS.md) before extending the implementation. The focused cle
 
 ## Acoustic replay (Sim QA)
 
-Headless faster-than-live fixture replay through the live follower path (not phone mic latency):
+Headless faster-than-live fixture replay through the live follower path (ONNX CPU + `RecitationFollower` + `ContinuationGate`). Not phone/mic latency. Not Tilawa's streaming tracker.
+
+Restore EveryAyah/Alafasy 16 kHz mono WAV fixtures (gitignored under `artifacts/recitation/`, SSSAAA names like `108001.wav`):
 
 ```bash
-npm run test:replay           # fatiha + ikhlas + nas
+npm run fixtures:recitation
+npm run test:replay -- --check-fixtures
+```
+
+Suite commands:
+
+```bash
+npm run test:replay                 # all suites (same as -- all)
+npm run test:replay -- all
+npm run test:replay -- core         # fatiha + ikhlas + nas
 npm run test:replay -- fatiha
 npm run test:replay -- ikhlas
 npm run test:replay -- nas
+npm run test:replay -- kawthar
+npm run test:replay -- falaq
+npm run test:replay -- asr
+npm run test:replay -- quraysh
+npm run test:replay -- longer       # Al-Baqarah 2:1–5
+npm run test:replay -- jump         # Kawthar then Ikhlas
+npm run test:replay -- english-negative
+npm run test:replay -- basmala-hold
+npm run test:replay -- back-to-back # Asr then Quraysh
+npm run test:replay -- cold-start-mid
+npm run test:replay -- stall-after-lock
+npm run test:replay -- --list
 ```
 
-Writes `artifacts/qa-runs/replay-<suite>.json`. Requires `onnxruntime-node` (devDependency) and 16 kHz mono WAV fixtures under `artifacts/recitation/`.
+Each suite writes `artifacts/qa-runs/replay-<suite>.json` with `matches[{surah,ayah,audioSeconds,score}]`, `firstLockSeconds`, `clocks`, `failureMode`, `wrongSurahRate`, `wrongSurahCount`, and `firstLockWrongSurah`. `english-negative` PASSes only when no verse commits. `basmala-hold` PASSes only when `001001` alone locks neither 1:1 nor any other verse. Honest `failureMode` strings are expected when the current follower misses a suite — this harness does not retune acquire/follow.
+
+Requires `onnxruntime-node` (devDependency), pinned model assets (`npm run assets:download`), and the WAV fixtures. Cloud/Linux agents can unit-test gates without ONNX; acoustic scoring is for a machine that already has the model + clips (typically Sim QA on Mac).
 

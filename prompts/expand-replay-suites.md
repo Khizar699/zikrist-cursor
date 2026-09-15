@@ -1,5 +1,69 @@
 # Expand headless replay suites + fixtures
 
+## Session plan (2026-09-15)
+
+### Goal
+
+Grow `npm run test:replay` coverage beyond Fatiha / Ikhlas / Nas so Sim QA can overnight-score locate+follow on more surahs and edge cases. Add EveryAyah/Alafasy-style fixtures under `artifacts/recitation/` (SSSAAA naming like `108001.wav`) and wire named suites that write the same JSON shape, plus `wrongSurahRate`.
+
+### Scope (one concern)
+
+Harness suite wiring, fixture download/conversion, concat/silence/trim helpers, and docs only. **Do not** retune `RecitationFollower`, acquire/follow thresholds, ContinuationGate, or model weights.
+
+### Inspected
+
+- `scripts/replay.ts` already names `fatiha`, `ikhlas`, `nas`, `kawthar`, `falaq`, `asr`, `quraysh`; default argv-empty list is those seven. Core gates: Fatiha 1:2–1:7 (Ibrahim 14:39/14:40 first-lock special case), Ikhlas 112:1–4, Nas 114:1–6.
+- `artifacts/` is gitignored. This checkout had **no** WAVs on disk; do not assume Sim QA’s tree is empty. Restore via `npm run fixtures:recitation` (EveryAyah Alafasy MP3 → 16 kHz mono PCM16 WAV).
+- JSON today: `matches[{surah,ayah,audioSeconds,score}]`, `firstLockSeconds`, `clocks`, `failureMode`. Missing `wrongSurahRate`.
+- Live-mic feed skips unvoiced frames **inside** the clip (`index < audio.length`) and still feeds trailing pad. Stall silence must be **trailing pad that is fed**, not mid-clip zeros (those would be skipped).
+
+### Assumptions
+
+- `longer` = Al-Baqarah **2:1–5** (`002001`–`002005`), not Mulk 67:1–3.
+- `jump` = Kawthar then Ikhlas. `back-to-back` = Asr then Quraysh (distinct from jump).
+- `english-negative` inverted gate: PASS only if **no** verse commits; `failureMode` if any lock.
+- `basmala-hold`: `001001` alone must not lock 1:1 or any other verse.
+- `cold-start-mid`: trim first 0.75 s of `002002.wav` (unique longer ayah).
+- `stall-after-lock`: `112002` + 4 s trailing silence that **is** fed; keep last verse / no jump.
+- Honest `failureMode` is success for this session if the current algorithm fails a suite.
+- Evaluation audio stays gitignored; the download script is the committed fixture path.
+
+### Files
+
+- `scripts/replay-suites.ts` (blueprints, gates, PCM helpers, `wrongSurahRate`)
+- `scripts/replay.ts` (ONNX + follower feed; suite CLI)
+- `scripts/download-recitation-fixtures.ts`
+- `tests/replay-suites.test.ts`
+- `package.json`, `README.md`, `VALIDATION.md`, `THIRD_PARTY_NOTICES.md`
+- This prompt
+
+### Architecture / security
+
+- Real ONNX CPU + `RecitationFollower` + `ContinuationGate` (same as live). No fake matches.
+- One serialized feed loop; no overlapping session mutation.
+- Evaluation clips are not app assets and are not uploaded. EveryAyah URL ≠ redistribution grant.
+- Private local capture only; harness writes `artifacts/qa-runs/` only.
+
+### Acceptance
+
+1. `npm run test:replay -- <name>` writes `artifacts/qa-runs/replay-<name>.json` including `wrongSurahRate`.
+2. Default / `all` runs core + new suites; `core` keeps fatiha/ikhlas/nas.
+3. Fixtures downloadable for every suite; inverted/hold/stall gates as specified.
+4. `npm test`, `npm run typecheck`, `npm run lint` pass.
+5. No follower/threshold edits.
+
+### Checks / manual
+
+- Unit tests for gates, SSSAAA names, trim/concat (no ONNX).
+- `--check-fixtures` for presence without inference.
+- Optional real `test:replay` if model + WAVs are present; report honest `failureMode`.
+- Cloud/Linux agents without `assets/model/*.onnx` still ship harness + `tests/replay-suites.test.ts`. Acoustic overnight scoring is Sim QA on Mac.
+- Not a physical-phone or mosque measurement.
+
+---
+
+## Original prompt
+
 ## Goal
 
 Grow `npm run test:replay` coverage beyond Fatiha / Ikhlas / Nas so Sim QA can overnight-score locate+follow on more surahs and edge cases. Add EveryAyah/Alafasy-style fixtures under `artifacts/recitation/` (SSSAAAayah naming like `108001.wav`) and wire named suites that write the same JSON shape.

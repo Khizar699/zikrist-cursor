@@ -15,6 +15,9 @@
     "export": "expo export --platform ios --platform android",
     "postinstall": "patch-package",
     "test:replay": "tsx scripts/replay.ts",
+    "test:replay:core": "tsx scripts/replay.ts core",
+    "test:replay:all": "tsx scripts/replay.ts all",
+    "fixtures:recitation": "tsx scripts/download-recitation-fixtures.ts",
     "benchmark": "tsx scripts/replay.ts"
   },
   "dependencies": {
