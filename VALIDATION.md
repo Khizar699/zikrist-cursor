@@ -102,4 +102,13 @@ JSON path: `artifacts/qa-runs/replay-<suite>.json`. Fields include `matches`, `f
 
 Fixture-ready after `npm run fixtures:recitation` (ffmpeg required; EveryAyah Alafasy MP3 → 16 kHz mono WAV). Composed suites reuse those clips. Evaluation audio stays gitignored. An EveryAyah URL is not a redistribution grant.
 
-This cloud workspace did not have `assets/model/*.onnx` at harness landing. Gate contracts are covered by `tests/replay-suites.test.ts` (`npm test`). Acoustic overnight scoring is for Sim QA on a Mac (or any machine) that already has the model + WAVs. Honest `failureMode` on a suite is a valid harness result, not a reason to retune the follower in this change.
+Gate contracts are covered by `tests/replay-suites.test.ts` (`npm test` 99/99). After `npm run fixtures:recitation`, `--check-fixtures` reported all 14 suites ready. A Linux/x64 `onnxruntime-node` smoke on this workspace (not a phone, not Sim QA overnight):
+
+| Suite | Result |
+| --- | --- |
+| `english-negative` | PASS — no verse locks; `wrongSurahRate` 0 |
+| `basmala-hold` | PASS — `001001` alone locked nothing; `wrongSurahRate` 0 |
+| `stall-after-lock` | PASS — first lock 112:2, no jump during 4 s fed silence |
+| `kawthar` | `failureMode` `stall_missing_108:3_after_2_matches` (108:1 then 108:2; `wrongSurahRate` 0) |
+
+Remaining suites were not scored here. Overnight locate+follow scoring is still for Sim QA on Mac (or any machine with the model + WAVs). Honest `failureMode` is a valid harness result, not a reason to retune the follower in this change.
