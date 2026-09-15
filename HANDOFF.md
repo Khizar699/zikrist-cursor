@@ -2,6 +2,18 @@
 
 Friends and **new Grok / Cursor agents** (no chat history) start here. Large recitation wav/mp3 is **not** in git (no Git LFS). Founder-verified imam **labels** are in git. Audio is restored locally.
 
+## Maintainer rule (founder)
+
+Every PR that merges to `main` **must** update this file **in the same PR**: what landed, tip state, open tracks, gates (`npm run test:replay -- all` = **14/14** Quran), fixture restore commands, known fails. Prompt Smith / cloud agents follow `prompts/_SHARED-HANDOFF.md`. A PR without a `HANDOFF.md` bump is not mergeable.
+
+## Tip state (update every PR)
+
+- **This PR:** #15 — founder labels in git; `npm run fixtures:imam`; Grok-bot briefing; this maintainer rule. Real-imam suites stay `stub`. No audio committed.
+- **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate.
+- **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (tag `imam-fixtures-v1`, asset `zikrist-imam-fixtures-v1.zip`). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say` (Mac Majed).
+- **Known fails:** Subayyal want **4:129** currently **41:34**; Qiyam want **36:16** currently **78:4** — `prompts/imam-mid-surah-cold-false-lock.md`. Do not flip stub→ready until Mac-green.
+- **Open tracks:** liturgy TTS after thana (`tts-fill/03-ruku.md`); mid-surah-cold algo; real-imam label-fill **held**.
+
 ## For assistants / Grok bots — read first
 
 You have no prior thread. Do not invent product history, ayah numbers, or Mac results.
