@@ -1,11 +1,8 @@
-# Overnight algorithm queue (post-5674f3e expand score 7/14)
+# Queue post-eacf963 (10/14)
 
-Harness is done. Root-cause order (one session each) — fixing parents also clears inherited suite fails:
+1. **nas-last-ayah-stall.md** — finish 114:6; never jump 7:1 (PR #3 in flight)
+2. **longer-ayah1-miss-2-1.md** — Baqarah 2:1 first (agent in flight)
+3. **jump-ikhlas-after-kawthar.md** — after 108:3 lock 112:1–4
+4. **back-to-back-quraysh-after-asr.md** — after 103:3 lock 106:1–4
 
-1. **nas-last-ayah-stall.md** — complete 114:6 (unblocks nas only)
-2. **kawthar-last-ayah-stall-108-3.md** — complete 108:3 (**also clears `jump`**)
-3. **asr ayah-1** — lock 103:1 before 103:2 (**also clears `back-to-back`**); use/update `asr-false-lock-51-53.md` → now skip-103:1 not 51:53
-4. **quraysh** finish 106:3–4 (after 106:1–2)
-5. **longer-ayah1-miss-2-1.md** — Baqarah 2:1 first lock
-
-Regression gates every session: fatiha, ikhlas, falaq, english-negative, basmala-hold, stall-after-lock.
+Gates every session: fatiha, ikhlas, falaq, asr, kawthar, quraysh, english-negative, basmala-hold, cold-start-mid, stall-after-lock.
