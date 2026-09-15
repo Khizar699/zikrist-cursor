@@ -7,6 +7,11 @@
 
 **Rules** — see `_SHARED.md`. One suite (or one new sibling suite id) per Cursor session. No matcher retune.
 
+## Hold (algorithm first)
+
+Bot Mac probe (2026-09-16): Subayyal still first-locks **41:34** (want **4:129**); Qiyam **78:4** (want **36:16**).  
+**Do not launch 01/02** until `prompts/imam-mid-surah-cold-false-lock.md` is Mac-green. Then 01 → 02.
+
 ## Blocked
 
 | Suite / clip | Why |
