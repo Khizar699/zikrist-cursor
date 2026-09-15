@@ -611,6 +611,43 @@ test('after Kawthar, repeating Kawthar still locks from its opening', async () =
   assert.deepEqual(refs(await engine.feed(hop())), ['108:1']);
 });
 
+test('after Kawthar, leftover last-ayah tokens plus Ikhlas opening lock 112:1', async () => {
+  const kawthar3 = corpus.find((item) => item.surah === 108 && item.ayah === 3)!;
+  const ikhlas1 = corpus.find((item) => item.surah === 112 && item.ayah === 1)!;
+  const mixed = `${kawthar3.phonemes_joined} ${ikhlas1.phonemes_joined}`;
+  const engine = follower([
+    spoken(108, 3),
+    {
+      text: mixed,
+      rawPhonemes: mixed,
+      championMatch: champion(109, 1, 0.7),
+    },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['108:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['112:1']);
+});
+
+test('after Kawthar, a later Ikhlas span first-locks 112:1 not 112:4', async () => {
+  const ikhlas = [1, 2, 3, 4].map((ayah) => corpus.find((item) => item.surah === 112 && item.ayah === ayah)!);
+  const spokenAll = ikhlas.map((verse) => verse.phonemes_joined).join(' ');
+  const engine = follower([
+    spoken(108, 3),
+    {
+      text: spokenAll,
+      rawPhonemes: spokenAll,
+      championMatch: champion(112, 4, 0.9, {
+        ayah_end: 4,
+        runners_up: [{
+          surah: 109, ayah: 1, raw_score: 0.68, bonus: 0, score: 0.68,
+          phonemes_joined: corpus.find((item) => item.surah === 109 && item.ayah === 1)!.phonemes_joined,
+        }],
+      }),
+    },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['108:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['112:1']);
+});
+
 test('after Kawthar, Yasin can still lock from its opening', async () => {
   const engine = follower([
     spoken(108, 3),
