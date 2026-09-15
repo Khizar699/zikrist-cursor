@@ -15,6 +15,14 @@ import { nextSequentialRef } from '../core/sequential';
 import type { DisplayVerse, RecognitionMessage } from '../core/types';
 import { content } from './content';
 import { loadModel } from './model';
+import liturgyPack from '../../assets/content/salah-liturgy.json';
+import {
+  filterQuranMessagesForLiturgy,
+  matcherFromPack,
+  type SalahLiturgyLockEvent,
+} from '../core/salah-liturgy-matcher';
+
+type InferenceBatch = { quran: RecognitionMessage[]; liturgy: SalahLiturgyLockEvent | null };
 
 export type ListeningState = {
   status: 'loading' | 'ready' | 'starting' | 'listening' | 'stopping' | 'error';
@@ -35,7 +43,7 @@ class Listening {
   private listeners = new Set<() => void>();
   private session: TilawaSession | null = null;
   private recorder: AudioRecorder | null = null;
-  private queue: AudioQueue<RecognitionMessage[]> | null = null;
+  private queue: AudioQueue<InferenceBatch> | null = null;
   private timeline = new Timeline();
   private subscriptions: AudioEventSubscription[] = [];
   private stopping: Promise<void> | null = null;
@@ -49,6 +57,7 @@ class Listening {
   private meterTimer: ReturnType<typeof setTimeout> | null = null;
   private gate: ContinuationGate | null = null;
   private follower: RecitationFollower | null = null;
+  private liturgy = matcherFromPack(liturgyPack);
 
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   snapshot = () => this.state;
@@ -94,22 +103,40 @@ class Listening {
       this.meterTimer = null;
       this.follower = new RecitationFollower(this.session!.db, this.session!);
       this.gate = new ContinuationGate((ref) => this.session!.db.getNextVerse(ref.surah, ref.ayah));
+      this.liturgy.reset();
       this.recorder = new AudioRecorder();
       this.queue = new AudioQueue({
         maxSamples: 16000 * 6, maxBatchSamples: 16000,
-        process: async (packet) => this.follower!.feed(packet.samples, {
-          queueWaitMs: packet.queueWaitMs ?? 0,
-          stallMs: packet.stallMs ?? 0,
-        }),
-        result: (messages, packet) => {
-          this.receive(this.gate!.accept(messages, packet.voicedMs ?? 0, packet.voiced === true), packet.endMs);
+        process: async (packet) => {
+          const quran = await this.follower!.feed(packet.samples, {
+            queueWaitMs: packet.queueWaitMs ?? 0,
+            stallMs: packet.stallMs ?? 0,
+          });
+          const liturgy = this.liturgy.observe({
+            tokens: this.follower!.lastHeardTokens,
+            atMs: packet.endMs,
+            quranPhase: this.follower!.phase,
+            quranLock: this.follower!.lockedRef,
+            ayahComplete: this.follower!.lockedAyahComplete,
+            voiced: packet.voiced === true,
+          });
+          return { quran, liturgy };
+        },
+        result: (result, packet) => {
+          const quran = this.applyLiturgy(result.quran, result.liturgy);
+          this.receive(this.gate!.accept(quran, packet.voicedMs ?? 0, packet.voiced === true), packet.endMs);
           if (this.gate!.isAmbiguousOpening || (this.follower?.phase === 'reacquiring' && this.state.current)) {
             this.update({ phase: 'searching' });
           } else if (this.follower?.phase === 'following' && this.state.current) {
             this.update({ phase: 'following' });
           }
         },
-        reset: () => { this.session!.reset(); this.follower!.reset(); this.gate!.dropPending(); },
+        reset: () => {
+          this.session!.reset();
+          this.follower!.reset();
+          this.gate!.dropPending();
+          this.liturgy.reset();
+        },
         gap: (reason) => {
           this.timeline.breakSegment();
           this.update({ phase: reason === 'long pause' ? 'waiting' : 'searching' });
@@ -166,6 +193,16 @@ class Listening {
       await this.stop();
       this.update({ status: 'ready', error: errorText(error) });
     }
+  }
+
+  private applyLiturgy(
+    messages: RecognitionMessage[],
+    liturgy: SalahLiturgyLockEvent | null,
+  ): RecognitionMessage[] {
+    if (!liturgy) return messages;
+    this.follower?.reset();
+    this.gate?.reset();
+    return filterQuranMessagesForLiturgy(messages);
   }
 
   private receive(messages: RecognitionMessage[], offset: number): void {
@@ -252,6 +289,7 @@ class Listening {
     void deactivateKeepAwake('zikrist-listening');
     this.session?.reset();
     this.follower?.reset();
+    this.liturgy.reset();
     this.update({
       status: 'ready', meter: [], draftWords: [],
       error: errors.length ? [this.state.error, ...errors].filter(Boolean).join('\n') : this.state.error,
