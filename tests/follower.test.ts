@@ -33,6 +33,7 @@ const corpus = [
   verse(14, 39, ['alhamdu', 'lillahi', 'alladhi', 'wahaba', 'li', 'ala', 'alkibar', 'ismail', 'waishaq'], 'Ibrahim'),
   verse(14, 40, ['rabbi', 'ijalni', 'muqima', 'alsalah', 'wamin', 'dhurriyyati', 'rabbana', 'wataqabbal', 'dua'], 'Ibrahim'),
   verse(14, 41, ['rabbana', 'ighfir', 'li', 'waliwalidayya'], 'Ibrahim'),
+  verse(14, 42, ['wala', 'tahsabanna', 'allaha', 'ghafilan'], 'Ibrahim'),
   verse(36, 1, ['ya', 'seen'], 'Ya-Sin'),
   verse(108, 1, ['inna', 'aatayna', 'kalkawthar'], 'Al-Kawthar'),
   verse(108, 2, ['fasalli', 'lirabbika', 'wanhar'], 'Al-Kawthar'),
