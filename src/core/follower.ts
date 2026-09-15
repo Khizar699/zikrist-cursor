@@ -138,15 +138,6 @@ function heardIsolatedBodyToken(recognized: string[], token: string): boolean {
   });
 }
 
-function locateTextEnough(text: string, recognized: string[]): boolean {
-  if (compact(text).length >= 6) return true;
-  // Mac 002001 windows can be just الم (3 letters) after Basmala slides out.
-  return recognized.some((word) => {
-    const heard = compact(word);
-    return heard.length >= 3 && heard.length <= 5 && !isSharedBasmalaToken(heard);
-  });
-}
-
 /** Opening words in order. Extra spoken words may be skipped; a distinctive
  * verse word may not, so قُلْ … ٱللَّهُ cannot stand in for قُل لَّوْ شَاءَ. */
 function contiguousAlignFromOpening(recognized: string[], verseWords: string[]): number[] {
@@ -450,7 +441,7 @@ export class RecitationFollower {
     const attempts = [ranked];
     if (ranked.surah !== acoustic.surah || ranked.ayah !== acoustic.ayah) attempts.push(acoustic);
     let candidates: RecognitionMessage[] | undefined;
-    if (locateTextEnough(text, recognized)) {
+    if (this.locateTextEnough(text, recognized)) {
       for (const match of attempts) {
         const located = this.locateAyah(match, text, recognized);
         const verse = located ? this.preferCanonicalDuplicate(located, text) : undefined;
@@ -477,6 +468,20 @@ export class RecitationFollower {
       }
     }
     return this.unconfirmedMessages(recognized, ranked, candidates);
+  }
+
+  /** Isolated الم is enough to locate; a 5-letter garbled Kawthar opening is not. */
+  private locateTextEnough(text: string, recognized: string[]): boolean {
+    if (compact(text).length >= 6) return true;
+    for (const verse of this.db.verses) {
+      if (verse.ayah !== 1) continue;
+      const { words } = verseAlignWords(verse);
+      if (words.length !== 1) continue;
+      const token = compact(words[0]!);
+      if (token.length > 5 || skipUnusableLock(verse) || isSharedBasmalaToken(token)) continue;
+      if (heardIsolatedBodyToken(recognized, token)) return true;
+    }
+    return false;
   }
 
   private followMaxSec(): number {

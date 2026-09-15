@@ -147,4 +147,4 @@ Rebased onto main `802bc66`. Acquire treats post-Basmala ayah-1 **body** as lock
 | `kawthar` | PASS — 108:1@7.75 → 108:2@8.75 → 108:3@10.25 |
 | `quraysh` | PASS — 106:1@2 → 106:2@7.5 → 106:3@11 → 106:4@20.5 |
 
-`npm test` 119/119. Nas, Fatiha, and short-surah `asr` / `kawthar` / `quraysh` stayed green. Not a physical-device accuracy claim.
+`npm test` 122/122. Linux longer still 2:1 first; nas/fatiha/asr/kawthar/quraysh/ikhlas/falaq stayed green. Not a physical-device accuracy claim. Mac `test:replay -- longer` remains the acceptance bar.
