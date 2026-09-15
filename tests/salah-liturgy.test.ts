@@ -11,9 +11,16 @@ import {
   collectSalahLiturgyErrors,
   normalizeLiturgyArabic,
   phraseHashPayload,
+  type SalahLiturgyPack,
 } from '../src/core/salah-liturgy';
 
-const pack = JSON.parse(readFileSync('assets/content/salah-liturgy.json', 'utf8'));
+function loadPack(): SalahLiturgyPack {
+  const data: unknown = JSON.parse(readFileSync('assets/content/salah-liturgy.json', 'utf8'));
+  assertSalahLiturgyPack(data);
+  return data;
+}
+
+const pack = loadPack();
 
 function sha256(text: string): string {
   return createHash('sha256').update(text, 'utf8').digest('hex');
@@ -21,7 +28,6 @@ function sha256(text: string): string {
 
 test('the salah liturgy pack matches the v1 schema and unique-id contract', () => {
   assert.deepEqual(collectSalahLiturgyErrors(pack), []);
-  assertSalahLiturgyPack(pack);
   assert.equal(pack.kind, SALAH_LITURGY_KIND);
   assert.equal(pack.english_kind, SALAH_LITURGY_ENGLISH_KIND);
   assert.match(pack.english_label, /liturgy/i);
