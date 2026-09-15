@@ -751,7 +751,7 @@ test('after Asr last ayah, Quraysh tokens before a 103:3 tail token still lock 1
   assert.deepEqual(refs(await engine.feed(hop())), ['106:1']);
 });
 
-test('after Asr last ayah, leftover that cannot lock yet cold-starts so the next surah can acquire', async () => {
+test('after Asr last ayah, leftover crumbs stay on the last ayah until Quraysh tokens can lock 106:1', async () => {
   const local = [
     verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
     verse(104, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'ويل', 'لكل', 'همزة', 'لمزة'], 'Al-Humazah'),
@@ -779,7 +779,7 @@ test('after Asr last ayah, leftover that cannot lock yet cold-starts so the next
   );
   assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
   assert.deepEqual(refs(await engine.feed(hop())), []);
-  assert.equal(engine.phase, 'reacquiring');
+  assert.equal(engine.phase, 'following');
   assert.deepEqual(refs(await engine.feed(audio(1))), ['106:1']);
   assert.equal(engine.phase, 'following');
 });

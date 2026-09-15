@@ -200,10 +200,38 @@ function remainingAfterCurrent(recognized: string[], verseWords: string[]): stri
   return recognized.slice(last.spoken + 1);
 }
 
-/** Tokens the current last-ayah body does not explain. A leftover suffix is
- * not required: a 103:3 interior word or a tail token after 106:1 in CTC
- * order must not hide Quraysh. Interior coincidences such as هو in 108:3
- * are dropped without stripping الله احد. */
+/** Tokens after a suffix of the completed last ayah. Interior coincidences
+ * (هو in 108:3 and 112:1) must not strip the new surah’s opening. */
+function remainingAfterTail(recognized: string[], verseWords: string[]): string[] {
+  if (!recognized.length || !verseWords.length) return recognized;
+  const maxSuffix = Math.min(verseWords.length, recognized.length);
+  for (let length = maxSuffix; length >= 1; length--) {
+    const suffix = verseWords.slice(-length);
+    for (let start = 0; start + length <= recognized.length; start++) {
+      const matches = suffix.every((word, index) => {
+        const spoken = recognized[start + index]!;
+        return wordsMatch(spoken, word) || relatedStem(spoken, word);
+      });
+      if (matches) return recognized.slice(start + length);
+    }
+  }
+  return recognized;
+}
+
+/** Unexplained last-ayah leftover. Prefer tokens after a last-ayah suffix so
+ * in-progress 103:3 recitation is not treated as a new surah. If the suffix
+ * sits at the end (Mac CTC) or an interior 103:3 word remains, fall back to
+ * distinctive unexplained tokens in the whole window. */
+function leftoverAfterLastAyah(recognized: string[], verseWords: string[]): string[] {
+  const fromTail = leftoverNewTokens(remainingAfterTail(recognized, verseWords), verseWords);
+  if (leftoverIsNewRecitation(fromTail)) return fromTail;
+  const fromWindow = leftoverNewTokens(recognized, verseWords);
+  if (leftoverIsNewRecitation(fromWindow) && compact(fromWindow.join(' ')).length >= 6) return fromWindow;
+  return fromTail;
+}
+
+/** Tokens the current last-ayah body does not explain. Interior coincidences
+ * such as هو in 108:3 are dropped without stripping الله احد. */
 function leftoverNewTokens(recognized: string[], verseWords: string[]): string[] {
   return recognized.filter((token) => (
     !verseWords.some((word) => wordsMatch(token, word) || relatedStem(token, word))
@@ -446,7 +474,7 @@ export class RecitationFollower {
       : 0;
     const heardNext = Boolean(next && heardDistinct(recognized, next, this.distinctSkip(next, current)));
     const currentBody = verseAlignWords(current).words;
-    const leftover = leftoverNewTokens(recognized, currentBody);
+    const leftover = leftoverAfterLastAyah(recognized, currentBody);
     const leftoverUnexplained = leftoverIsNewRecitation(leftover);
     const matchedBody = alignWords(recognized, currentBody);
     const matched = matchedBody.map((index) => index + verseAlignWords(current).basmala);
@@ -533,20 +561,23 @@ export class RecitationFollower {
     }
 
     if (newRecitationAfterSurah) {
+      const otherSurah = (message: RecognitionMessage) => (
+        message.type !== 'verse_match' || message.surah !== current.surah
+      );
       if (compact(leftover.join(' ')).length >= 6) {
         const leftoverResult: TranscribeResult = { text: leftover.join(' '), rawPhonemes: leftover.join(' ') };
-        const acquired = this.lockFromTranscript(leftoverResult, true, current);
+        const acquired = this.lockFromTranscript(leftoverResult, true, current).filter(otherSurah);
         if (acquired.some((message) => message.type === 'verse_match')) {
           return [...messages, ...acquired];
         }
+        const fromWindow = this.lockFromTranscript(result, true, current).filter(otherSurah);
+        if (fromWindow.some((message) => message.type === 'verse_match')) {
+          return [...messages, ...fromWindow];
+        }
+        // Leave follow so the next hops use the 4 s acquire window on kept audio.
+        this.startReacquire(false);
+        this.fresh = this.window.length;
       }
-      const fromWindow = this.lockFromTranscript(result, true, current);
-      if (fromWindow.some((message) => message.type === 'verse_match')) {
-        return [...messages, ...fromWindow];
-      }
-      // Leave follow so the next hops use the 4 s acquire window on kept audio.
-      this.startReacquire(false);
-      this.fresh = this.window.length;
       return messages;
     }
 
