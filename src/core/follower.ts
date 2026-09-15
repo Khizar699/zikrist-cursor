@@ -118,6 +118,35 @@ function openingWordMatch(left: string, right: string): boolean {
   return left === right || openingStem(left, right);
 }
 
+const OPENING_BASMALA_TOKENS = new Set([
+  'بسم', 'الله', 'الرحمن', 'الرحيم', 'bismi', 'allahi', 'alrahman', 'alrahim',
+]);
+
+function isSharedBasmalaToken(word: string): boolean {
+  const token = compact(word);
+  if (OPENING_BASMALA_TOKENS.has(token)) return true;
+  return [...OPENING_BASMALA_TOKENS].some((item) => relatedStem(item, token));
+}
+
+/** Exact الم, or a one-letter ASR elongation such as المي. Not المال / المصدر. */
+function heardIsolatedBodyToken(recognized: string[], token: string): boolean {
+  const body = compact(token);
+  if (!body) return false;
+  return recognized.some((word) => {
+    const heard = compact(word);
+    return heard === body || openingStem(heard, body);
+  });
+}
+
+function locateTextEnough(text: string, recognized: string[]): boolean {
+  if (compact(text).length >= 6) return true;
+  // Mac 002001 windows can be just الم (3 letters) after Basmala slides out.
+  return recognized.some((word) => {
+    const heard = compact(word);
+    return heard.length >= 3 && heard.length <= 5 && !isSharedBasmalaToken(heard);
+  });
+}
+
 /** Opening words in order. Extra spoken words may be skipped; a distinctive
  * verse word may not, so قُلْ … ٱللَّهُ cannot stand in for قُل لَّوْ شَاءَ. */
 function contiguousAlignFromOpening(recognized: string[], verseWords: string[]): number[] {
@@ -312,7 +341,7 @@ function isBasmalaEchoBody(verse: QuranVerse): boolean {
   const { words, basmala } = verseAlignWords(verse);
   if (basmala <= 0 || words.length !== 1) return false;
   const token = words[0]!;
-  const formula = new Set(['بسم', 'الله', 'الرحمن', 'الرحيم', 'bismi', 'allahi', 'alrahman', 'alrahim']);
+  const formula = OPENING_BASMALA_TOKENS;
   if (formula.has(token)) return true;
   return [...formula].some((word) => relatedStem(word, token));
 }
@@ -421,9 +450,10 @@ export class RecitationFollower {
     const attempts = [ranked];
     if (ranked.surah !== acoustic.surah || ranked.ayah !== acoustic.ayah) attempts.push(acoustic);
     let candidates: RecognitionMessage[] | undefined;
-    if (compact(text).length >= 6) {
+    if (locateTextEnough(text, recognized)) {
       for (const match of attempts) {
-        const verse = this.locateAyah(match, text, recognized);
+        const located = this.locateAyah(match, text, recognized);
+        const verse = located ? this.preferCanonicalDuplicate(located, text) : undefined;
         if (!verse || this.sameRef(verse, ignore) || this.ambiguousSurah(match, verse, text)) {
           candidates ??= [{
             type: 'verse_candidate',
@@ -796,8 +826,13 @@ export class RecitationFollower {
     let bestScore = -1;
     for (const verse of this.db.verses) {
       if (skipUnusableLock(verse)) continue;
-      const start = this.bodyWords(verse)[0];
-      if (!start || !recognized.some((word) => wordsMatch(word, start))) continue;
+      const start = verseAlignWords(verse).words[0];
+      if (!start) continue;
+      const oneWordBody = verseAlignWords(verse).words.length === 1;
+      const heardStart = oneWordBody
+        ? heardIsolatedBodyToken(recognized, start)
+        : recognized.some((word) => wordsMatch(word, start));
+      if (!heardStart) continue;
       if (!this.hasVerseEvidence(text, verse, recognized)) continue;
       const score = this.locationScore(text, verse);
       if (!best || score > bestScore + 0.03) {
@@ -867,8 +902,7 @@ export class RecitationFollower {
     const { words: body } = verseAlignWords(verse);
     if (body.length === 1 && compact(body[0]!).length <= 5) {
       const token = compact(body[0]!);
-      const heard = recognized.some((word) => compact(word) === token);
-      if (!heard) return false;
+      if (!heardIsolatedBodyToken(recognized, token)) return false;
     }
     const skip = openingBasmalaWordCount(verse);
     if (skip > 0) {
@@ -882,7 +916,10 @@ export class RecitationFollower {
         if (score < 0.45) return false;
       }
     }
-    return match.score >= LOCK_CLEAR_SCORE || !this.closeRival(match) || (verse.ayah > 1 && this.beatsRival(match, verse, text));
+    return match.score >= LOCK_CLEAR_SCORE
+      || !this.closeRival(match)
+      || this.equivalentAyah1Body(match, verse)
+      || (verse.ayah > 1 && this.beatsRival(match, verse, text));
   }
 
   private hasVerseEvidence(text: string, verse: QuranVerse, recognized: string[]): boolean {
@@ -944,9 +981,25 @@ export class RecitationFollower {
     const rival = match.runners_up?.[0];
     if (!rival || rival.surah === match.surah) return false;
     if (match.score - rival.score >= SURAH_MARGIN) return false;
+    // Identical muqattaʿāt (2:1 vs 3:1) are the same opening, not two surahs.
+    if (this.equivalentAyah1Body(match, verse)) return false;
     // Was `ayah <= 1 || !beatsRival` which made EVERY ayah-1 lock ambiguous whenever
     // any close cross-surah rival existed (Kawthar/Asr/Quraysh skipped to ayah 2+).
     return !this.beatsRival(match, verse, text);
+  }
+
+  private equivalentAyah1Body(match: QuranChampionMatch, verse: QuranVerse): boolean {
+    if (verse.ayah !== 1) return false;
+    const key = (item: QuranVerse) => verseAlignWords(item).words.join('\0');
+    const body = key(verse);
+    if (!body) return false;
+    const sameOpening = (surah: number, ayah: number) => {
+      const other = this.db.getVerse(surah, ayah);
+      return Boolean(other && other.ayah === 1 && other.surah !== verse.surah && key(other) === body);
+    };
+    if (match.surah !== verse.surah && sameOpening(match.surah, match.ayah)) return true;
+    const rival = match.runners_up?.[0];
+    return Boolean(rival && sameOpening(rival.surah, rival.ayah));
   }
 
   private closeRival(match: QuranChampionMatch): boolean {
@@ -990,8 +1043,7 @@ export class RecitationFollower {
     if (!first) return undefined;
     const opening = this.db.getVerse(match.surah, 1);
     const openingBody = Boolean(
-      match.ayah > 1
-      && opening
+      opening
       && !skipUnusableLock(opening)
       && this.hasVerseEvidence(text, opening, recognized)
     );

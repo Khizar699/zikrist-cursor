@@ -130,7 +130,7 @@ Remaining suites were not scored here. Overnight locate+follow scoring is still 
 
 ## Ayah-1 body evidence (Al-Baqarah start)
 
-Rebased onto main `802bc66` (Nas 114:6 last-ayah seed-trim-before-append). Acquire treats post-Basmala ayah-1 **body** as lock evidence (not Basmala, not a longer prefix lookalike such as `المال` for `الم`). Opening align uses a tight stem so `الم` cannot lock `المال`; follow leftover matching still allows ASR `الا` to hit `الانسن` (Asr 103:2). Mysterious-letter `canLock` keeps main’s exact compact phoneme token (no 7:1). `ContinuationGate` confirms a one-word ayah-1 body on that phoneme token (`الم`, not Uthmani `الٓمٓ`). Linux/x64 `onnxruntime-node` 1.24.3 headless replay on this workspace (not a phone). **Mac `npm run test:replay -- longer` is the acceptance bar.**
+Rebased onto main `802bc66`. Acquire treats post-Basmala ayah-1 **body** as lock evidence. Opening align uses a tight stem so `الم` cannot lock `المال`; follow leftover matching still allows ASR `الا` to hit `الانسن`. Mysterious-letter tokens accept a one-letter elongation (`المي`) but not `المصدر` / `المال`. Isolated `الم` (compact length 3) can locate; equivalent muqattaʿāt such as 3:1 are not a close-rival veto of 2:1. Keep Nas last-ayah seed-trim and Basmala-echo 55:1. Linux/x64 `onnxruntime-node` 1.24.3 headless replay (not a phone). **Mac `npm run test:replay -- longer` is the acceptance bar** — tip `8bd9c35` failed there with `sequence_break_at_0_got_2:2_expected_2:1`.
 
 | Suite | Result |
 | --- | --- |

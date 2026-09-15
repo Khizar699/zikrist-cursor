@@ -1066,6 +1066,50 @@ test('ayah-1 body الم locks 2:1, not a longer lookalike such as 18:46 الم�
   assert.equal(engine.phase, 'following');
 });
 
+test('isolated الم without Basmala still locks 2:1', async () => {
+  const three = muqattaat.find((item) => item.surah === 3 && item.ayah === 1)!;
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'الم',
+    rawPhonemes: 'الم',
+    championMatch: muqattaatChampion(18, 46, 0.83, {
+      runners_up: [{
+        surah: 3, ayah: 1, score: 0.8, raw_score: 0.8, bonus: 0, phonemes_joined: three.phonemes_joined,
+      }],
+    }),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('ASR المي still locks 2:1 as ayah-1 body', async () => {
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'المي',
+    rawPhonemes: 'المي',
+    championMatch: muqattaatChampion(3, 1, 0.7, {
+      runners_up: [{
+        surah: 2, ayah: 1, score: 0.69, raw_score: 0.69, bonus: 0, phonemes_joined: 'الم',
+      }],
+    }),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('ayah-1 الم still locks 2:1 when 3:1 is a close rival', async () => {
+  const two = muqattaat.find((item) => item.surah === 2 && item.ayah === 1)!;
+  const engine = new RecitationFollower(dbFrom(muqattaat), script([{
+    text: 'الم المي',
+    rawPhonemes: 'الم المي',
+    championMatch: muqattaatChampion(3, 1, 0.7, {
+      runners_up: [{
+        surah: 2, ayah: 1, score: 0.69, raw_score: 0.69, bonus: 0, phonemes_joined: two.phonemes_joined,
+      }],
+    }),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
 test('a window that still contains ayah-1 body prefers 2:1 over 2:2 already in the span', async () => {
   const spoken = 'الم ذلك الكتب لا ريب فيه';
   const engine = new RecitationFollower(dbFrom(muqattaat), script([{
