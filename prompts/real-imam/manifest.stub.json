@@ -1,6 +1,7 @@
 {
   "version": 1,
   "clip_drop": "~/Desktop/zikrist-imam-clips/",
+  "audio_root": "artifacts/recitation/imam",
   "suites": [
     {
       "suite_id": "imam-mid-surah-cold",
@@ -42,6 +43,8 @@
       "suite_id": "imam-multi-qari",
       "status": "stub",
       "clip_path": "_stubs/imam-multi-qari__pending__STUB.txt",
+      "qari_slots": ["qari-a", "qari-b"],
+      "clipRunMode": "each-clip",
       "expected_first_lock": null,
       "expected_sequence": [],
       "notes": "Placeholder for qari-a / qari-b slots",

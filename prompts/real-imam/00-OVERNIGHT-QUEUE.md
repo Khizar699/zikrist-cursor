@@ -17,3 +17,15 @@ Launch **one session at a time**:
 7. `07-live-feel-checklist.md` — manual Sim QA checklist (no new algorithm)
 
 Do not mega-merge algorithm retunes with harness scaffolding.
+
+## Harness registration (do not duplicate these prompts)
+
+Suite ids, naming, and `~/Desktop/zikrist-imam-clips/` are defined above and in `01-fixture-scaffold.md` / `FIXTURES.md`. The replay runner reads `prompts/real-imam/manifest.stub.json`.
+
+```bash
+npm run test:replay -- all           # hard gate: original 14 only
+npm run test:replay -- real-imam     # stub suites SKIP with missing_fixture (not PASS)
+```
+
+Audio staging (gitignored): `artifacts/recitation/imam/<suite-id>/<qari-or-source>/`. No silent STUB WAVs.
+

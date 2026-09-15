@@ -10,6 +10,8 @@
  *   npm run test:replay -- kawthar
  *   npm run test:replay -- --check-fixtures
  *   npm run test:replay -- --list
+ *   npm run test:replay -- real-imam
+ *   npm run test:replay -- --include-pending
  *   npm run test:replay -- artifacts/recitation/112001.wav ...
  */
 import fs from 'node:fs';
@@ -27,11 +29,17 @@ import {
 import { LIVE_STREAMING_CONFIG } from '../src/core/streaming';
 import {
   ALL_SUITE_NAMES,
+  MISSING_FIXTURE,
+  REAL_IMAM_SUITE_NAMES,
   SAMPLE_RATE,
+  SKIPPED_PENDING,
   evaluateFailure,
+  isRealImamSuiteName,
+  parseReplayCli,
   parseSuiteSelection,
   prepareSuiteAudio,
   suiteBlueprint,
+  suiteClipDirectory,
   suiteHelpText,
   uniqueClipsForSuites,
   wrongSurahStats,
@@ -70,19 +78,42 @@ function readWav(file: string): Float32Array {
   return Float32Array.from({ length: data.length / 2 }, (_, index) => data!.readInt16LE(index * 2) / 32768);
 }
 
-function clipPath(clip: string): string {
-  return path.join(recitationDir, clip);
+function clipPath(clip: string, suite?: Pick<SuiteBlueprint, 'clipDir'>): string {
+  return path.join(root, suiteClipDirectory(suite ?? {}), clip);
+}
+
+function missingClips(suite: SuiteBlueprint): string[] {
+  return suite.clips.filter((clip) => !fs.existsSync(clipPath(clip, suite)));
+}
+
+function convertHint(suite: SuiteBlueprint, wavClip: string): string | undefined {
+  const mp3Clip = wavClip.replace(/\.wav$/i, '.mp3');
+  const mp3Path = clipPath(mp3Clip, suite);
+  if (!fs.existsSync(mp3Path)) return undefined;
+  const wavPath = clipPath(wavClip, suite);
+  return `found ${path.relative(root, mp3Path)}; convert: ffmpeg -y -i ${path.relative(root, mp3Path)} -ar 16000 -ac 1 -c:a pcm_s16le ${path.relative(root, wavPath)}`;
+}
+
+function writeReport(label: string, report: unknown): string {
+  const outDir = path.join(root, 'artifacts/qa-runs');
+  fs.mkdirSync(outDir, { recursive: true });
+  const outPath = path.join(outDir, `replay-${label.replace(/[/:]/g, '_')}.json`);
+  fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
+  fs.writeFileSync(path.join(root, 'artifacts/benchmark-latest.json'), JSON.stringify(report, null, 2));
+  return outPath;
 }
 
 function fixtureStatus(names: string[]) {
   return names.map((name) => {
     const suite = suiteBlueprint(name);
-    const missing = suite.clips.filter((clip) => !fs.existsSync(clipPath(clip)));
+    const missing = missingClips(suite);
     return {
       suite: name,
       ready: missing.length === 0,
+      status: missing.length === 0 ? 'ready' : (suite.readiness === 'pending' ? SKIPPED_PENDING : 'missing'),
       missing,
       clips: suite.clips,
+      clipDir: suiteClipDirectory(suite),
       description: suite.description,
     };
   });
@@ -214,59 +245,127 @@ async function replaySuite(
     files: files.map((file) => path.relative(root, file)),
   };
 
-  const outDir = path.join(root, 'artifacts/qa-runs');
-  fs.mkdirSync(outDir, { recursive: true });
-  const outPath = path.join(outDir, `replay-${suite.label}.json`);
-  fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
-  fs.writeFileSync(path.join(root, 'artifacts/benchmark-latest.json'), JSON.stringify(report, null, 2));
+  const outPath = writeReport(suite.label, report);
   return { report, outPath };
 }
 
-const args = process.argv.slice(2);
-if (args.includes('--help') || args.includes('-h')) {
+type ResultRow = {
+  label: string;
+  outPath: string;
+  failureMode: string | null;
+  wrongSurahRate: number;
+  status?: string;
+};
+
+function recordMissingFixture(suite: SuiteBlueprint, missing: string[]): ResultRow {
+  const hints = missing.map((clip) => convertHint(suite, clip)).filter((hint): hint is string => Boolean(hint));
+  const report = {
+    suite: suite.label,
+    status: SKIPPED_PENDING,
+    gate: suite.gate,
+    failureMode: MISSING_FIXTURE,
+    missingClips: missing,
+    convertHints: hints,
+    matches: [],
+    firstLockSeconds: null,
+    wrongSurahCount: 0,
+    wrongSurahRate: 0,
+    firstLockWrongSurah: false,
+    clipDir: suiteClipDirectory(suite),
+    expectedLocksPath: suite.expectedLocksPath ?? null,
+    description: suite.description,
+  };
+  const outPath = writeReport(suite.label, report);
+  console.error(`[${suite.label}] skip ${MISSING_FIXTURE} ${missing.join(', ')}${hints.length ? ` (${hints.join('; ')})` : ''} (not PASS)`);
+  return {
+    label: suite.label,
+    outPath,
+    failureMode: MISSING_FIXTURE,
+    wrongSurahRate: 0,
+    status: SKIPPED_PENDING,
+  };
+}
+
+const cli = parseReplayCli(process.argv.slice(2));
+if (cli.help) {
   console.log(suiteHelpText());
   process.exit(0);
 }
-if (args.includes('--list')) {
+if (cli.list) {
+  console.log('Ready (default all, 14 suites):');
   for (const name of ALL_SUITE_NAMES) {
     const suite = suiteBlueprint(name);
-    console.log(`${name}\t${suite.description}`);
+    console.log(`${name}\tready\t${suite.description}`);
+  }
+  console.log('Pending real-imam (`npm run test:replay -- real-imam`; stubs skip with missing_fixture, not PASS):');
+  for (const name of REAL_IMAM_SUITE_NAMES) {
+    const suite = suiteBlueprint(name);
+    const missing = missingClips(suite);
+    const status = missing.length ? SKIPPED_PENDING : 'ready';
+    console.log(`${name}\t${status}\t${suite.description}`);
   }
   process.exit(0);
 }
 
-const wavArgs = args.filter((arg) => arg.endsWith('.wav') || arg.endsWith('.WAV'));
-const namedArgs = args.filter((arg) => !arg.startsWith('--') && !arg.endsWith('.wav') && !arg.endsWith('.WAV'));
-const selectedSuites = wavArgs.length && !namedArgs.length
+const selectedSuites = cli.wavArgs.length && !cli.namedArgs.length
   ? []
-  : parseSuiteSelection(namedArgs);
+  : parseSuiteSelection(cli.namedArgs, { includePending: cli.includePending });
 
-if (args.includes('--check-fixtures')) {
+if (cli.checkFixtures) {
   const names = selectedSuites.length ? selectedSuites : [...ALL_SUITE_NAMES];
   const status = fixtureStatus(names);
-  const missingClips = [...new Set(status.flatMap((row) => row.missing))];
+  const missing = [...new Set(status.flatMap((row) => row.missing))];
+  const pendingOnly = names.length > 0 && names.every((name) => isRealImamSuiteName(name));
   console.log(JSON.stringify({
     recitationDir: path.relative(root, recitationDir),
     uniqueClips: uniqueClipsForSuites(names),
-    missingClips,
+    missingClips: missing,
     suites: status,
-    restore: 'npm run fixtures:recitation',
+    restore: pendingOnly
+      ? 'Drop 16 kHz mono WAV under artifacts/recitation/imam/<suite-id>/<qari>/ from ~/Desktop/zikrist-imam-clips/ (prompts/real-imam/FIXTURES.md)'
+      : 'npm run fixtures:recitation',
   }, null, 2));
-  if (missingClips.length) {
-    console.error(`Missing ${missingClips.length} fixture(s). Run npm run fixtures:recitation`);
+  const blocking = status.filter((row) => row.missing.length && row.status !== SKIPPED_PENDING);
+  if (pendingOnly && missing.length) {
+    console.error(`skip missing_fixture: ${missing.length} real-imam clip(s) (not PASS). See prompts/real-imam/FIXTURES.md`);
+  } else if (blocking.length) {
+    const blockingClips = [...new Set(blocking.flatMap((row) => row.missing))];
+    console.error(`Missing ${blockingClips.length} fixture(s). Run npm run fixtures:recitation`);
     process.exitCode = 1;
   }
   process.exit();
 }
 
-const results: { label: string; outPath: string; failureMode: string | null; wrongSurahRate: number }[] = [];
-const loadStart = performance.now();
-const engine = await createSession();
-const loadMs = performance.now() - loadStart;
+const results: ResultRow[] = [];
+const runnable: { suite: SuiteBlueprint; files: string[] }[] = [];
+
+for (const name of selectedSuites) {
+  const suite = suiteBlueprint(name);
+  const missing = missingClips(suite);
+  if (missing.length) {
+    if (isRealImamSuiteName(name) || suite.readiness === 'pending') {
+      results.push(recordMissingFixture(suite, missing));
+      continue;
+    }
+    throw new Error(`missing_clip:${missing.map((clip) => path.basename(clip)).join(',')}`);
+  }
+  runnable.push({ suite, files: suite.clips.map((clip) => clipPath(clip, suite)) });
+}
+
+const needsEngine = cli.wavArgs.length > 0 || runnable.length > 0;
+let engine: Engine | undefined;
+let loadMs = 0;
 let firstLoadAssigned = false;
 
 try {
-  for (const file of wavArgs) {
+  if (needsEngine) {
+    const loadStart = performance.now();
+    engine = await createSession();
+    loadMs = performance.now() - loadStart;
+  }
+
+  for (const file of cli.wavArgs) {
+    if (!engine) throw new Error('missing_onnx');
     const custom: SuiteBlueprint = {
       label: 'custom',
       clips: [path.basename(file)],
@@ -284,24 +383,39 @@ try {
     });
   }
 
-  for (const name of selectedSuites) {
-    const suite = suiteBlueprint(name);
-    const files = suite.clips.map(clipPath);
-    const { report, outPath } = await replaySuite(suite, files, engine, firstLoadAssigned ? 0 : loadMs);
-    firstLoadAssigned = true;
-    results.push({
-      label: suite.label,
-      outPath,
-      failureMode: report.failureMode,
-      wrongSurahRate: report.wrongSurahRate,
-    });
+  for (const item of runnable) {
+    if (!engine) throw new Error('missing_onnx');
+    const trials = item.suite.clipRunMode === 'each-clip'
+      ? item.suite.clips.map((clip, index) => ({
+        suite: {
+          ...item.suite,
+          label: `${item.suite.label}:${path.basename(clip, path.extname(clip))}`,
+          clips: [clip],
+        },
+        files: [item.files[index]!],
+      }))
+      : [item];
+    for (const trial of trials) {
+      const { report, outPath } = await replaySuite(trial.suite, trial.files, engine, firstLoadAssigned ? 0 : loadMs);
+      firstLoadAssigned = true;
+      results.push({
+        label: trial.suite.label,
+        outPath,
+        failureMode: report.failureMode,
+        wrongSurahRate: report.wrongSurahRate,
+      });
+    }
   }
 } finally {
-  await engine.runtime.release();
+  await engine?.runtime.release();
 }
 
 console.log(JSON.stringify({ results }, null, 2));
-const failed = results.filter((row) => row.failureMode);
+const skipped = results.filter((row) => row.status === SKIPPED_PENDING);
+const failed = results.filter((row) => row.failureMode && row.status !== SKIPPED_PENDING);
+if (skipped.length) {
+  console.error('Skipped pending real-imam (missing_fixture, not PASS):', skipped.map((row) => row.label).join(', '));
+}
 if (failed.length) {
   console.error('Replay gate failed:', failed.map((row) => `${row.label}:${row.failureMode}`).join(', '));
   process.exitCode = 1;

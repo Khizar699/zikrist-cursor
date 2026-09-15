@@ -167,3 +167,15 @@ Rebased onto main `810ed4c` (Prompt Smith sharper brief). 2:1 `text_clean` is `Ø
 
 `npm test` 141/141; typecheck pass; lint still reports the pre-existing unused `openingScore` warning. Linux longer 2:1 first and nas/fatiha/short-surah Linux times above are from a **pre-rebase** tip. This workspace has no ONNX/WAV fixtures. Not a physical-device accuracy claim. **Only remaining merge gate: Mac `test:replay -- longer` first-lock 2:1.** Keep Mac nas/fatiha/asr/kawthar/quraysh/jump/back-to-back green.
 
+## Real-imam coverage pack (scaffold, no audio)
+
+Harness only. Prompt Smith already owns `prompts/real-imam/` (queue, fixture README, LIVE-FEEL, suite prompts, stub manifest). This change **registers** those suite ids in the replay runner instead of duplicating the briefs. **No founder/imam WAV or MP3 is committed.** Silent STUB audio was not invented. `RecitationFollower` was not retuned.
+
+- Manifest: `prompts/real-imam/manifest.stub.json` (`status: stub`). Founder drop: `~/Desktop/zikrist-imam-clips/`. Staging: `artifacts/recitation/imam/<suite-id>/<qari-or-source>/` (gitignored).
+- `npm run test:replay -- all` still resolves to the original **14** Quran suites (hard gate).
+- `npm run test:replay -- real-imam` **skips** the five stub suites with `failureMode: missing_fixture` and `status: skipped` (not PASS) and does not load ONNX.
+- `--include-pending` can list them next to `all`; stubs still skip until WAV exists, so they cannot fail the 14-suite gate.
+- Salah liturgy remains a **separate** track (`prompts/salah-liturgy/`).
+
+This workspace (Linux/x64, no EveryAyah WAVs restored): `npm test` **150/150**; `npm run typecheck` pass. `npx tsx scripts/replay.ts real-imam` exited **0** with five skipped `missing_fixture` rows (not PASS) and did not load ONNX. Acoustic `npm run test:replay -- all` was **not** scored here. Not a physical-device, mosque, or imam-ready claim.
+
