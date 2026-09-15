@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+ios/
+android/
+coverage/
+.DS_Store
+.env
+.env.*.local
+assets/model/*
+!assets/model/.gitkeep
+artifacts/
+.tooling/
+*.log

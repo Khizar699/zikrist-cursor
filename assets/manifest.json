@@ -1,0 +1,38 @@
+[
+  {
+    "path": "assets/model/fastconformer_full_mixed.onnx",
+    "url": "https://github.com/yazinsai/tilawa/releases/download/v0.2.0/fastconformer_full_mixed.onnx",
+    "sha256": "4767182cd92975869f81a7e32700b14ca2b04e8dc97a15ff220a8697f4639488",
+    "bytes": 88307366
+  },
+  {
+    "path": "assets/model/vocab.json",
+    "url": "https://github.com/yazinsai/tilawa/releases/download/v0.2.0/vocab.json",
+    "sha256": "c55877f3bff8bc3aaefc160e8c2fb88cb349088d092513d40210ccfe535e671b",
+    "bytes": 21062
+  },
+  {
+    "path": "assets/model/quran_ctc_tokens.json",
+    "url": "https://github.com/yazinsai/tilawa/releases/download/v0.2.0/quran_ctc_tokens.json",
+    "sha256": "96aa32d188d075598536fcbb936dc793466fce2a8da331e48f15932022f4dce8",
+    "bytes": 12211783
+  },
+  {
+    "path": "assets/model/quran.json",
+    "url": "https://github.com/yazinsai/tilawa/releases/download/v0.2.0/quran.json",
+    "sha256": "6e6f31f642c701b49a1ba090311ca4c7a97c6a5b79a302712dff815a9d7b3d03",
+    "bytes": 3186385
+  },
+  {
+    "path": "assets/model/export_metadata.json",
+    "url": "https://github.com/yazinsai/tilawa/releases/download/v0.2.0/export_metadata.json",
+    "sha256": "449588983498ff19f0efd0c9ebaf03e1b58e7e2c959bf2893297fe0533c6eae1",
+    "bytes": 1130
+  },
+  {
+    "path": "assets/content/quran-uthmani.txt",
+    "url": "https://tanzil.net/pub/download/index.php?quranType=uthmani&outType=txt-2&agree=true",
+    "sha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8",
+    "bytes": 1370878
+  }
+]

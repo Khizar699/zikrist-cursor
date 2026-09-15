@@ -1,0 +1,1280 @@
+diff --git a/node_modules/@tilawa/core/dist/index.js b/node_modules/@tilawa/core/dist/index.js
+index aefcdfe..0a59e85 100644
+--- a/node_modules/@tilawa/core/dist/index.js
++++ b/node_modules/@tilawa/core/dist/index.js
+@@ -9,7 +9,6 @@ export { QuranDB } from "./quran-db.js";
+ export { TextCTCDecoder } from "./text-ctc-decode.js";
+ export { RecitationTracker } from "./tracker.js";
+ export { adaptQuranTextData, validateCtcTokenRoundTrip } from "./quran-text-adapter.js";
+-const CHAMPION_TRUST_THRESHOLD = 0.8;
+ /**
+  * Wire the pure-TS core (CTC decode + QuranDB + tracker) to an injected
+  * `SessionRunner`. Reproduces the init()/transcribe() glue from the web worker
+@@ -27,14 +26,23 @@ export function createTilawaSession(runner, assets, options = {}) {
+     const postDebug = (event, data) => {
+         options.onDiagnostic?.(event, data);
+     };
+-    const transcribe = async (audio) => {
++    const transcribe = async (audio, locate = true) => {
++        const onnxStarted = Date.now();
+         const { logprobs, timeSteps, vocabSize } = await runner.run(audio);
++        const onnxMs = Date.now() - onnxStarted;
++        const decodeStarted = Date.now();
+         const greedy = decoder.decode(logprobs, timeSteps, vocabSize);
+-        const champion = db.bestJoint03Match(greedy.text);
++        const decodeMs = Date.now() - decodeStarted;
++        const locateStarted = Date.now();
++        const champion = locate ? db.bestJoint03Match(greedy.text) : null;
++        const locateMs = locate ? Date.now() - locateStarted : 0;
+         postDebug("transcribe", {
+             audioSec: Math.round((audio.length / 16000) * 100) / 100,
+-            text: greedy.text,
+             tokenCount: greedy.tokenIds.length,
++            locate,
++            onnxMs,
++            decodeMs,
++            locateMs,
+             champion: champion
+                 ? {
+                     ref: `${champion.surah}:${champion.ayah}` +
+@@ -43,7 +51,6 @@ export function createTilawaSession(runner, assets, options = {}) {
+                 }
+                 : null,
+         });
+-        const trustedChampion = champion?.score && champion.score >= CHAMPION_TRUST_THRESHOLD ? champion : null;
+         return {
+             text: greedy.text,
+             rawPhonemes: greedy.text,
+@@ -54,7 +61,9 @@ export function createTilawaSession(runner, assets, options = {}) {
+                 vocabSize,
+                 blankId: decoder.getBlankId(),
+             },
+-            championMatch: trustedChampion ?? undefined,
++            championMatch: champion ?? undefined,
++            locateAttempted: locate,
++            timings: { onnxMs, decodeMs, locateMs },
+         };
+     };
+     const makeTracker = () => new RecitationTracker(db, transcribe, {
+@@ -99,4 +108,3 @@ export function createTilawaSession(runner, assets, options = {}) {
+         },
+     };
+ }
+-//# sourceMappingURL=index.js.map
+\ No newline at end of file
+diff --git a/node_modules/@tilawa/core/dist/levenshtein.js b/node_modules/@tilawa/core/dist/levenshtein.js
+index 401f21d..144dd9d 100644
+--- a/node_modules/@tilawa/core/dist/levenshtein.js
++++ b/node_modules/@tilawa/core/dist/levenshtein.js
+@@ -1,84 +1,73 @@
+-/**
+- * Levenshtein edit distance between two strings.
+- * Uses a single-row DP approach for O(min(m,n)) space.
+- */
+-export function distance(a, b) {
+-    if (a === b)
+-        return 0;
+-    if (a.length === 0)
+-        return b.length;
+-    if (b.length === 0)
+-        return a.length;
+-    // Ensure a is the shorter string for space efficiency
+-    if (a.length > b.length)
+-        [a, b] = [b, a];
+-    const m = a.length;
+-    const n = b.length;
+-    let prev = new Uint16Array(m + 1);
+-    let curr = new Uint16Array(m + 1);
+-    for (let i = 0; i <= m; i++)
+-        prev[i] = i;
+-    for (let j = 1; j <= n; j++) {
+-        curr[0] = j;
+-        for (let i = 1; i <= m; i++) {
+-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+-            curr[i] = Math.min(prev[i] + 1, // deletion
+-            curr[i - 1] + 1, // insertion
+-            prev[i - 1] + cost);
+-        }
+-        [prev, curr] = [curr, prev];
+-    }
+-    return prev[m];
+-}
+-/**
+- * Normalized Levenshtein similarity ratio.
+- * Returns 1.0 for identical strings, 0.0 for completely different.
+- * Matches python-Levenshtein's `ratio()` behavior:
+- *   ratio = (len(a) + len(b) - distance) / (len(a) + len(b))
+- */
++import { distance } from 'fastest-levenshtein';
++export { distance };
++/** Preserve Tilawa's existing score formula and UTF-16 edit-distance semantics. */
+ export function ratio(a, b) {
+-    const lenSum = a.length + b.length;
+-    if (lenSum === 0)
+-        return 1.0;
+-    return (lenSum - distance(a, b)) / lenSum;
++    const length = a.length + b.length;
++    return length ? (length - distance(a, b)) / length : 1;
+ }
+-/**
+- * Semi-global edit distance: finds the minimum edit distance to align
+- * the entire query against any substring of ref.
+- * Free gaps at start and end of ref (row 0 initialized to 0, take min of last row).
+- * Use case: "how well does this transcript fragment match somewhere inside this verse?"
+- */
++// Myers bit-vector semi-global alignment, adapted from fastest-levenshtein
++// 1.0.16 (Kasper Ulsted, MIT; see THIRD_PARTY_NOTICES.md). Unlike global
++// distance, row zero is free and the minimum of the final row is returned.
++// Keep the query orientation fixed: substring matching is not symmetric.
++const masks = new Uint32Array(0x10000);
++let positive = new Int32Array(0);
++let negative = new Int32Array(0);
+ export function semiGlobalDistance(query, ref) {
+-    if (query.length === 0)
+-        return 0;
+-    if (ref.length === 0)
+-        return query.length;
+     const m = query.length;
+     const n = ref.length;
+-    let prev = new Uint16Array(m + 1);
+-    let curr = new Uint16Array(m + 1);
+-    for (let i = 0; i <= m; i++)
+-        prev[i] = i;
+-    let best = prev[m];
+-    for (let j = 1; j <= n; j++) {
+-        curr[0] = 0; // Free to start anywhere in ref
+-        for (let i = 1; i <= m; i++) {
+-            const cost = query[i - 1] === ref[j - 1] ? 0 : 1;
+-            curr[i] = Math.min(prev[i] + 1, curr[i - 1] + 1, prev[i - 1] + cost);
++    if (!m || !n)
++        return m;
++    if (ref.includes(query))
++        return 0;
++    const columns = Math.ceil(n / 32);
++    if (positive.length < columns) {
++        positive = new Int32Array(columns);
++        negative = new Int32Array(columns);
++    }
++    positive.fill(0, 0, columns); // free leading reference characters
++    negative.fill(0, 0, columns);
++    const blocks = Math.ceil(m / 32);
++    let best = m;
++    let score = m;
++    for (let block = 0; block < blocks; block++) {
++        const start = block * 32;
++        const end = Math.min(start + 32, m);
++        for (let k = start; k < end; k++)
++            masks[query.charCodeAt(k)] |= 1 << k;
++        let pv = -1;
++        let mv = 0;
++        const last = block === blocks - 1;
++        for (let i = 0; i < n; i++) {
++            const eq = masks[ref.charCodeAt(i)];
++            const slot = i >>> 5;
++            const pb = (positive[slot] >>> i) & 1;
++            const mb = (negative[slot] >>> i) & 1;
++            const xv = eq | mv;
++            const xh = ((((eq | mb) & pv) + pv) ^ pv) | eq | mb;
++            let ph = mv | ~(xh | pv);
++            let mh = pv & xh;
++            if (last) {
++                score += (ph >>> (m - 1)) & 1;
++                score -= (mh >>> (m - 1)) & 1;
++                if (score < best)
++                    best = score;
++            }
++            else {
++                if ((ph >>> 31) ^ pb)
++                    positive[slot] ^= 1 << i;
++                if ((mh >>> 31) ^ mb)
++                    negative[slot] ^= 1 << i;
++            }
++            ph = (ph << 1) | pb;
++            mh = (mh << 1) | mb;
++            pv = mh | ~(xv | ph);
++            mv = ph & xv;
+         }
+-        best = Math.min(best, curr[m]); // Free to end anywhere in ref
+-        [prev, curr] = [curr, prev];
++        for (let k = start; k < end; k++)
++            masks[query.charCodeAt(k)] = 0;
+     }
+     return best;
+ }
+-/**
+- * Fragment score: how well does the query match as a fragment of ref?
+- * Returns 0.0-1.0. Score of 1.0 means query is an exact substring of ref.
+- * Directional: measures "how much of the query does the ref explain?"
+- */
+ export function fragmentScore(query, ref) {
+-    if (query.length === 0)
+-        return 1.0;
+-    return Math.max(0, 1 - semiGlobalDistance(query, ref) / query.length);
++    return query.length ? Math.max(0, 1 - semiGlobalDistance(query, ref) / query.length) : 1;
+ }
+-//# sourceMappingURL=levenshtein.js.map
+\ No newline at end of file
+diff --git a/node_modules/@tilawa/core/dist/quran-db.d.ts b/node_modules/@tilawa/core/dist/quran-db.d.ts
+index fdabc83..bbcbebc 100644
+--- a/node_modules/@tilawa/core/dist/quran-db.d.ts
++++ b/node_modules/@tilawa/core/dist/quran-db.d.ts
+@@ -63,6 +63,7 @@ export declare class QuranDB {
+     getVerse(surah: number, ayah: number): QuranVerse | undefined;
+     getSurah(surah: number): QuranVerse[];
+     getNextVerse(surah: number, ayah: number): QuranVerse | undefined;
++    warmSearchIndexes(): void;
+     private _startsWithArabicBismillah;
+     /** Return candidates for verses whose non-Bsm phoneme token IDs are short (≤ maxTokens). */
+     getShortVerseCandidates(maxTokens?: number): QuranCandidate[];
+diff --git a/node_modules/@tilawa/core/dist/quran-db.js b/node_modules/@tilawa/core/dist/quran-db.js
+index e071b8a..fa01a5d 100644
+--- a/node_modules/@tilawa/core/dist/quran-db.js
++++ b/node_modules/@tilawa/core/dist/quran-db.js
+@@ -21,6 +21,17 @@ const JOINT_SHORT_OPENING_MAX_CHARS = 10;
+ const JOINT_SHORT_OPENING_MIN_QUERY_CHARS = 8;
+ const JOINT_SHORT_OPENING_MIN_SCORE = 0.48;
+ const JOINT_SHORT_OPENING_MARGIN = -0.18;
++const EMPTY_NGRAMS = new Int32Array(0);
++/**
++ * Bits per character in a packed n-gram key. Trigrams pack three characters, so
++ * this caps a key at 30 bits — comfortably inside a positive int32. Character ids
++ * run `1..NGRAM_MAX_CHAR_ID`; id `0` is reserved for "not in the corpus alphabet",
++ * so any key containing it can never equal a key packed from corpus text.
++ */
++const NGRAM_CHAR_BITS = 10;
++const NGRAM_MAX_CHAR_ID = (1 << NGRAM_CHAR_BITS) - 1;
++/** Size of the charCode -> id lookup table: every UTF-16 code unit. */
++const NGRAM_CHAR_CODE_SPACE = 0x10000;
+ export function partialRatio(short, long) {
+     if (!short || !long)
+         return 0.0;
+@@ -44,6 +55,10 @@ export class QuranDB {
+     _bySurah = new Map();
+     _jointPrefixSpans = null;
+     _jointGlobalSpans = null;
++    /** charCode -> character id, or `null` if the corpus alphabet doesn't fit (see `_ngramCharTable`). */
++    _ngramCharIds = null;
++    _ngramCharIdsBuilt = false;
++    _verseNgrams = null;
+     tokenEncoder;
+     ctcTokenTable;
+     constructor(data, tokenEncoder, ctcTokenTable) {
+@@ -133,6 +148,13 @@ export class QuranDB {
+         }
+         return undefined;
+     }
++    warmSearchIndexes() {
++        const charIds = this._ngramCharTable();
++        if (charIds)
++            this._verseNgramTable(charIds);
++        this._jointPrefixSpanTable();
++        this._jointGlobalSpanTable();
++    }
+     _startsWithArabicBismillah(words) {
+         if (!words || words.length <= _BSM_ARABIC_WORDS.length)
+             return false;
+@@ -472,14 +494,27 @@ export class QuranDB {
+         const noSpaceText = phonemeText.replace(/ /g, "");
+         if (noSpaceText.length < JOINT_GLOBAL_SPAN_MIN_CHARS)
+             return [];
+-        const qb = QuranDB._jointNgrams(noSpaceText, 2);
+-        const qt = QuranDB._jointNgrams(noSpaceText, 3);
++        const charIds = this._ngramCharTable();
+         const rough = [];
+-        for (const row of this._jointGlobalSpanTable()) {
+-            const ov = QuranDB._intersectionSize(qb, row.bigrams) +
+-                0.48 * QuranDB._intersectionSize(qt, row.trigrams);
+-            if (ov > 0)
+-                rough.push([ov, row]);
++        if (charIds) {
++            const qb = QuranDB._packNgrams(noSpaceText, 2, charIds);
++            const qt = QuranDB._packNgrams(noSpaceText, 3, charIds);
++            for (const row of this._jointGlobalSpanTable()) {
++                const ov = QuranDB._intersectionSizePacked(qb, row.bigrams) +
++                    0.48 * QuranDB._intersectionSizePacked(qt, row.trigrams);
++                if (ov > 0)
++                    rough.push([ov, row]);
++            }
++        }
++        else {
++            const qb = QuranDB._jointNgrams(noSpaceText, 2);
++            const qt = QuranDB._jointNgrams(noSpaceText, 3);
++            for (const row of this._jointGlobalSpanTable()) {
++                const ov = QuranDB._intersectionSize(qb, row.bigramSet) +
++                    0.48 * QuranDB._intersectionSize(qt, row.trigramSet);
++                if (ov > 0)
++                    rough.push([ov, row]);
++            }
+         }
+         rough.sort((a, b) => b[0] - a[0]);
+         const out = [];
+@@ -546,23 +581,40 @@ export class QuranDB {
+     }
+     _jointCandidateVerses(noSpaceText, maxCandidates = 950) {
+         if (noSpaceText.length < 4)
+-            return this.verses;
+-        const qb = QuranDB._jointNgrams(noSpaceText, 2);
+-        const qt = QuranDB._jointNgrams(noSpaceText, 3);
+-        if (qb.size === 0 && qt.size === 0)
+-            return this.verses;
++            return [];
++        const charIds = this._ngramCharTable();
+         const scored = [];
+-        for (let i = 0; i < this.verses.length; i++) {
+-            const refNs = this.verses[i].phonemes_joined_ns ?? "";
+-            if (refNs.length < 2)
+-                continue;
+-            const ov = QuranDB._intersectionSize(qb, QuranDB._jointNgrams(refNs, 2)) +
+-                0.48 * QuranDB._intersectionSize(qt, QuranDB._jointNgrams(refNs, 3));
+-            if (ov > 0)
+-                scored.push([ov, i]);
++        if (charIds) {
++            const qb = QuranDB._packNgrams(noSpaceText, 2, charIds);
++            const qt = QuranDB._packNgrams(noSpaceText, 3, charIds);
++            if (qb.length === 0 && qt.length === 0)
++                return [];
++            const ngrams = this._verseNgramTable(charIds);
++            for (let i = 0; i < ngrams.length; i++) {
++                const row = ngrams[i];
++                if (row.bigrams.length === 0)
++                    continue;
++                const ov = QuranDB._intersectionSizePacked(qb, row.bigrams) +
++                    0.48 * QuranDB._intersectionSizePacked(qt, row.trigrams);
++                if (ov > 0)
++                    scored.push([ov, i]);
++            }
++        }
++        else {
++            const qb = QuranDB._jointNgrams(noSpaceText, 2);
++            const qt = QuranDB._jointNgrams(noSpaceText, 3);
++            if (qb.size === 0 && qt.size === 0)
++                return [];
++            for (let i = 0; i < this.verses.length; i++) {
++                const refNs = this.verses[i].phonemes_joined_ns ?? "";
++                if (refNs.length < 2)
++                    continue;
++                const ov = QuranDB._intersectionSize(qb, QuranDB._jointNgrams(refNs, 2)) +
++                    0.48 * QuranDB._intersectionSize(qt, QuranDB._jointNgrams(refNs, 3));
++                if (ov > 0)
++                    scored.push([ov, i]);
++            }
+         }
+-        if (scored.length < 80)
+-            return this.verses;
+         scored.sort((a, b) => b[0] - a[0]);
+         return scored.slice(0, maxCandidates).map(([, index]) => this.verses[index]);
+     }
+@@ -591,9 +643,18 @@ export class QuranDB {
+         this._jointPrefixSpans = spans;
+         return spans;
+     }
++    /**
++     * Every 2..7-verse span in the corpus (~37k rows), with its n-grams precomputed.
++     *
++     * The n-grams are packed (~4 bytes/entry) rather than `Set<string>` (~64
++     * bytes/entry): at ~800 distinct n-grams per row the `Set` form is 1–2 GB, which
++     * is a hard out-of-memory on a phone. Packed it is ~120 MB. Scores are unchanged —
++     * every span is still enumerated and still scored.
++     */
+     _jointGlobalSpanTable() {
+         if (this._jointGlobalSpans)
+             return this._jointGlobalSpans;
++        const charIds = this._ngramCharTable();
+         const spans = [];
+         for (const [surahNum, verses] of this._bySurah.entries()) {
+             for (let i = 0; i < verses.length; i++) {
+@@ -608,8 +669,10 @@ export class QuranDB {
+                         ayah_end: chunk[chunk.length - 1].ayah,
+                         phonemes,
+                         phonemesNs,
+-                        bigrams: QuranDB._jointNgrams(phonemesNs, 2),
+-                        trigrams: QuranDB._jointNgrams(phonemesNs, 3),
++                        bigrams: charIds ? QuranDB._packNgrams(phonemesNs, 2, charIds) : EMPTY_NGRAMS,
++                        trigrams: charIds ? QuranDB._packNgrams(phonemesNs, 3, charIds) : EMPTY_NGRAMS,
++                        bigramSet: charIds ? null : QuranDB._jointNgrams(phonemesNs, 2),
++                        trigramSet: charIds ? null : QuranDB._jointNgrams(phonemesNs, 3),
+                     });
+                 }
+             }
+@@ -759,8 +822,115 @@ export class QuranDB {
+         }
+         return count;
+     }
++    /**
++     * Lazily interns every character the corpus can contribute to an n-gram, mapping
++     * charCode -> a dense id in `1..NGRAM_MAX_CHAR_ID`.
++     *
++     * Covers `phonemes_joined` and `phonemes_joined_no_bsm` for every verse, which
++     * between them are the only sources of packed corpus text (the `_ns` variants and
++     * every span's phonemes are built by joining and de-spacing those two). So no
++     * corpus n-gram ever contains id `0`, and a query character the corpus has never
++     * seen — which packs to `0` — can never produce a spurious match.
++     *
++     * Returns `null` when the corpus has more than `NGRAM_MAX_CHAR_ID` distinct
++     * characters, i.e. more than a phoneme or Arabic alphabet could plausibly need.
++     * Callers then fall back to the `Set<string>` n-gram path, which is slower but
++     * scores identically.
++     */
++    _ngramCharTable() {
++        if (this._ngramCharIdsBuilt)
++            return this._ngramCharIds;
++        this._ngramCharIdsBuilt = true;
++        const table = new Int32Array(NGRAM_CHAR_CODE_SPACE);
++        let next = 1;
++        for (const verse of this.verses) {
++            for (let source = 0; source < 2; source++) {
++                const text = source === 0 ? verse.phonemes_joined : verse.phonemes_joined_no_bsm;
++                if (!text)
++                    continue;
++                for (let i = 0; i < text.length; i++) {
++                    const code = text.charCodeAt(i);
++                    if (table[code] !== 0)
++                        continue;
++                    if (next > NGRAM_MAX_CHAR_ID)
++                        return null;
++                    table[code] = next++;
++                }
++            }
++        }
++        this._ngramCharIds = table;
++        return table;
++    }
++    /**
++     * Packs the n-grams of `s` into a sorted, deduplicated `Int32Array`.
++     *
++     * Same information as `_jointNgrams`, at ~4 bytes per entry instead of the ~64 a
++     * `Set<string>` entry costs — the difference between ~6 MB and ~100 MB once cached
++     * across all 6,236 verses. Intersection becomes a two-pointer merge over typed
++     * arrays, which also beats iterating a `Set` of strings.
++     */
++    static _packNgrams(s, n, charIds) {
++        const span = s.length - n + 1;
++        if (span <= 0)
++            return EMPTY_NGRAMS;
++        const keys = new Int32Array(span);
++        for (let i = 0; i < span; i++) {
++            let key = 0;
++            for (let j = 0; j < n; j++) {
++                key = (key << NGRAM_CHAR_BITS) | charIds[s.charCodeAt(i + j)];
++            }
++            keys[i] = key;
++        }
++        keys.sort(); // Int32Array sorts numerically ascending by default
++        // Dedupe in place. Track `last` rather than reading keys[i - 1], which may already
++        // have been overwritten by a compaction write.
++        let write = 0;
++        let last = 0;
++        for (let i = 0; i < span; i++) {
++            const key = keys[i];
++            if (i === 0 || key !== last) {
++                keys[write++] = key;
++                last = key;
++            }
++        }
++        return keys.slice(0, write);
++    }
++    /** Two-pointer intersection over sorted, deduped packed n-grams. */
++    static _intersectionSizePacked(a, b) {
++        let i = 0;
++        let j = 0;
++        let count = 0;
++        while (i < a.length && j < b.length) {
++            const av = a[i];
++            const bv = b[j];
++            if (av === bv) {
++                count++;
++                i++;
++                j++;
++            }
++            else if (av < bv) {
++                i++;
++            }
++            else {
++                j++;
++            }
++        }
++        return count;
++    }
++    /** Lazily built per-verse packed n-gram cache, parallel to `this.verses`. */
++    _verseNgramTable(charIds) {
++        if (this._verseNgrams)
++            return this._verseNgrams;
++        this._verseNgrams = this.verses.map((verse) => {
++            const ns = verse.phonemes_joined_ns ?? "";
++            return {
++                bigrams: QuranDB._packNgrams(ns, 2, charIds),
++                trigrams: QuranDB._packNgrams(ns, 3, charIds),
++            };
++        });
++        return this._verseNgrams;
++    }
+     static _round4(value) {
+         return Math.round(value * 10000) / 10000;
+     }
+ }
+-//# sourceMappingURL=quran-db.js.map
+\ No newline at end of file
+diff --git a/node_modules/@tilawa/core/dist/session.js b/node_modules/@tilawa/core/dist/session.js
+index 8fb4a8f..cb0ff5c 100644
+--- a/node_modules/@tilawa/core/dist/session.js
++++ b/node_modules/@tilawa/core/dist/session.js
+@@ -1,2 +1 @@
+ export {};
+-//# sourceMappingURL=session.js.map
+\ No newline at end of file
+diff --git a/node_modules/@tilawa/core/dist/tracker.d.ts b/node_modules/@tilawa/core/dist/tracker.d.ts
+index 2b4bdb8..87ce1a0 100644
+--- a/node_modules/@tilawa/core/dist/tracker.d.ts
++++ b/node_modules/@tilawa/core/dist/tracker.d.ts
+@@ -19,6 +19,12 @@ export interface TranscribeResult {
+     /** Final match from the champion joint03 decode/matcher path. */
+     championMatch?: QuranChampionMatch;
+     championTranscript?: string;
++    locateAttempted?: boolean;
++    timings?: {
++        onnxMs: number;
++        decodeMs: number;
++        locateMs: number;
++    };
+ }
+ type TranscribeFn = (audio: Float32Array) => Promise<TranscribeResult>;
+ export type TrackerDiagnosticEvent = {
+diff --git a/node_modules/@tilawa/core/dist/tracker.js b/node_modules/@tilawa/core/dist/tracker.js
+index c4a2d17..cd8945c 100644
+--- a/node_modules/@tilawa/core/dist/tracker.js
++++ b/node_modules/@tilawa/core/dist/tracker.js
+@@ -73,12 +73,8 @@ function alignPosition(recognizedWords, verseWords, startFrom = 0, lookahead = D
+ function hasStrongPendingPrefixEvidence(matchedIndices, totalWords) {
+     if (matchedIndices.length === 0)
+         return false;
+-    const first = matchedIndices[0];
+-    const last = matchedIndices[matchedIndices.length - 1];
+-    if (totalWords <= 3) {
+-        return first === 0;
+-    }
+-    return first <= 1 && (matchedIndices.length >= 2 || last >= 2);
++    return matchedIndices[0] === 0 &&
++        matchedIndices.length >= Math.min(2, totalWords);
+ }
+ function getSurroundingVerses(db, surah, ayah) {
+     const verses = db.getSurah(surah);
+@@ -361,36 +357,16 @@ export class RecitationTracker {
+             return messages;
+         }
+         this.newAudioCount = 0;
+-        const result = await this.transcribe(this.utteranceAudio.slice());
++        // `utteranceAudio` is only ever reassigned, never mutated in place, so the
++        // callee can borrow it instead of taking a copy of the whole window (768 KB at
++        // 12s, 1.9 MB at 30s, every cycle). See the `SessionRunner.run` contract.
++        // Tracking consumes acoustic/text evidence only; global location is unused here.
++        const result = await this.transcribe(this.utteranceAudio, false);
+         this.lastTrackingResult = result;
+         const text = result.text.trim();
+         if (!text && !finalFlush) {
+             return messages;
+         }
+-        if (finalFlush &&
+-            this.trackingPendingEmission &&
+-            this.pendingEmissionMessage !== null &&
+-            this.pendingEmissionMargin < this.config.advanceFlushStrictMargin) {
+-            messages.push(this.pendingEmissionMessage);
+-            this._emitDiagnostic({
+-                type: "commit",
+-                ref: `${this.pendingEmissionMessage.surah}:${this.pendingEmissionMessage.ayah}`,
+-                reason: "final_flush_pending_emit",
+-                confidence: this.pendingEmissionMessage.confidence,
+-            });
+-            this._emitDiagnostic({
+-                type: "pending_emission",
+-                action: "final_flush_emit",
+-                ref: `${this.pendingEmissionMessage.surah}:${this.pendingEmissionMessage.ayah}`,
+-                margin: Number.isFinite(this.pendingEmissionMargin)
+-                    ? Math.round(this.pendingEmissionMargin * 1000) / 1000
+-                    : null,
+-                fresh_samples: this.totalSamplesFed - this.samplesAtAdvance,
+-            });
+-            this._clearPendingEmission();
+-            this._exitTracking("final silence flush (pending emitted)");
+-            return messages;
+-        }
+         const recognizedWords = text.split(" ").filter(Boolean);
+         const resumeFrom = Math.max(this.trackingLastWordIdx, 0);
+         let confirmedPendingEmission = false;
+@@ -422,6 +398,17 @@ export class RecitationTracker {
+             this._clearPendingEmission();
+             confirmedPendingEmission = true;
+         }
++        // A shared suffix (e.g. الناس across An-Nas) is not evidence that the
++        // next verse began. Neither acoustic/character fallback nor final silence
++        // may confirm an armed next verse without its actual opening words.
++        if (this.trackingPendingEmission && !confirmedPendingEmission) {
++            this.staleCycles++;
++            if (this.staleCycles >= this.config.staleCycleLimit || finalFlush) {
++                this._rollbackWeakCommit("unconfirmed next-verse opening");
++                this._exitTracking("unconfirmed next-verse opening");
++            }
++            return messages;
++        }
+         let acousticWord = null;
+         if (matchedIndices.length === 0) {
+             const acousticIdx = this._resolveTrackingAcousticWord(result);
+@@ -807,7 +794,10 @@ export class RecitationTracker {
+         }
+         this.newAudioCount = 0;
+         this.cyclesSinceCommit++;
+-        const result = await this.transcribe(this.utteranceAudio.slice());
++        // `utteranceAudio` is only ever reassigned, never mutated in place, so the
++        // callee can borrow it instead of taking a copy of the whole window (768 KB at
++        // 12s, 1.9 MB at 30s, every cycle). See the `SessionRunner.run` contract.
++        const result = await this.transcribe(this.utteranceAudio);
+         const text = result.text.trim();
+         if (!text || text.length < 5) {
+             // Short-utterance rescue: use CTC rescoring against short-verse candidates
+@@ -1504,4 +1494,3 @@ export class RecitationTracker {
+         return Math.max(1, Math.round(SAMPLE_RATE * seconds));
+     }
+ }
+-//# sourceMappingURL=tracker.js.map
+\ No newline at end of file
+diff --git a/node_modules/@tilawa/core/src/index.ts b/node_modules/@tilawa/core/src/index.ts
+index 7a901aa..22d7745 100644
+--- a/node_modules/@tilawa/core/src/index.ts
++++ b/node_modules/@tilawa/core/src/index.ts
+@@ -92,8 +92,6 @@ export interface TilawaSession {
+   readonly decoder: TextCTCDecoder;
+ }
+ 
+-const CHAMPION_TRUST_THRESHOLD = 0.8;
+-
+ /**
+  * Wire the pure-TS core (CTC decode + QuranDB + tracker) to an injected
+  * `SessionRunner`. Reproduces the init()/transcribe() glue from the web worker
+@@ -125,15 +123,24 @@ export function createTilawaSession(
+     options.onDiagnostic?.(event, data);
+   };
+ 
+-  const transcribe = async (audio: Float32Array): Promise<TranscribeResult> => {
++  const transcribe = async (audio: Float32Array, locate = true): Promise<TranscribeResult> => {
++    const onnxStarted = Date.now();
+     const { logprobs, timeSteps, vocabSize } = await runner.run(audio);
++    const onnxMs = Date.now() - onnxStarted;
++    const decodeStarted = Date.now();
+     const greedy = decoder.decode(logprobs, timeSteps, vocabSize);
+-    const champion = db.bestJoint03Match(greedy.text);
++    const decodeMs = Date.now() - decodeStarted;
++    const locateStarted = Date.now();
++    const champion = locate ? db.bestJoint03Match(greedy.text) : null;
++    const locateMs = locate ? Date.now() - locateStarted : 0;
+ 
+     postDebug("transcribe", {
+       audioSec: Math.round((audio.length / 16000) * 100) / 100,
+-      text: greedy.text,
+       tokenCount: greedy.tokenIds.length,
++      locate,
++      onnxMs,
++      decodeMs,
++      locateMs,
+       champion: champion
+         ? {
+             ref:
+@@ -144,9 +151,6 @@ export function createTilawaSession(
+         : null,
+     });
+ 
+-    const trustedChampion =
+-      champion?.score && champion.score >= CHAMPION_TRUST_THRESHOLD ? champion : null;
+-
+     return {
+       text: greedy.text,
+       rawPhonemes: greedy.text,
+@@ -157,7 +161,9 @@ export function createTilawaSession(
+         vocabSize,
+         blankId: decoder.getBlankId(),
+       },
+-      championMatch: trustedChampion ?? undefined,
++      championMatch: champion ?? undefined,
++      locateAttempted: locate,
++      timings: { onnxMs, decodeMs, locateMs },
+     };
+   };
+ 
+diff --git a/node_modules/@tilawa/core/src/levenshtein.ts b/node_modules/@tilawa/core/src/levenshtein.ts
+index 9377a54..c1b25ed 100644
+--- a/node_modules/@tilawa/core/src/levenshtein.ts
++++ b/node_modules/@tilawa/core/src/levenshtein.ts
+@@ -1,83 +1,68 @@
+-/**
+- * Levenshtein edit distance between two strings.
+- * Uses a single-row DP approach for O(min(m,n)) space.
+- */
+-export function distance(a: string, b: string): number {
+-  if (a === b) return 0;
+-  if (a.length === 0) return b.length;
+-  if (b.length === 0) return a.length;
++import { distance } from 'fastest-levenshtein';
++export { distance };
+ 
+-  // Ensure a is the shorter string for space efficiency
+-  if (a.length > b.length) [a, b] = [b, a];
+-
+-  const m = a.length;
+-  const n = b.length;
+-  let prev = new Uint16Array(m + 1);
+-  let curr = new Uint16Array(m + 1);
+-
+-  for (let i = 0; i <= m; i++) prev[i] = i;
+-
+-  for (let j = 1; j <= n; j++) {
+-    curr[0] = j;
+-    for (let i = 1; i <= m; i++) {
+-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+-      curr[i] = Math.min(
+-        prev[i] + 1, // deletion
+-        curr[i - 1] + 1, // insertion
+-        prev[i - 1] + cost, // substitution
+-      );
+-    }
+-    [prev, curr] = [curr, prev];
+-  }
+-
+-  return prev[m];
+-}
+-
+-/**
+- * Normalized Levenshtein similarity ratio.
+- * Returns 1.0 for identical strings, 0.0 for completely different.
+- * Matches python-Levenshtein's `ratio()` behavior:
+- *   ratio = (len(a) + len(b) - distance) / (len(a) + len(b))
+- */
++/** Preserve Tilawa's existing score formula and UTF-16 edit-distance semantics. */
+ export function ratio(a: string, b: string): number {
+-  const lenSum = a.length + b.length;
+-  if (lenSum === 0) return 1.0;
+-  return (lenSum - distance(a, b)) / lenSum;
++  const length = a.length + b.length;
++  return length ? (length - distance(a, b)) / length : 1;
+ }
+ 
+-/**
+- * Semi-global edit distance: finds the minimum edit distance to align
+- * the entire query against any substring of ref.
+- * Free gaps at start and end of ref (row 0 initialized to 0, take min of last row).
+- * Use case: "how well does this transcript fragment match somewhere inside this verse?"
+- */
++// Myers bit-vector semi-global alignment, adapted from fastest-levenshtein
++// 1.0.16 (Kasper Ulsted, MIT; see THIRD_PARTY_NOTICES.md). Unlike global
++// distance, row zero is free and the minimum of the final row is returned.
++// Keep the query orientation fixed: substring matching is not symmetric.
++const masks = new Uint32Array(0x10000);
++let positive = new Int32Array(0);
++let negative = new Int32Array(0);
+ export function semiGlobalDistance(query: string, ref: string): number {
+-  if (query.length === 0) return 0;
+-  if (ref.length === 0) return query.length;
+   const m = query.length;
+   const n = ref.length;
+-  let prev = new Uint16Array(m + 1);
+-  let curr = new Uint16Array(m + 1);
+-  for (let i = 0; i <= m; i++) prev[i] = i;
+-  let best = prev[m];
+-  for (let j = 1; j <= n; j++) {
+-    curr[0] = 0; // Free to start anywhere in ref
+-    for (let i = 1; i <= m; i++) {
+-      const cost = query[i - 1] === ref[j - 1] ? 0 : 1;
+-      curr[i] = Math.min(prev[i] + 1, curr[i - 1] + 1, prev[i - 1] + cost);
++  if (!m || !n) return m;
++  if (ref.includes(query)) return 0;
++  const columns = Math.ceil(n / 32);
++  if (positive.length < columns) {
++    positive = new Int32Array(columns);
++    negative = new Int32Array(columns);
++  }
++  positive.fill(0, 0, columns); // free leading reference characters
++  negative.fill(0, 0, columns);
++  const blocks = Math.ceil(m / 32);
++  let best = m;
++  let score = m;
++  for (let block = 0; block < blocks; block++) {
++    const start = block * 32;
++    const end = Math.min(start + 32, m);
++    for (let k = start; k < end; k++) masks[query.charCodeAt(k)] |= 1 << k;
++    let pv = -1;
++    let mv = 0;
++    const last = block === blocks - 1;
++    for (let i = 0; i < n; i++) {
++      const eq = masks[ref.charCodeAt(i)];
++      const slot = i >>> 5;
++      const pb = (positive[slot] >>> i) & 1;
++      const mb = (negative[slot] >>> i) & 1;
++      const xv = eq | mv;
++      const xh = ((((eq | mb) & pv) + pv) ^ pv) | eq | mb;
++      let ph = mv | ~(xh | pv);
++      let mh = pv & xh;
++      if (last) {
++        score += (ph >>> (m - 1)) & 1;
++        score -= (mh >>> (m - 1)) & 1;
++        if (score < best) best = score;
++      } else {
++        if ((ph >>> 31) ^ pb) positive[slot] ^= 1 << i;
++        if ((mh >>> 31) ^ mb) negative[slot] ^= 1 << i;
++      }
++      ph = (ph << 1) | pb;
++      mh = (mh << 1) | mb;
++      pv = mh | ~(xv | ph);
++      mv = ph & xv;
+     }
+-    best = Math.min(best, curr[m]); // Free to end anywhere in ref
+-    [prev, curr] = [curr, prev];
++    for (let k = start; k < end; k++) masks[query.charCodeAt(k)] = 0;
+   }
+   return best;
+ }
+ 
+-/**
+- * Fragment score: how well does the query match as a fragment of ref?
+- * Returns 0.0-1.0. Score of 1.0 means query is an exact substring of ref.
+- * Directional: measures "how much of the query does the ref explain?"
+- */
+ export function fragmentScore(query: string, ref: string): number {
+-  if (query.length === 0) return 1.0;
+-  return Math.max(0, 1 - semiGlobalDistance(query, ref) / query.length);
++  return query.length ? Math.max(0, 1 - semiGlobalDistance(query, ref) / query.length) : 1;
+ }
+diff --git a/node_modules/@tilawa/core/src/quran-db.ts b/node_modules/@tilawa/core/src/quran-db.ts
+index 84facfa..ef3556d 100644
+--- a/node_modules/@tilawa/core/src/quran-db.ts
++++ b/node_modules/@tilawa/core/src/quran-db.ts
+@@ -82,14 +82,37 @@ const JOINT_SHORT_OPENING_MIN_QUERY_CHARS = 8;
+ const JOINT_SHORT_OPENING_MIN_SCORE = 0.48;
+ const JOINT_SHORT_OPENING_MARGIN = -0.18;
+ 
++const EMPTY_NGRAMS = new Int32Array(0);
++
++/**
++ * Bits per character in a packed n-gram key. Trigrams pack three characters, so
++ * this caps a key at 30 bits — comfortably inside a positive int32. Character ids
++ * run `1..NGRAM_MAX_CHAR_ID`; id `0` is reserved for "not in the corpus alphabet",
++ * so any key containing it can never equal a key packed from corpus text.
++ */
++const NGRAM_CHAR_BITS = 10;
++const NGRAM_MAX_CHAR_ID = (1 << NGRAM_CHAR_BITS) - 1;
++/** Size of the charCode -> id lookup table: every UTF-16 code unit. */
++const NGRAM_CHAR_CODE_SPACE = 0x10000;
++
++/** Packed n-gram sets for one verse or span, parallel to the `Set<string>` form. */
++interface PackedNgrams {
++  bigrams: Int32Array;
++  trigrams: Int32Array;
++}
++
+ interface GlobalSpanRow {
+   surah: number;
+   ayah: number;
+   ayah_end: number;
+   phonemes: string;
+   phonemesNs: string;
+-  bigrams: Set<string>;
+-  trigrams: Set<string>;
++  /** Packed form; empty when the corpus alphabet is too large to pack (see `_ngramCharIds`). */
++  bigrams: Int32Array;
++  trigrams: Int32Array;
++  /** Legacy `Set` form, populated only on the unpackable fallback path. */
++  bigramSet: Set<string> | null;
++  trigramSet: Set<string> | null;
+ }
+ 
+ export function partialRatio(short: string, long: string): number {
+@@ -113,6 +136,10 @@ export class QuranDB {
+   private _bySurah: Map<number, QuranVerse[]> = new Map();
+   private _jointPrefixSpans: QuranChampionMatch[] | null = null;
+   private _jointGlobalSpans: GlobalSpanRow[] | null = null;
++  /** charCode -> character id, or `null` if the corpus alphabet doesn't fit (see `_ngramCharTable`). */
++  private _ngramCharIds: Int32Array | null = null;
++  private _ngramCharIdsBuilt = false;
++  private _verseNgrams: PackedNgrams[] | null = null;
+   private tokenEncoder?: QuranTokenEncoder;
+   private ctcTokenTable?: QuranCtcTokenTable;
+ 
+@@ -222,6 +249,14 @@ export class QuranDB {
+     return undefined;
+   }
+ 
++  /** Build n-gram and span tables at session load so the first long locate is not a hitch. */
++  warmSearchIndexes(): void {
++    const charIds = this._ngramCharTable();
++    if (charIds) this._verseNgramTable(charIds);
++    this._jointPrefixSpanTable();
++    this._jointGlobalSpanTable();
++  }
++
+   private _startsWithArabicBismillah(words: readonly string[] | undefined): boolean {
+     if (!words || words.length <= _BSM_ARABIC_WORDS.length) return false;
+     return _BSM_ARABIC_WORDS.every((word, index) => words[index] === word);
+@@ -602,14 +637,26 @@ export class QuranDB {
+     const noSpaceText = phonemeText.replace(/ /g, "");
+     if (noSpaceText.length < JOINT_GLOBAL_SPAN_MIN_CHARS) return [];
+ 
+-    const qb = QuranDB._jointNgrams(noSpaceText, 2);
+-    const qt = QuranDB._jointNgrams(noSpaceText, 3);
++    const charIds = this._ngramCharTable();
+     const rough: [number, GlobalSpanRow][] = [];
+-    for (const row of this._jointGlobalSpanTable()) {
+-      const ov =
+-        QuranDB._intersectionSize(qb, row.bigrams) +
+-        0.48 * QuranDB._intersectionSize(qt, row.trigrams);
+-      if (ov > 0) rough.push([ov, row]);
++    if (charIds) {
++      const qb = QuranDB._packNgrams(noSpaceText, 2, charIds);
++      const qt = QuranDB._packNgrams(noSpaceText, 3, charIds);
++      for (const row of this._jointGlobalSpanTable()) {
++        const ov =
++          QuranDB._intersectionSizePacked(qb, row.bigrams) +
++          0.48 * QuranDB._intersectionSizePacked(qt, row.trigrams);
++        if (ov > 0) rough.push([ov, row]);
++      }
++    } else {
++      const qb = QuranDB._jointNgrams(noSpaceText, 2);
++      const qt = QuranDB._jointNgrams(noSpaceText, 3);
++      for (const row of this._jointGlobalSpanTable()) {
++        const ov =
++          QuranDB._intersectionSize(qb, row.bigramSet!) +
++          0.48 * QuranDB._intersectionSize(qt, row.trigramSet!);
++        if (ov > 0) rough.push([ov, row]);
++      }
+     }
+     rough.sort((a, b) => b[0] - a[0]);
+ 
+@@ -685,24 +732,42 @@ export class QuranDB {
+   }
+ 
+   private _jointCandidateVerses(noSpaceText: string, maxCandidates = 950): QuranVerse[] {
+-    if (noSpaceText.length < 4) return this.verses;
+-
+-    const qb = QuranDB._jointNgrams(noSpaceText, 2);
+-    const qt = QuranDB._jointNgrams(noSpaceText, 3);
+-    if (qb.size === 0 && qt.size === 0) return this.verses;
++    if (noSpaceText.length < 4) return [];
+ 
++    const charIds = this._ngramCharTable();
+     const scored: [number, number][] = [];
+-    for (let i = 0; i < this.verses.length; i++) {
+-      const refNs = this.verses[i].phonemes_joined_ns ?? "";
+-      if (refNs.length < 2) continue;
+-      const ov =
+-        QuranDB._intersectionSize(qb, QuranDB._jointNgrams(refNs, 2)) +
+-        0.48 * QuranDB._intersectionSize(qt, QuranDB._jointNgrams(refNs, 3));
+-      if (ov > 0) scored.push([ov, i]);
+-    }
+-    if (scored.length < 80) return this.verses;
++
++    if (charIds) {
++      const qb = QuranDB._packNgrams(noSpaceText, 2, charIds);
++      const qt = QuranDB._packNgrams(noSpaceText, 3, charIds);
++      if (qb.length === 0 && qt.length === 0) return [];
++
++      const ngrams = this._verseNgramTable(charIds);
++      for (let i = 0; i < ngrams.length; i++) {
++        const row = ngrams[i];
++        if (row.bigrams.length === 0) continue;
++        const ov =
++          QuranDB._intersectionSizePacked(qb, row.bigrams) +
++          0.48 * QuranDB._intersectionSizePacked(qt, row.trigrams);
++        if (ov > 0) scored.push([ov, i]);
++      }
++    } else {
++      const qb = QuranDB._jointNgrams(noSpaceText, 2);
++      const qt = QuranDB._jointNgrams(noSpaceText, 3);
++      if (qb.size === 0 && qt.size === 0) return [];
++
++      for (let i = 0; i < this.verses.length; i++) {
++        const refNs = this.verses[i].phonemes_joined_ns ?? "";
++        if (refNs.length < 2) continue;
++        const ov =
++          QuranDB._intersectionSize(qb, QuranDB._jointNgrams(refNs, 2)) +
++          0.48 * QuranDB._intersectionSize(qt, QuranDB._jointNgrams(refNs, 3));
++        if (ov > 0) scored.push([ov, i]);
++      }
++    }
++
+     scored.sort((a, b) => b[0] - a[0]);
+-    return scored.slice(0, maxCandidates).map(([, index]) => this.verses[index]);
++    return scored.slice(0, maxCandidates).map(([, index]) => this.verses[index]!);
+   }
+ 
+   private _jointPrefixSpanTable(): QuranChampionMatch[] {
+@@ -730,9 +795,18 @@ export class QuranDB {
+     return spans;
+   }
+ 
++  /**
++   * Every 2..7-verse span in the corpus (~37k rows), with its n-grams precomputed.
++   *
++   * The n-grams are packed (~4 bytes/entry) rather than `Set<string>` (~64
++   * bytes/entry): at ~800 distinct n-grams per row the `Set` form is 1–2 GB, which
++   * is a hard out-of-memory on a phone. Packed it is ~120 MB. Scores are unchanged —
++   * every span is still enumerated and still scored.
++   */
+   private _jointGlobalSpanTable(): GlobalSpanRow[] {
+     if (this._jointGlobalSpans) return this._jointGlobalSpans;
+ 
++    const charIds = this._ngramCharTable();
+     const spans: GlobalSpanRow[] = [];
+     for (const [surahNum, verses] of this._bySurah.entries()) {
+       for (let i = 0; i < verses.length; i++) {
+@@ -747,8 +821,10 @@ export class QuranDB {
+             ayah_end: chunk[chunk.length - 1].ayah,
+             phonemes,
+             phonemesNs,
+-            bigrams: QuranDB._jointNgrams(phonemesNs, 2),
+-            trigrams: QuranDB._jointNgrams(phonemesNs, 3),
++            bigrams: charIds ? QuranDB._packNgrams(phonemesNs, 2, charIds) : EMPTY_NGRAMS,
++            trigrams: charIds ? QuranDB._packNgrams(phonemesNs, 3, charIds) : EMPTY_NGRAMS,
++            bigramSet: charIds ? null : QuranDB._jointNgrams(phonemesNs, 2),
++            trigramSet: charIds ? null : QuranDB._jointNgrams(phonemesNs, 3),
+           });
+         }
+       }
+@@ -930,6 +1006,114 @@ export class QuranDB {
+     return count;
+   }
+ 
++  /**
++   * Lazily interns every character the corpus can contribute to an n-gram, mapping
++   * charCode -> a dense id in `1..NGRAM_MAX_CHAR_ID`.
++   *
++   * Covers `phonemes_joined` and `phonemes_joined_no_bsm` for every verse, which
++   * between them are the only sources of packed corpus text (the `_ns` variants and
++   * every span's phonemes are built by joining and de-spacing those two). So no
++   * corpus n-gram ever contains id `0`, and a query character the corpus has never
++   * seen — which packs to `0` — can never produce a spurious match.
++   *
++   * Returns `null` when the corpus has more than `NGRAM_MAX_CHAR_ID` distinct
++   * characters, i.e. more than a phoneme or Arabic alphabet could plausibly need.
++   * Callers then fall back to the `Set<string>` n-gram path, which is slower but
++   * scores identically.
++   */
++  private _ngramCharTable(): Int32Array | null {
++    if (this._ngramCharIdsBuilt) return this._ngramCharIds;
++    this._ngramCharIdsBuilt = true;
++
++    const table = new Int32Array(NGRAM_CHAR_CODE_SPACE);
++    let next = 1;
++    for (const verse of this.verses) {
++      for (let source = 0; source < 2; source++) {
++        const text = source === 0 ? verse.phonemes_joined : verse.phonemes_joined_no_bsm;
++        if (!text) continue;
++        for (let i = 0; i < text.length; i++) {
++          const code = text.charCodeAt(i);
++          if (table[code] !== 0) continue;
++          if (next > NGRAM_MAX_CHAR_ID) return null;
++          table[code] = next++;
++        }
++      }
++    }
++
++    this._ngramCharIds = table;
++    return table;
++  }
++
++  /**
++   * Packs the n-grams of `s` into a sorted, deduplicated `Int32Array`.
++   *
++   * Same information as `_jointNgrams`, at ~4 bytes per entry instead of the ~64 a
++   * `Set<string>` entry costs — the difference between ~6 MB and ~100 MB once cached
++   * across all 6,236 verses. Intersection becomes a two-pointer merge over typed
++   * arrays, which also beats iterating a `Set` of strings.
++   */
++  private static _packNgrams(s: string, n: number, charIds: Int32Array): Int32Array {
++    const span = s.length - n + 1;
++    if (span <= 0) return EMPTY_NGRAMS;
++
++    const keys = new Int32Array(span);
++    for (let i = 0; i < span; i++) {
++      let key = 0;
++      for (let j = 0; j < n; j++) {
++        key = (key << NGRAM_CHAR_BITS) | charIds[s.charCodeAt(i + j)];
++      }
++      keys[i] = key;
++    }
++    keys.sort(); // Int32Array sorts numerically ascending by default
++
++    // Dedupe in place. Track `last` rather than reading keys[i - 1], which may already
++    // have been overwritten by a compaction write.
++    let write = 0;
++    let last = 0;
++    for (let i = 0; i < span; i++) {
++      const key = keys[i];
++      if (i === 0 || key !== last) {
++        keys[write++] = key;
++        last = key;
++      }
++    }
++    return keys.slice(0, write);
++  }
++
++  /** Two-pointer intersection over sorted, deduped packed n-grams. */
++  private static _intersectionSizePacked(a: Int32Array, b: Int32Array): number {
++    let i = 0;
++    let j = 0;
++    let count = 0;
++    while (i < a.length && j < b.length) {
++      const av = a[i];
++      const bv = b[j];
++      if (av === bv) {
++        count++;
++        i++;
++        j++;
++      } else if (av < bv) {
++        i++;
++      } else {
++        j++;
++      }
++    }
++    return count;
++  }
++
++  /** Lazily built per-verse packed n-gram cache, parallel to `this.verses`. */
++  private _verseNgramTable(charIds: Int32Array): PackedNgrams[] {
++    if (this._verseNgrams) return this._verseNgrams;
++    this._verseNgrams = this.verses.map((verse) => {
++      const ns = verse.phonemes_joined_ns ?? "";
++      return {
++        bigrams: QuranDB._packNgrams(ns, 2, charIds),
++        trigrams: QuranDB._packNgrams(ns, 3, charIds),
++      };
++    });
++    return this._verseNgrams;
++  }
++
+   private static _round4(value: number): number {
+     return Math.round(value * 10000) / 10000;
+   }
+diff --git a/node_modules/@tilawa/core/src/session.ts b/node_modules/@tilawa/core/src/session.ts
+index 3679f58..bfbc679 100644
+--- a/node_modules/@tilawa/core/src/session.ts
++++ b/node_modules/@tilawa/core/src/session.ts
+@@ -17,7 +17,12 @@ export interface SessionRunner {
+   /**
+    * Run one forward pass of the acoustic model.
+    *
+-   * @param audio - mono 16kHz PCM, float32, shape `[N]`.
++   * `audio` is **borrowed, not owned**: implementations must treat it as read-only
++   * and must not write into it. The streaming tracker hands over its live window
++   * buffer directly rather than copying it on every cycle. Copy first if you need
++   * to pad, resample, or otherwise modify the samples.
++   *
++   * @param audio - mono 16kHz PCM, float32, shape `[N]`. Read-only.
+    * @returns flattened log-probs (`timeSteps * vocabSize`) plus the two dims
+    *   needed to reshape them into `[T, vocab]`.
+    */
+diff --git a/node_modules/@tilawa/core/src/tracker.ts b/node_modules/@tilawa/core/src/tracker.ts
+index 3239cb9..3414957 100644
+--- a/node_modules/@tilawa/core/src/tracker.ts
++++ b/node_modules/@tilawa/core/src/tracker.ts
+@@ -57,9 +57,12 @@ export interface TranscribeResult {
+   /** Final match from the champion joint03 decode/matcher path. */
+   championMatch?: QuranChampionMatch;
+   championTranscript?: string;
++  /** True when this window already ran Quran locate. */
++  locateAttempted?: boolean;
++  timings?: { onnxMs: number; decodeMs: number; locateMs: number };
+ }
+ 
+-type TranscribeFn = (audio: Float32Array) => Promise<TranscribeResult>;
++type TranscribeFn = (audio: Float32Array, locate?: boolean) => Promise<TranscribeResult>;
+ 
+ interface PendingLeader {
+   key: string;
+@@ -263,13 +266,8 @@ function hasStrongPendingPrefixEvidence(
+ ): boolean {
+   if (matchedIndices.length === 0) return false;
+ 
+-  const first = matchedIndices[0];
+-  const last = matchedIndices[matchedIndices.length - 1];
+-  if (totalWords <= 3) {
+-    return first === 0;
+-  }
+-
+-  return first <= 1 && (matchedIndices.length >= 2 || last >= 2);
++  return matchedIndices[0] === 0 &&
++    matchedIndices.length >= Math.min(2, totalWords);
+ }
+ 
+ function getSurroundingVerses(
+@@ -624,40 +622,17 @@ export class RecitationTracker {
+     }
+     this.newAudioCount = 0;
+ 
+-    const result = await this.transcribe(this.utteranceAudio.slice());
++    // `utteranceAudio` is only ever reassigned, never mutated in place, so the
++    // callee can borrow it instead of taking a copy of the whole window (768 KB at
++    // 12s, 1.9 MB at 30s, every cycle). See the `SessionRunner.run` contract.
++    // Tracking consumes acoustic/text evidence only; global location is unused here.
++    const result = await this.transcribe(this.utteranceAudio, false);
+     this.lastTrackingResult = result;
+     const text = result.text.trim();
+     if (!text && !finalFlush) {
+       return messages;
+     }
+ 
+-    if (
+-      finalFlush &&
+-      this.trackingPendingEmission &&
+-      this.pendingEmissionMessage !== null &&
+-      this.pendingEmissionMargin < this.config.advanceFlushStrictMargin
+-    ) {
+-      messages.push(this.pendingEmissionMessage);
+-      this._emitDiagnostic({
+-        type: "commit",
+-        ref: `${this.pendingEmissionMessage.surah}:${this.pendingEmissionMessage.ayah}`,
+-        reason: "final_flush_pending_emit",
+-        confidence: this.pendingEmissionMessage.confidence,
+-      });
+-      this._emitDiagnostic({
+-        type: "pending_emission",
+-        action: "final_flush_emit",
+-        ref: `${this.pendingEmissionMessage.surah}:${this.pendingEmissionMessage.ayah}`,
+-        margin: Number.isFinite(this.pendingEmissionMargin)
+-          ? Math.round(this.pendingEmissionMargin * 1000) / 1000
+-          : null,
+-        fresh_samples: this.totalSamplesFed - this.samplesAtAdvance,
+-      });
+-      this._clearPendingEmission();
+-      this._exitTracking("final silence flush (pending emitted)");
+-      return messages;
+-    }
+-
+     const recognizedWords = text.split(" ").filter(Boolean);
+     const resumeFrom = Math.max(this.trackingLastWordIdx, 0);
+     let confirmedPendingEmission = false;
+@@ -700,6 +675,18 @@ export class RecitationTracker {
+       confirmedPendingEmission = true;
+     }
+ 
++    // A shared suffix (e.g. الناس across An-Nas) is not evidence that the
++    // next verse began. Neither acoustic/character fallback nor final silence
++    // may confirm an armed next verse without its actual opening words.
++    if (this.trackingPendingEmission && !confirmedPendingEmission) {
++      this.staleCycles++;
++      if (this.staleCycles >= this.config.staleCycleLimit || finalFlush) {
++        this._rollbackWeakCommit("unconfirmed next-verse opening");
++        this._exitTracking("unconfirmed next-verse opening");
++      }
++      return messages;
++    }
++
+     let acousticWord: number | null = null;
+     if (matchedIndices.length === 0) {
+       const acousticIdx = this._resolveTrackingAcousticWord(result);
+@@ -1128,7 +1115,10 @@ export class RecitationTracker {
+     this.newAudioCount = 0;
+     this.cyclesSinceCommit++;
+ 
+-    const result = await this.transcribe(this.utteranceAudio.slice());
++    // `utteranceAudio` is only ever reassigned, never mutated in place, so the
++    // callee can borrow it instead of taking a copy of the whole window (768 KB at
++    // 12s, 1.9 MB at 30s, every cycle). See the `SessionRunner.run` contract.
++    const result = await this.transcribe(this.utteranceAudio);
+     const text = result.text.trim();
+     if (!text || text.length < 5) {
+       // Short-utterance rescue: use CTC rescoring against short-verse candidates

@@ -1,0 +1,22 @@
+[
+  {
+    "language": "en",
+    "key": "english_rwwad",
+    "version": "1.0.19",
+    "title": "Rowwad Translation Center",
+    "url": "https://quranenc.com/en/home/d/sqlite/english_rwwad",
+    "sha256": "77e2ede3d8e6d6b5c6e16ff78eda2d2b6cc0a6b7489c94a5dde4f7481f5fdee8",
+    "bytes": 1245184,
+    "sourceUrl": "https://quranenc.com/en/browse/english_rwwad"
+  },
+  {
+    "language": "ur",
+    "key": "urdu_junagarhi",
+    "version": "1.1.3",
+    "title": "Muhammad Ibrahim Junagarhi",
+    "url": "https://quranenc.com/en/home/d/sqlite/urdu_junagarhi",
+    "sha256": "20ccc96bd25e481ca248e8a02d354a316bda2b6fc325fd2aeb5cdd26f7fb11bb",
+    "bytes": 6160384,
+    "sourceUrl": "https://quranenc.com/en/browse/urdu_junagarhi"
+  }
+]

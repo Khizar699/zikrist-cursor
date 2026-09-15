@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Zikrist", "slug": "zikrist", "scheme": "zikrist", "version": "0.1.0",
+    "orientation": "portrait", "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "app.zikrist.mobile", "supportsTablet": true,
+      "infoPlist": { "ITSAppUsesNonExemptEncryption": false, "UIFileSharingEnabled": false, "LSSupportsOpeningDocumentsInPlace": false }
+    },
+    "android": { "package": "app.zikrist.mobile", "allowBackup": false },
+    "plugins": [
+      "expo-asset", "expo-font", "expo-sqlite",
+      ["react-native-audio-api", {
+        "iosMicrophonePermission": "Zikrist listens to identify Quran verses and show their translation on your phone. Audio is processed on the device and is not saved.",
+        "iosBackgroundMode": true, "androidForegroundService": true,
+        "androidFSTypes": ["microphone"],
+        "androidPermissions": ["android.permission.RECORD_AUDIO", "android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_MICROPHONE", "android.permission.POST_NOTIFICATIONS"],
+        "disableFFmpeg": true
+      }],
+      "./plugins/with-private-storage.cjs"
+    ]
+  }
+}
