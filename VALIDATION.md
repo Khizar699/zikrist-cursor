@@ -63,6 +63,7 @@ Public distribution also requires model/content rights clearance and store priva
 ## Overnight algorithm loop (2026-09-15 late)
 
 - Ikhlas (`npm run test:replay -- ikhlas`) gated **PASS**: 112:1→4 in order.
+<<<<<<< HEAD
 - Fatiha / longer Baqarah still algorithm work (see overnight queue). Expanded suites: kawthar, falaq, asr, quraysh + edge suites.
 - Short-surah start/tail (PR #2 + Basmala-echo guard): ContinuationGate confirms a distinctive one-word ayah-1 body after Basmala; a one-word body that is only a Basmala token (الرحمن) cannot first-lock 55:1. Follow advances on unused distinctive tokens of the expected next ayah (including a unique opening or a tail such as الابتر) without re-scoring that tail against the opening. `unused` is stem/word-strict so a current-ayah token cannot consume the next ayah via 0.72 fuzzy after prefix stripping.
 - Nas last-ayah slice: grow the follow window for a short last ayah of the current surah, and require an exact phoneme mysterious-letter token so garbage cannot jump 114:5→7:1. See `prompts/nas-last-ayah-stall.md`.
