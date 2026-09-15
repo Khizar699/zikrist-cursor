@@ -226,12 +226,12 @@ test('a kept window can still locate Al-Fatihah after the neighborhood fails', a
   const fatiha = corpus.find((item) => item.surah === 1 && item.ayah === 2)!;
   const noise = { text: 'zzzz yyyy xxxx wwww', rawPhonemes: 'zzzz yyyy xxxx wwww' };
   const engine = follower([
-    spoken(112, 4),
+    spoken(112, 2),
     noise,
     noise,
     { text: fatiha.phonemes_joined, rawPhonemes: fatiha.phonemes_joined, championMatch: champion(1, 2, 0.86) },
   ]);
-  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:4']);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:2']);
   assert.deepEqual(refs(await engine.feed(audio(FOLLOW_TRIGGER_SEC))), []);
   assert.deepEqual(refs(await engine.feed(audio(FOLLOW_TRIGGER_SEC))), []);
   assert.deepEqual(refs(await engine.feed(audio(FOLLOW_TRIGGER_SEC))), ['1:2']);
@@ -627,6 +627,185 @@ test('after Kawthar, Basmala alone does not lock Al-Baqarah', async () => {
   ]);
   assert.deepEqual(refs(await engine.feed(audio(1))), ['108:3']);
   assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.equal(engine.phase, 'following');
+});
+
+test('after Asr last ayah, leftover Quraysh ayah-1 tokens lock 106:1 while the 103:3 tail is still in the window', async () => {
+  const local = [
+    verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
+    verse(104, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'ويل', 'لكل', 'همزة', 'لمزة'], 'Al-Humazah'),
+    verse(106, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'لايلاف', 'قريش'], 'Quraysh'),
+    verse(106, 2, ['الفهم', 'رحله', 'الشتاء', 'والصيف'], 'Quraysh'),
+  ];
+  const three = local[0]!;
+  const mixed = ['بالصبر', 'لايلاف', 'قريش'].join(' ');
+  const { db, searches } = countingDb(local);
+  const engine = new RecitationFollower(db, script([
+    {
+      text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+        surah: 103, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+        score: 0.86, raw_score: 0.86, bonus: 0,
+      },
+    },
+    { text: mixed, rawPhonemes: mixed },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['106:1']);
+  assert.equal(engine.phase, 'following');
+  assert.equal(searches(), 0);
+});
+
+test('after Asr last ayah, leftover Basmala does not lock mushaf-next Humazah', async () => {
+  const local = [
+    verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
+    verse(104, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'ويل', 'لكل', 'همزة', 'لمزة'], 'Al-Humazah'),
+    verse(106, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'لايلاف', 'قريش'], 'Quraysh'),
+  ];
+  const three = local[0]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 103, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: 'بسم الله الرحمن الرحيم', rawPhonemes: 'بسم الله الرحمن الرحيم' },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.equal(engine.phase, 'following');
+});
+
+test('after Asr last ayah, leftover Quraysh tokens still lock 106:1 when the 103:3 opening has aged out', async () => {
+  const local = [
+    verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
+    verse(104, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'ويل', 'لكل', 'همزة', 'لمزة'], 'Al-Humazah'),
+    verse(106, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'لايلاف', 'قريش'], 'Quraysh'),
+  ];
+  const three = local[0]!;
+  const mixed = ['وتواصوا', 'بالصبر', 'لايلاف', 'قريش'].join(' ');
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 103, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: mixed, rawPhonemes: mixed },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['106:1']);
+});
+
+test('after Asr last ayah, a 103:3 interior token mixed with Quraysh still locks 106:1', async () => {
+  const local = [
+    verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
+    verse(104, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'ويل', 'لكل', 'همزة', 'لمزة'], 'Al-Humazah'),
+    verse(106, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'لايلاف', 'قريش'], 'Quraysh'),
+  ];
+  const three = local[0]!;
+  const mixed = ['الذين', 'لايلاف', 'قريش'].join(' ');
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 103, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: mixed, rawPhonemes: mixed },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['106:1']);
+});
+
+test('after Asr last ayah, Quraysh tokens before a 103:3 tail token still lock 106:1', async () => {
+  const local = [
+    verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
+    verse(104, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'ويل', 'لكل', 'همزة', 'لمزة'], 'Al-Humazah'),
+    verse(106, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'لايلاف', 'قريش'], 'Quraysh'),
+  ];
+  const three = local[0]!;
+  const mixed = ['لايلاف', 'قريش', 'بالصبر'].join(' ');
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 103, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: mixed, rawPhonemes: mixed },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['106:1']);
+});
+
+test('after Asr last ayah, a short وال leftover does not re-lock 103:1', async () => {
+  const local = [
+    verse(103, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'والعصر'], 'Al-Asr'),
+    verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
+    verse(104, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'ويل', 'لكل', 'همزة', 'لمزة'], 'Al-Humazah'),
+    verse(106, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'لايلاف', 'قريش'], 'Quraysh'),
+  ];
+  const three = local[1]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 103, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: 'وال الذي الذين اوا', rawPhonemes: 'وال الذي الذين اوا' },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.equal(engine.phase, 'following');
+});
+
+test('after Asr last ayah, leftover crumbs stay on the last ayah until Quraysh tokens can lock 106:1', async () => {
+  const local = [
+    verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
+    verse(104, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'ويل', 'لكل', 'همزة', 'لمزة'], 'Al-Humazah'),
+    verse(106, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'لايلف', 'قريش'], 'Quraysh'),
+  ];
+  const three = local[0]!;
+  const next = local[2]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 103, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: 'ل ت', rawPhonemes: 'ل ت' },
+      {
+        text: next.phoneme_words.slice(4).join(' '), rawPhonemes: next.phoneme_words.slice(4).join(' '), championMatch: {
+          surah: 106, ayah: 1, text: next.phonemes_joined, phonemes_joined: next.phonemes_joined,
+          score: 0.9, raw_score: 0.9, bonus: 0,
+        },
+      },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.equal(engine.phase, 'following');
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['106:1']);
   assert.equal(engine.phase, 'following');
 });
 
