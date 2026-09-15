@@ -16,12 +16,12 @@
     },
     {
       "suite_id": "liturgy-thana",
-      "status": "stub",
+      "status": "ready",
       "gate": "liturgy-phrase",
-      "clip_path": "_stubs/liturgy-thana__pending__STUB.txt",
+      "clip_path": "liturgy-thana/liturgy-thana__edge-tts__ar-SA-HamedNeural.wav",
       "expect_phrase_ids": ["thana"],
       "expect_quran": [],
-      "notes": "full thana",
+      "notes": "full Hanafi istiftah (thana); no verse_match. Evaluation TTS clip (not committed/redistributed). Manifest clip_path stays liturgy-thana/liturgy-thana__edge-tts__ar-SA-HamedNeural.wav; Mac --engine say writes that same dest. Founder Mac: edge-tts HTTP 403; working generate is `export PATH=\"/tmp/ffmpeg-static:$PATH\"` then `npm run liturgy:tts -- liturgy-thana --engine say` (say voice Majed ar_001). Spoken text is pack arabic_uthmani for phrase id thana. Then npm run test:replay -- liturgy-thana (must PASS, not skip).",
       "license_status": "unresolved"
     },
     {

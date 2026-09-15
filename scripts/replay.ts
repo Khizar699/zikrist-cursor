@@ -405,7 +405,7 @@ if (cli.checkFixtures) {
   const liturgyOnly = names.length > 0 && names.every((name) => isLiturgySuiteName(name));
   const imamOnly = names.length > 0 && names.every((name) => isRealImamSuiteName(name));
   const restore = liturgyOnly
-    ? 'Ready: npm run liturgy:tts -- liturgy-takbeer. Stubs skip missing_fixture until their fill session. Mixed suites reuse EveryAyah Fatiha WAVs from artifacts/recitation/ after npm run fixtures:recitation. Do not invent silent WAVs.'
+    ? 'Ready: npm run liturgy:tts -- liturgy-takbeer or liturgy-thana --engine say (Mac; ffmpeg on PATH e.g. /tmp/ffmpeg-static; say Majed ar_001). Stubs skip missing_fixture until their fill session. Mixed suites reuse EveryAyah Fatiha WAVs from artifacts/recitation/ after npm run fixtures:recitation. Do not invent silent WAVs.'
     : imamOnly
       ? 'Drop 16 kHz mono WAV under artifacts/recitation/imam/<suite-id>/<qari>/ from ~/Desktop/zikrist-imam-clips/ (prompts/real-imam/FIXTURES.md)'
       : 'npm run fixtures:recitation';

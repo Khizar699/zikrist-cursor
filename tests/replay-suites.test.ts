@@ -146,10 +146,13 @@ test('salah liturgy selection is pending-only and stays out of default all', () 
     [...ALL_SUITE_NAMES, ...LITURGY_SUITE_NAMES],
   );
   assert.deepEqual(parseSuiteSelection(['liturgy-takbeer']), ['liturgy-takbeer']);
+  assert.deepEqual(parseSuiteSelection(['liturgy-thana']), ['liturgy-thana']);
   assert.equal(suiteBlueprint('liturgy-takbeer').readiness, 'ready');
   assert.equal(suiteSkipsWhenClipMissing(suiteBlueprint('liturgy-takbeer')), false);
-  assert.equal(suiteBlueprint('liturgy-thana').readiness, 'pending');
-  assert.equal(suiteSkipsWhenClipMissing(suiteBlueprint('liturgy-thana')), true);
+  assert.equal(suiteBlueprint('liturgy-thana').readiness, 'ready');
+  assert.equal(suiteSkipsWhenClipMissing(suiteBlueprint('liturgy-thana')), false);
+  assert.equal(suiteBlueprint('liturgy-ruku').readiness, 'pending');
+  assert.equal(suiteSkipsWhenClipMissing(suiteBlueprint('liturgy-ruku')), true);
   assert.equal(suiteBlueprint('liturgy-takbeer').scoreLiturgy, true);
   assert.equal(suiteBlueprint('fatiha').scoreLiturgy, undefined);
   assert.equal(suiteSkipsWhenClipMissing(suiteBlueprint('fatiha')), false);

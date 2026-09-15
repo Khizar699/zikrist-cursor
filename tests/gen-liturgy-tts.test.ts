@@ -62,7 +62,30 @@ test('liturgy TTS plan reads pack arabic_uthmani for takbeer and the ready clip_
   assert.equal(loadSalahLiturgyStubEntry('liturgy-takbeer').status, 'ready');
 });
 
-test('liturgy TTS parser defaults to liturgy-takbeer and refuses other stub suites', () => {
+test('liturgy TTS plan reads pack arabic_uthmani for thana and the ready clip_path', () => {
+  const pack = loadLiturgyPack();
+  const phrase = spokenArabicForPhrase(pack, 'thana');
+  const fromDisk = JSON.parse(
+    fs.readFileSync(path.join(root, 'assets/content/salah-liturgy.json'), 'utf8'),
+  ) as { phrases: { id: string; arabic_uthmani: string }[] };
+  const row = fromDisk.phrases.find((item) => item.id === 'thana');
+  assert.equal(
+    row?.arabic_uthmani,
+    'سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ وَتَبَارَكَ اسْمُكَ وَتَعَالَى جَدُّكَ وَلَا إِلَهَ غَيْرُكَ',
+  );
+  assert.equal(phrase.arabic_uthmani, row?.arabic_uthmani);
+  assert.notEqual(phrase.arabic_uthmani, 'Subhanaka Allahumma');
+  const plan = resolveLiturgyTtsPlan('liturgy-thana', pack);
+  assert.equal(plan.phraseId, 'thana');
+  assert.equal(plan.spokenArabic, phrase.arabic_uthmani);
+  assert.equal(plan.destRelative, 'artifacts/recitation/liturgy/liturgy-thana/liturgy-thana__edge-tts__ar-SA-HamedNeural.wav');
+  assert.deepEqual(suiteBlueprint('liturgy-thana').clips, [
+    'liturgy-thana/liturgy-thana__edge-tts__ar-SA-HamedNeural.wav',
+  ]);
+  assert.equal(loadSalahLiturgyStubEntry('liturgy-thana').status, 'ready');
+});
+
+test('liturgy TTS parser defaults to liturgy-takbeer and refuses remaining stub suites', () => {
   assert.deepEqual(parseLiturgyTtsArgs([]), {
     help: false,
     dryRun: false,
@@ -72,6 +95,8 @@ test('liturgy TTS parser defaults to liturgy-takbeer and refuses other stub suit
     suiteId: 'liturgy-takbeer',
   });
   assert.equal(parseLiturgyTtsArgs(['liturgy-takbeer', '--dry-run']).dryRun, true);
+  assert.equal(parseLiturgyTtsArgs(['liturgy-thana', '--engine', 'say']).suiteId, 'liturgy-thana');
+  assert.equal(parseLiturgyTtsArgs(['liturgy-thana', '--engine', 'say', '--voice', 'Majed']).voice, 'Majed');
   assert.deepEqual(parseLiturgyTtsArgs(['--engine', 'say']), {
     help: false,
     dryRun: false,
@@ -82,7 +107,7 @@ test('liturgy TTS parser defaults to liturgy-takbeer and refuses other stub suit
   });
   assert.equal(parseLiturgyTtsArgs(['--engine', 'edge-tts', '--voice', 'ar-SA-HamedNeural']).suiteId, 'liturgy-takbeer');
   assert.equal(parseLiturgyTtsArgs(['--rate=-25%']).rate, '-25%');
-  assert.throws(() => resolveLiturgyTtsPlan('liturgy-thana'), /still stub/);
+  assert.throws(() => resolveLiturgyTtsPlan('liturgy-ruku'), /still stub/);
 });
 
 test('spoken-clip checks reject silent PCM16 and accept voiced 16 kHz mono', () => {

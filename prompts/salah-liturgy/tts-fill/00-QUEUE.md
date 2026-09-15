@@ -14,8 +14,8 @@
 
 **Launch order**
 
-1. `01-takbeer.md` — **this session / landing:** manifest ready; Mac generates WAV then scores
-2. `02-thana.md`
+1. `01-takbeer.md` — **landed:** manifest ready; Mac generates WAV then scores
+2. `02-thana.md` — **this session / landing:** manifest ready; Mac `say` Majed (`--engine say`, ffmpeg on PATH) writes the stable clip_path
 3. `03-ruku.md`
 4. `04-sujood.md`
 5. `05-tashahhud.md`

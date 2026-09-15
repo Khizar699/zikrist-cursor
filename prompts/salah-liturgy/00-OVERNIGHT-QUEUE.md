@@ -17,10 +17,12 @@ Do not mega-merge corpus + matcher + UI in one Cursor session.
 ## After 03-display
 `04-replay-suites.md` + `manifest.stub.json` — stub liturgy replay pack (skip not PASS); Quran all stays 14.
 
-Harness: `npm run test:replay -- liturgy` (alias `salah-liturgy`) skips eight stubs with `missing_fixture` (not PASS). Default `all` stays 14. Staging: `artifacts/recitation/liturgy/<suite-id>/`. Do not commit evaluation audio.
+Harness: `npm run test:replay -- liturgy` (alias `salah-liturgy`) skips remaining stubs with `missing_fixture` (not PASS). Ready suites (`liturgy-takbeer`, `liturgy-thana`) need generated WAV. Default `all` stays 14. Staging: `artifacts/recitation/liturgy/<suite-id>/`. Do not commit evaluation audio.
 
 
 ## Next: TTS / clip-fill (stubs → ready)
 `prompts/salah-liturgy/tts-fill/00-QUEUE.md` — one suite per session. No imam fill until founder labels locks. Soft: `nas-no-post-end-jump.md`.
 
 `01-takbeer.md`: suite `liturgy-takbeer` is manifest-ready. Mac generates WAV (`npm run liturgy:tts -- liturgy-takbeer`) then `npm run test:replay -- liturgy-takbeer` must PASS; `all` stays 14/14.
+
+`02-thana.md`: suite `liturgy-thana` is manifest-ready. Founder Mac: `export PATH="/tmp/ffmpeg-static:$PATH"` then `npm run liturgy:tts -- liturgy-thana --engine say` (Majed `ar_001`; same dest as clip_path). Then `npm run test:replay -- liturgy-thana` must PASS; `all` stays 14/14.
