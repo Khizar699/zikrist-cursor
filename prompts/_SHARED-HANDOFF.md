@@ -11,7 +11,7 @@ Update root **`HANDOFF.md` tip** in the same PR:
 3. **Open tracks** (next prompt / hold / blocked)
 4. **Gates** — `npm run test:replay -- all` stays **14/14** Quran; note Linux is not that gate
 5. **Fixture restore** — `npm run fixtures:recitation` and `npm run fixtures:imam` (tag `imam-fixtures-v1` / `zikrist-imam-fixtures-v1.zip`); liturgy `npm run liturgy:tts -- <id> --engine say` with ffmpeg on `PATH`
-6. **Known fails** — at least Subayyal 4:129≠41:34 and Qiyam 36:16≠78:4 until those are Mac-green; never invent ayah labels
+6. **Known fails** — mid-surah cold false-lock **cleared on Mac via #17**; still blocked: `imam-mid-ayah-pause` (no pause mark), Qunut@s9P 4:56 (dua). Never invent ayah labels
 
 Follow this file **exactly**. A PR without a `HANDOFF.md` tip bump is **not mergeable**. CI: `.github/workflows/handoff-required.yml` fails PRs to `main` that omit `HANDOFF.md` from the diff.
 
@@ -28,7 +28,7 @@ Bots: Tip → `AGENTS.md` → the one prompt Tip names (HANDOFF **Bot start prot
 
 - Merging to `main` without a `HANDOFF.md` tip diff
 - Chat-only continuity (“Bot knows”) with no file write
-- Flipping real-imam suites to `ready` until `prompts/imam-mid-surah-cold-false-lock.md` is Mac-green
+- Flipping real-imam suites to `ready` except in a label-fill session after Mac `test:replay -- <suite>` PASS (false-lock already Mac-green via #17)
 - Committing wav/mp3
 
 See **Maintainer rule**, **Dictation for successor bots**, and **Bot start protocol** in `HANDOFF.md`. Use the PR template checklist.

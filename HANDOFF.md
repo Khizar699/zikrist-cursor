@@ -33,11 +33,13 @@ Skip overnight queues unless picking next work. Dictation above is what to **wri
 
 ## Tip state (update every PR)
 
-- **This PR:** Prompt Smith — unhold real-imam label-fill after [#17](https://github.com/Khizar699/zikrist-cursor/pull/17) Mac-green mid-surah cold false-lock. **Next CloudAgent:** `prompts/real-imam/label-fill/01-mid-surah-cold-dr-subayyal.md` (flip `imam-mid-surah-cold` → ready, 4:129–130). Then `02` (qiyam sibling 36:16–18).
-- **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate.
-- **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (tag `imam-fixtures-v1`, asset `zikrist-imam-fixtures-v1.zip`). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say` (Mac Majed).
-- **Known fails:** mid-surah cold Subayyal/Qiyam false locks **cleared on Mac via #17**. Still blocked: `imam-mid-ayah-pause` (no pause mark); Qunut@s9P 4:56 = dua not Quran.
-- **Open tracks:** **label-fill `01` (now)** → `02`; liturgy TTS next `tts-fill/03-ruku.md` after thana Mac-green; continuity #16 parallel OK (do not block label-fill).
+- **This PR:** Continuity #16 — `handoff-required` CI + `.cursor/rules/zikrist-continuity.mdc` (`alwaysApply`) for local Cursor. Docs/CI only; no follower retune. **#17 tip preserved.**
+- **#17 landed (`2f056f7`):** Mac-green mid-surah cold false-lock. Subayyal **4:129** / Qiyam **36:16** cleared.
+- **P0 next:** label-fill `01` — `prompts/real-imam/label-fill/01-mid-surah-cold-dr-subayyal.md` (flip `imam-mid-surah-cold` → ready, 4:129–130). Then `02`.
+- **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate. This PR **N/A** (docs + CI).
+- **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (zip **uploaded**). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say`.
+- **Known fails:** mid-surah cold **cleared on Mac via #17**. Still blocked: `imam-mid-ayah-pause` (no pause mark); Qunut@s9P 4:56 = dua not Quran.
+- **Open tracks:** **label-fill `01` (in flight)** → `02`; liturgy TTS `tts-fill/03-ruku.md`.
 
 
 ## For assistants / Grok bots — read first
@@ -73,7 +75,7 @@ Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that woul
 
 **Mid-surah cold (Mac-green via #17 — label-fill may flip ready)**
 
-Follower scoring for these pairs is in this PR; **acoustic Mac result is unproven**. Until Sim QA greens the two clips, keep these as the known fails:
+#17 cleared the false first-locks. Label-fill `01`/`02` may flip those suites to `ready` after Mac `test:replay -- <suite>` PASS.
 
 | Clip | Want | Status | Next |
 |---|---|---|---|
@@ -93,9 +95,7 @@ Follower scoring for these pairs is in this PR; **acoustic Mac result is unprove
 - **P0:** label-fill `01` — `prompts/real-imam/label-fill/01-mid-surah-cold-dr-subayyal.md`
 - Then label-fill `02` — `prompts/real-imam/label-fill/02-mid-surah-cold-qiyam.md`
 - Liturgy TTS after thana Mac-green — `prompts/salah-liturgy/tts-fill/03-ruku.md`
-- Continuity CI (#16) parallel — do not block label-fill
 
-Read `AGENTS.md`
 Read `AGENTS.md` before implementing.
 
 ## Friend path
@@ -127,7 +127,7 @@ The zip unpacks **into** `artifacts/recitation/imam/`, merging `LABELS.md`, `lab
 
 Asset is live. A 404 means the tag/asset disappeared or `ZIKRIST_IMAM_RELEASE_TAG` is wrong; the script still names https://github.com/Khizar699/zikrist-cursor/releases.
 
-Real-imam replay suites stay `stub` until algorithm fixes land. Restoring wavs is not a readiness flip. `npm run test:replay -- real-imam` still **skips** with `missing_fixture` (not PASS) while the manifest is stub.
+Flip to `ready` only via label-fill (one suite/session). Restoring wavs is not a readiness flip. `npm run test:replay -- real-imam` still **skips** stub suites (`missing_fixture`, not PASS).
 
 ## Liturgy TTS wavs (gitignored)
 

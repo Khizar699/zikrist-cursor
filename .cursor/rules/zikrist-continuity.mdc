@@ -28,5 +28,5 @@ Write obligation (do not paste it here): follow **Dictation for successor bots**
 
 - `npm run test:replay -- all` stays **14/14** Quran. Linux ONNX is not that gate.
 - Never invent ayah labels.
-- Do not flip real-imam `stub` → `ready` until mid-surah-cold false-lock is Mac-green.
+- Do not flip real-imam `stub` → `ready` except in a label-fill session after Mac `test:replay -- <suite>` PASS. Mid-surah-cold false-lock is already Mac-green (#17).
 - Do not commit `artifacts/` audio (wav/mp3).
