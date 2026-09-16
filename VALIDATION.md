@@ -273,4 +273,12 @@ Ready suites with a missing clip error `missing_clip` instead of skipping. Clip 
 
 This workspace (Linux/x64): `npm test` **194/194**; `npm run typecheck` pass. `npx tsx scripts/replay.ts imam-mid-surah-cold-qiyam` errors `missing_clip` (WAV not restored here) instead of skipping — expected ready behavior. Acoustic scoring and Mac `all` 14/14 were **not** run here. Not a physical-device, mosque, or license-clearance claim.
 
+## Masjid-e-Nabi acquire (25:69 ≠ 2:1)
+
+Matcher/follower only. Prompt: `prompts/real-imam/algo/01-masjid-e-nabi-25-69-false-2-1.md`. Founder-labeled Masjid-e-Nabi Al-Furqan **25:69–77** was measured as a false first-lock on Baqarah **2:1**. Subayyal/Qiyam ready suites and liturgy were not retuned. Manifest `ready` was not flipped.
+
+Cause class (token evidence, not clip IDs): a thin/noisy window can crown distant **2:1** `الم` because (1) `openingIsAtStart` treated `الم` *anywhere* after a Basmala tail as ayah-1 evidence, (2) short `الم` fragment-scores ~1.0 on any compact string that starts with it, so an alternative Furqan body could not beat the champion. Acquire now (1) requires muqattaʿāt to *open* the remainder after the Basmala tail, (2) refuses exact muqattaʿāt ayah-1 when leftover distinctive tokens are not explained by the same-surah neighborhood (2:2 `ذلك الكتب` still allows mixed 2:1+2:2), (3) strips a leading CTC `الم` before scoring a non-muqattaʿāt ayah, and (4) prefers an alternative with two more distinctive body hits than a short `الم` champion. Units in `tests/follower.test.ts` encode **25:69 ≠ 2:1** (including coincidental/prefixed `الم`), a thin Furqan opening that must not crown 2:1, isolated `الم` still locking 2:1, and 25:69→25:70 follow. No suite-ID hardcodes.
+
+This workspace (Linux/x64, no imam WAVs, no ONNX replay): `npx tsx --test tests/follower.test.ts` **92/92**; full `npm test` **198/200** (two pre-existing ENOENT on missing `assets/model/quran.json`, same as prior founder-label sessions); `npm run typecheck` pass. Mosque-clip replay and `npm run test:replay -- all` were **not** scored here. Not a physical-device, mosque, or license-clearance claim. **Mac custom replay of the noise-bleed WAV must first-lock 25:69 and keep `all` 14/14.**
+
 

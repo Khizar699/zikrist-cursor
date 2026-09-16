@@ -1460,3 +1460,104 @@ test('Fatir 35:1 still first-locks from فاطر after shared الحمد لله'
   assert.equal(engine.phase, 'following');
 });
 
+const furqanBleed = [
+  {
+    ...verse(2, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'الم'], 'Al-Baqarah'),
+    text_uthmani: 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ الٓمٓ',
+  },
+  verse(2, 2, ['ذلك', 'الكتب', 'لا', 'ريب', 'فيه', 'هدي', 'للمتقين'], 'Al-Baqarah'),
+  verse(3, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'الم'], 'Al-Imran'),
+  verse(25, 69, ['يضاعف', 'له', 'العذاب', 'يوم', 'القيامه', 'ويخلد', 'فيه', 'مهانا'], 'Al-Furqan'),
+  verse(25, 70, ['الا', 'من', 'تاب', 'وامن', 'وعمل', 'عملا', 'صلحا', 'فاولئك', 'يبدل', 'الله', 'سياتهم', 'حسنت'], 'Al-Furqan'),
+  verse(25, 71, ['ومن', 'تاب', 'وعمل', 'صلحا', 'فانه', 'يتوب', 'الي', 'الله', 'متابا'], 'Al-Furqan'),
+];
+
+function furqanChampion(surah: number, ayah: number, score: number, extra: Partial<QuranChampionMatch> = {}): QuranChampionMatch {
+  const found = furqanBleed.find((item) => item.surah === surah && item.ayah === ayah)!;
+  return {
+    surah, ayah, text: found.phonemes_joined, phonemes_joined: found.phonemes_joined,
+    score, raw_score: score, bonus: 0, ...extra,
+  };
+}
+
+test('Furqan 25:69 body does not first-lock Baqarah 2:1 from a distant الم champion', async () => {
+  const spoken = 'يضاعف له العذاب يوم القيامه ويخلد فيه مهانا';
+  const furqan = furqanBleed.find((item) => item.surah === 25 && item.ayah === 69)!;
+  const engine = new RecitationFollower(dbFrom(furqanBleed), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: furqanChampion(2, 1, 0.86, {
+      runners_up: [{
+        surah: 25, ayah: 69, score: 0.7, raw_score: 0.7, bonus: 0, phonemes_joined: furqan.phonemes_joined,
+      }],
+    }),
+  }]));
+  const messages = await engine.feed(audio(1));
+  assert.equal(refs(messages).includes('2:1'), false);
+  assert.deepEqual(refs(messages), ['25:69']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('coincidental الم later in a 25:69 window still locates Furqan, not 2:1', async () => {
+  const spoken = 'يضاعف له العذاب يوم القيامه الم ويخلد فيه مهانا';
+  const engine = new RecitationFollower(dbFrom(furqanBleed), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: furqanChampion(2, 1, 0.88),
+  }]));
+  const messages = await engine.feed(audio(1));
+  assert.equal(refs(messages).includes('2:1'), false);
+  assert.deepEqual(refs(messages), ['25:69']);
+});
+
+test('CTC الم prefixed onto 25:69 body still refuses 2:1', async () => {
+  const spoken = 'الم يضاعف له العذاب يوم القيامه ويخلد فيه مهانا';
+  const engine = new RecitationFollower(dbFrom(furqanBleed), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: furqanChampion(2, 1, 0.9),
+  }]));
+  const messages = await engine.feed(audio(1));
+  assert.equal(refs(messages).includes('2:1'), false);
+  assert.deepEqual(refs(messages), ['25:69']);
+});
+
+test('a thin 25:69 opening holds or locks Furqan instead of crowning 2:1', async () => {
+  const spoken = 'يضاعف له العذاب';
+  const engine = new RecitationFollower(dbFrom(furqanBleed), script([{
+    text: spoken,
+    rawPhonemes: spoken,
+    championMatch: furqanChampion(2, 1, 0.85),
+  }]));
+  const locked = refs(await engine.feed(audio(1)));
+  assert.equal(locked.includes('2:1'), false);
+  assert.ok(
+    locked.length === 0 || locked[0] === '25:69',
+    `thin Furqan window locked ${locked.join(',') || 'nothing'}`,
+  );
+});
+
+test('isolated الم still first-locks 2:1 when no Furqan body is present', async () => {
+  const engine = new RecitationFollower(dbFrom(furqanBleed), script([{
+    text: 'الم',
+    rawPhonemes: 'الم',
+    championMatch: furqanChampion(2, 1, 0.86),
+  }]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:1']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('after 25:69, 25:70 still advances from its own words', async () => {
+  const sixtyNine = furqanBleed.find((item) => item.surah === 25 && item.ayah === 69)!;
+  const seventy = furqanBleed.find((item) => item.surah === 25 && item.ayah === 70)!;
+  const engine = new RecitationFollower(dbFrom(furqanBleed), script([
+    {
+      text: sixtyNine.phonemes_joined, rawPhonemes: sixtyNine.phonemes_joined,
+      championMatch: furqanChampion(25, 69, 0.86),
+    },
+    { text: seventy.phonemes_joined, rawPhonemes: seventy.phonemes_joined },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['25:69']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['25:70']);
+});
+
