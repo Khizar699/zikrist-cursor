@@ -4,7 +4,24 @@ An offline Quran recognition and translation MVP for iOS and Android. This is a 
 
 ## Continuing from GitHub / Cursor
 
-Friends and new bots: [HANDOFF.md](HANDOFF.md) **Tip state**, then **Bot start protocol** (`AGENTS.md` → the one prompt Tip names). Clone → `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam`.
+Friends and new bots: [HANDOFF.md](HANDOFF.md) **Tip state**, then **Bot start protocol** (`AGENTS.md` → the one prompt Tip names).
+
+**Terminal commands in order:** see **[SETUP.md](SETUP.md)** (copy-paste checklist).
+
+**First clone (app on simulator):**
+
+```sh
+npm ci          # or npm i
+npm run setup   # downloads ~104 MB gitignored ONNX model + verifies
+npm run ios     # Expo prebuild + native build (not Expo Go)
+```
+
+**Recognition / overnight bots** also need evaluation audio (gitignored, not LFS):
+
+```sh
+npm run setup -- --fixtures
+# same as: fixtures:recitation + fixtures:imam
+```
 
 **Open this folder in Cursor** — Agent/Composer always loads:
 
@@ -20,11 +37,14 @@ An offline **salah liturgy phrase pack** (`assets/content/salah-liturgy.json`) s
 
 ## Run this workspace
 
+After `npm run setup` (once per machine):
+
 ```sh
 cd zikrist-cursor
 npm run ios
 ```
 
+`npm run ios` refuses to start if the ONNX model is missing — that usually means `npm run setup` was skipped.
 For a connected iPhone, use `npm run ios -- --device`. Xcode signing and a development team must be configured for that device. A simulator is useful for interface and native integration checks; it does not establish physical microphone, battery, or locked-screen reliability.
 
 For Android, install Android Studio's SDK, an emulator or connected phone, and the JDK required by the generated Gradle project, then run:
@@ -41,12 +61,13 @@ Requirements: Node 22.13 or later, npm, and the appropriate native toolchain. iO
 
 ```sh
 npm ci
-npm run assets:download
-npm run assets:verify
+npm run setup
 npm run ios
 ```
 
-Friends restoring **evaluation audio** (gitignored, not git LFS) should follow [HANDOFF.md](HANDOFF.md): `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam`. Liturgy TTS wavs are regenerated with ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say` (Mac Majed). New agents: the top of `HANDOFF.md` is the no-history briefing.
+`npm run setup` downloads the pinned recognition model (~104 MB, gitignored), verifies checksums, and fails early if a leftover `ios/` tree is missing the microphone privacy string or looks like a stock `org.name.Zikrist` template (fix: `npx expo prebuild --platform ios --clean`). Add `--fixtures` when you need Mac replay audio.
+
+Friends restoring **evaluation audio** only: `npm run fixtures:recitation` then `npm run fixtures:imam`. Liturgy TTS wavs: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say` (Mac Majed). New agents: the top of `HANDOFF.md` is the no-history briefing.
 
 The model and recognition tables are approximately 104 MB on disk, before native runtime and application overhead. They are excluded from Git and restored from pinned URLs with SHA-256 verification. The application bundles these assets. This UI pass auto-prepares the English translation (about 1.2 MB) on first launch; a previously installed Urdu pack is still used if that is the saved language. At most two language packs are retained. Internet is needed for initial language installation and development-server loading; a release build with an installed pack performs recognition without a server.
 

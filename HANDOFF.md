@@ -2,6 +2,8 @@
 
 Friends and **new Grok / Cursor agents** (no chat history) start here. Large recitation wav/mp3 is **not** in git (no Git LFS). Founder-verified imam **labels** are in git. Audio is restored locally.
 
+**Human first clone (ordered npm commands):** [SETUP.md](SETUP.md).
+
 ## Maintainer rule (founder)
 
 Every PR that merges to `main` **must** update this file **in the same PR**: what landed, tip state, open tracks, gates (`npm run test:replay -- all` = **14/14** Quran regression floor; algo Tip work also notes product bar from `prompts/real-imam/algo/PRODUCT-BAR.md`), fixture restore commands, known fails. Prompt Smith / cloud agents follow `prompts/_SHARED-HANDOFF.md`. A PR without a `HANDOFF.md` bump is not mergeable. CI: `.github/workflows/handoff-required.yml`.
@@ -34,12 +36,12 @@ Skip overnight queues unless picking next work. Dictation above is what to **wri
 
 ## Tip state (update every PR)
 
-- **This PR:** Local Mac Agent — iOS boot unblock: `NSMicrophoneUsageDescription` in `app.json` infoPlist; fix `plugins/with-private-storage.cjs` `quoteBuildPhases` so Expo prebuild no longer dies on raw-newline shell scripts (`JSON.parse` → tolerant `readShellScript`). Clean `expo prebuild --platform ios` now applies mic permission, private-storage AppDelegate, and `onnxruntime-c` pod. Also ran `npm run assets:download` locally (gitignored model). **No matcher/follower code.** Recognition P0 unchanged.
+- **This PR:** Local Mac Agent — [SETUP.md](SETUP.md) ordered first-clone commands; `npm run setup` (+ optional `--fixtures`); `run-native` fail-fast if ONNX missing; README/HANDOFF point at SETUP. Same branch: iOS mic/prebuild unblock (`NSMicrophoneUsageDescription`, tolerant `quoteBuildPhases`). **No matcher/follower code.** Recognition P0 unchanged.
 - **Prior tip:** Prompt Smith + ratchet / product-bar docs; algo P0 = `04-hafiz-usama-…` handoff or restore floor. label-fill **02** Qiyam / **01** Subayyal / #17 mid-surah cold.
 - **Gate (floor) — last Mac measure (unchanged this session):** `npm run test:replay -- all` = **12/14 FAIL**. Failures: `jump` (no Ikhlas); `english-negative` (20:1). Soft: Nas→**2:1**; Quraysh→**2:1**. Units were **194/194**.
 - **Product bar baseline (unchanged):** Hafiz Usama — Fatiha then **2:1** (want **27:15**). Subayyal / Qiyam ready PASS after fixtures.
 - **Ratchet:** floor/handoff known-fails unchanged (no recognition fix this PR).
-- **Restore:** `npm i` → `npm run assets:download` → `npm run fixtures:recitation` → `npm run fixtures:imam`. After plugin/app.json native changes: `npx expo prebuild --platform ios --clean` then `npm run ios`. Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say`.
+- **Restore:** `npm ci` → `npm run setup` (or `setup -- --fixtures`) → `npm run ios`. After plugin/app.json native changes: `npx expo prebuild --platform ios --clean` then `npm run ios`. Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say`.
 - **Known fails:** floor **jump** + **english-negative**. Handoff: hafiz-usama →**27:15** (got **2:1**). Still blocked: `imam-mid-ayah-pause`; Qunut@s9P 4:56. Deferred P2: masjid **25:69≠2:1**; ahzab **33:62≠33:60**; baqarah→imran **≠57:28**.
 - **Open tracks:** **P0** restore floor **14/14** (jump + english-negative) **or** `04-hafiz-usama-…` handoff — each with same-PR test lock. Liturgy TTS `tts-fill/03-ruku.md`.
 
@@ -61,12 +63,21 @@ You have no prior thread. Do not invent product history, ayah numbers, or Mac re
 **After clone**
 
 ```sh
-npm i
-npm run fixtures:recitation    # EveryAyah Quran replay wavs
-npm run fixtures:imam          # Release tag imam-fixtures-v1 / zikrist-imam-fixtures-v1.zip
+npm ci                 # or npm i
+npm run setup          # ONNX model (~104 MB) + verify; fails early on bad ios/
+npm run ios            # simulator app — not Expo Go
 ```
 
-The zip is **uploaded**. If `fixtures:imam` 404s, the tag/asset was removed or `ZIKRIST_IMAM_RELEASE_TAG` is wrong — see https://github.com/Khizar699/zikrist-cursor/releases. Do not commit audio.
+Recognition / overnight bots also need gitignored audio:
+
+```sh
+npm run setup -- --fixtures
+# or: npm run fixtures:recitation && npm run fixtures:imam
+```
+
+The imam zip is **uploaded**. If `fixtures:imam` 404s, the tag/asset was removed or `ZIKRIST_IMAM_RELEASE_TAG` is wrong — see https://github.com/Khizar699/zikrist-cursor/releases. Do not commit audio.
+
+If the app red-boxes on `fastconformer_full_mixed.onnx`, setup was skipped. If it says `NSMicrophoneUsageDescription` is missing or the bundle is `org.name.Zikrist`: `npx expo prebuild --platform ios --clean` then `npm run ios`.
 
 **Liturgy TTS** (gitignored under `artifacts/recitation/liturgy/`): put ffmpeg on `PATH`, then Mac `say` Majed:
 
