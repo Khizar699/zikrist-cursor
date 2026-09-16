@@ -604,6 +604,35 @@ test('after Kawthar, a later short surah is taken from the next-surah pool witho
   assert.equal(searches(), 0);
 });
 
+test('after Kawthar leftover in the window, Ikhlas still locks 112:1 (Mac jump concat)', async () => {
+  const local = [
+    verse(108, 3, ['inna', 'shaniaka', 'huwa', 'alabtar'], 'Al-Kawthar'),
+    verse(10, 16, ['qul', 'law', 'shaa', 'allahu', 'ma', 'talawtuhu', 'alaykum'], 'Yunus'),
+    verse(112, 1, ['qul', 'huwa', 'allahu', 'ahad'], 'Al-Ikhlas'),
+    verse(112, 2, ['allahu', 'alsamad'], 'Al-Ikhlas'),
+  ];
+  const three = local[0]!;
+  const mixed = ['alabtar', 'qul', 'huwa', 'allahu', 'ahad'].join(' ');
+  const engine = new RecitationFollower(dbFrom(local), script([
+    {
+      text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+        surah: 108, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+        score: 0.86, raw_score: 0.86, bonus: 0,
+      },
+    },
+    {
+      text: mixed, rawPhonemes: mixed, championMatch: {
+        surah: 10, ayah: 16, text: local[1]!.phonemes_joined, phonemes_joined: local[1]!.phonemes_joined,
+        score: 0.92, raw_score: 0.92, bonus: 0,
+      },
+    },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['108:3']);
+  const jumped = refs(await engine.feed(hop()));
+  assert.equal(jumped.includes('10:16'), false);
+  assert.deepEqual(jumped, ['112:1']);
+});
+
 test('after Kawthar, repeating Kawthar still locks from its opening', async () => {
   const engine = follower([
     spoken(108, 3),

@@ -14,7 +14,7 @@ Founder rule: update root `HANDOFF.md` **in the same PR** — what landed, open 
 
 **Label-fill:** **01**+#**02** done on main (Subayyal + Qiyam sibling ready). Mid-ayah-pause still blocked; Qunut≠Quran. Queue: `label-fill/00-QUEUE.md`.
 
-**Algo:** founder-clip pack — `prompts/real-imam/algo/00-QUEUE.md`. **01** (masjid-e-nabi **25:69 ≠ 2:1**) is this PR — do not flip noise-bleed `ready`. **Next:** `02-ahzab-to-saba-cold-33-60-vs-33-62.md` → 03→04. One concern each; do not mega-merge with label-fill. Liturgy TTS `tts-fill/03-ruku.md` remains parallel.
+**Algo:** founder-clip pack — `prompts/real-imam/algo/00-QUEUE.md`. **01** (masjid-e-nabi **25:69 ≠ 2:1**) is **P0 residual** — Mac `08bce85` still first-locks **2:1@1s** (want **25:69**); jump restored this revision; do not flip noise-bleed `ready`; **do not merge as 25:69 success**. **Do not launch 02** until founder says. Liturgy TTS `tts-fill/03-ruku.md` remains parallel.
 
 Launch **one session at a time**:
 

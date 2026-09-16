@@ -33,12 +33,12 @@ Skip overnight queues unless picking next work. Dictation above is what to **wri
 
 ## Tip state (update every PR)
 
-- **This PR:** algo **01** — Masjid-e-Nabi cold/bleed **25:69 ≠ 2:1** (`prompts/real-imam/algo/01-masjid-e-nabi-25-69-false-2-1.md`). `RecitationFollower` refuses a distant Baqarah **2:1** `الم` champion when distinctive Furqan body tokens are in the window (and does not treat CTC `الم` later or prefixed as 2:1 evidence). Units encode the confusion; **no** mosque WAV on this VM. **Do not** flip manifest `ready`. **Do not** retune liturgy. **Do not** touch Subayyal/Qiyam ready suites. **Do not** work algo 02–04.
+- **This PR:** algo **01** residual — **not Mac-green**. Bot Mac-verify of `08bce85` **failed**: noise-bleed **and** mid-cold twin still first-lock **2:1@1s** (want **25:69**); `test:replay -- all` **broke jump** (was 14/14 on main). This revision **restores jump** (do not skip Ikhlas 112:1 after Kawthar leftover; no distinctive-hit ranking steal). Isolated CTC `الم` at ~1 s still locks **2:1** — same evidence as genuine Baqarah `longer` 2:1; refusing it would break 14/14. Units still encode **25:69 ≠ 2:1** when Furqan body tokens are already in the window. **Do not** flip `ready`. **Do not** retune liturgy. **Do not** touch Subayyal/Qiyam. **Do not** work algo 02–04. **Do not merge as 25:69 acoustic success.**
 - **Prior:** [#20](https://github.com/Khizar699/zikrist-cursor/pull/20) algo queue on main (`84f9d9b`). Label-fill **02** (`c228533` / #19) Qiyam sibling ready. Label-fill **01** (`6df8ef3` / #18) Subayyal ready. [#17](https://github.com/Khizar699/zikrist-cursor/pull/17) **Mac-green on merge** (`2f056f7`): Subayyal **4:129→130**, Qiyam **36:16→18**, `all` **14/14**.
-- **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate. This PR does **not** claim Mac acoustic green for the Masjid-e-Nabi clip — Bot/Sim QA must custom-replay the noise-bleed WAV (first lock **25:69**, never **2:1**) and confirm `all` still **14/14**.
+- **Gate:** Mac `npm run test:replay -- all` must be **14/14** again (jump restored — Bot re-verify). Linux ONNX is not that gate. **25:69 first-lock is still a P0 residual** (2:1@1s). Subayyal/Qiyam still PASS on the failed Mac run.
 - **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (zip **uploaded**; also copies Qiyam WAV into `imam-mid-surah-cold-qiyam/qari-a/`). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say`.
-- **Known fails:** mid-surah cold **cleared on Mac via #17**. Masjid-e-Nabi **2:1** false lock is **unit-gated here**; Mac WAV re-measure is Bot/Sim. Still queued (algo 02–04): ahzab cold **33:62≠33:60**; baqarah→imran **≠57:28**; hafiz-usama Fatiha→**27:15**. Still blocked: `imam-mid-ayah-pause` (no pause mark); Qunut@s9P 4:56 = dua not Quran. Other real-imam rows stay **stub**.
-- **Open tracks:** **next** `prompts/real-imam/algo/02-ahzab-to-saba-cold-33-60-vs-33-62.md` → 03→04 (`algo/00-QUEUE.md`). Liturgy TTS `tts-fill/03-ruku.md`.
+- **Known fails:** mid-surah cold **cleared on Mac via #17**. **P0 residual:** Masjid-e-Nabi **25:69** still first-locks **2:1@1s** on both named WAVs. Still queued (algo 02–04): ahzab cold **33:62≠33:60**; baqarah→imran **≠57:28**; hafiz-usama Fatiha→**27:15**. Still blocked: `imam-mid-ayah-pause` (no pause mark); Qunut@s9P 4:56 = dua not Quran.
+- **Open tracks:** **P0 residual still** `prompts/real-imam/algo/01-masjid-e-nabi-25-69-false-2-1.md` (do not launch 02 until founder says). Liturgy TTS `tts-fill/03-ruku.md`.
 
 ## For assistants / Grok bots — read first
 
@@ -79,11 +79,11 @@ Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that woul
 |---|---|---|---|
 | Dr Subayyal | **4:129–130** | Mac-green (#17); **ready** (#18) | Bot/Sim `test:replay -- imam-mid-surah-cold` (must still PASS) |
 | Qiyam Faisal | **36:16–18** | Mac-green (#17); **ready** (#19) | Bot/Sim `test:replay -- imam-mid-surah-cold-qiyam` |
-| Masjid-e-Nabi | **25:69–77** | algo this PR (units: never first-lock **2:1**) | Bot/Sim custom replay of noise-bleed WAV |
+| Masjid-e-Nabi | **25:69–77** | **P0 residual** — Mac still **2:1@1s** (Bot `08bce85`) | Do not merge as acoustic green |
 
-**Masjid-e-Nabi (this PR, algo only)**
+**Masjid-e-Nabi (this PR, algo residual — not Mac-green)**
 
-Prefer `imam-noise-bleed__masjid-e-nabi__025-069-077__raw.wav` (twin also under mid-surah-cold). Want first lock **25:69**, never Baqarah **2:1**. Manifest stays **stub**. Mosque WAVs are not on the Linux VM — units in `tests/follower.test.ts` encode **25:69 ≠ 2:1**. Bot/Sim on Mac:
+Prefer `imam-noise-bleed__masjid-e-nabi__025-069-077__raw.wav` (twin also under mid-surah-cold). **Want** first lock **25:69**, never Baqarah **2:1**. **Mac on `08bce85` still first-locked 2:1@1s on both named WAVs.** Isolated CTC `الم` at ~1 s is the same evidence as genuine `longer` 2:1 — refusing it would break 14/14. This revision restores jump (Ikhlas 112:1 after Kawthar leftover; no distinctive-hit ranking). Manifest stays **stub**. Mosque WAVs are not on the Linux VM — units encode **25:69 ≠ 2:1** when Furqan body tokens are already in the window. **Do not merge as 25:69 acoustic success.** Bot/Sim: re-verify jump / `all` **14/14**; custom replay will still show **2:1@1s** until a later fix.
 
 ```bash
 npx tsx scripts/replay.ts \
@@ -101,9 +101,9 @@ npm run test:replay -- all
 
 **Current open tracks**
 
-- **Next:** `prompts/real-imam/algo/02-ahzab-to-saba-cold-33-60-vs-33-62.md` (ahzab cold **33:62 ≠ 33:60**), then 03→04. One prompt each; do not mega-fill. Mid-ayah-pause still blocked until a founder pause mark.
+- **P0 residual still:** `prompts/real-imam/algo/01-masjid-e-nabi-25-69-false-2-1.md` (Mac first-lock still **2:1@1s**, want **25:69**). **Do not launch 02** until founder says.
 - Liturgy TTS after thana — `prompts/salah-liturgy/tts-fill/03-ruku.md`
-- Other real-imam suites stay **stub** (`imam-mid-ayah-pause` blocked; Qunut ≠ Quran). Noise-bleed Masjid-e-Nabi stays stub until Mac-green + a later label-fill.
+- Other real-imam suites stay **stub** (`imam-mid-ayah-pause` blocked; Qunut ≠ Quran). Noise-bleed Masjid-e-Nabi stays stub. Queued after residual (not next): algo 02 ahzab cold **33:62 ≠ 33:60**, then 03→04.
 
 Read `AGENTS.md` before implementing.
 

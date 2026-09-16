@@ -1206,10 +1206,11 @@ export class RecitationFollower {
   ): QuranVerse | undefined {
     let best: QuranVerse | undefined;
     let bestScore = -1;
-    let bestHits = -1;
     for (const verse of this.db.verses) {
       if (skipUnusableLock(verse)) continue;
-      if (this.thinWrongChampion(ranked, verse, recognized)) continue;
+      // Only skip distant الم / المص lookalikes. Do not skip Ikhlas 112:1 after
+      // Kawthar leftover — that broke Mac jump (14/14).
+      if (isExactMuqattaatAyah1(verse) && this.thinWrongChampion(ranked, verse, recognized)) continue;
       const start = verseAlignWords(verse).words[0];
       if (!start) continue;
       const body = verseAlignWords(verse).words;
@@ -1222,25 +1223,18 @@ export class RecitationFollower {
       if (!heardStart && distinctiveHits.length < 2) continue;
       if (!this.hasVerseEvidence(text, verse, recognized)) continue;
       const score = this.locationScore(this.scoredAcquireText(text, recognized, verse), verse);
-      const hits = distinctiveHits.length;
-      if (!best || hits > bestHits + 1 || (hits >= bestHits && score > bestScore + 0.03)) {
+      if (!best || score > bestScore + 0.03) {
         best = verse;
         bestScore = score;
-        bestHits = hits;
       }
     }
     if (!best || (best.surah === ranked.surah && best.ayah === ranked.ayah)) return undefined;
     const rankedVerse = this.db.getVerse(ranked.surah, ranked.ayah);
     if (rankedVerse && !skipUnusableLock(rankedVerse) && this.canLock(ranked, rankedVerse, text, recognized)) {
-      const rankedHits = distinctiveTokens(recognized, verseAlignWords(rankedVerse).words).length;
-      // Distant الم can fragment-score ~1.0 on any window that starts with it.
-      // Distinctive mid-ayah body tokens of another surah still win.
-      if (bestHits < rankedHits + 2) {
-        const rankedBody = this.locationScore(text, rankedVerse);
-        // Acoustic champion already explains the window — do not swap to a distant lookalike.
-        if (ranked.score >= LOCK_CLEAR_SCORE && rankedBody >= bestScore - 0.03) return undefined;
-        if (rankedBody >= bestScore + SURAH_MARGIN) return undefined;
-      }
+      const rankedBody = this.locationScore(text, rankedVerse);
+      // Acoustic champion already explains the window — do not swap to a distant lookalike.
+      if (ranked.score >= LOCK_CLEAR_SCORE && rankedBody >= bestScore - 0.03) return undefined;
+      if (rankedBody >= bestScore + SURAH_MARGIN) return undefined;
     }
     const match: QuranChampionMatch = {
       ...ranked,

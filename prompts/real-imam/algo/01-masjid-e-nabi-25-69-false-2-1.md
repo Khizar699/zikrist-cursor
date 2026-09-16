@@ -18,8 +18,9 @@ Do **not** trust `probes/hypothesized-locks.txt`.
 
 - **#17** mid-surah cold false-lock **cleared** on Mac (Subayyal 4:129, Qiyam 36:16); `all` **14/14**.
 - Label-fill **01** on main (`6df8ef3` / PR #18 area): `imam-mid-surah-cold` ready for Subayyal — **do not touch**.
-- Label-fill **02** (Qiyam sibling) in flight or merged when this launches — **do not retune labels/manifest ready**.
+- Label-fill **02** (Qiyam sibling) merged (`c228533` / #19) — **do not retune labels/manifest ready**.
 - This session is **algo only** for the remaining founder-clip false lock **25:69 ≠ 2:1**.
+- **Mac verify of `08bce85` FAILED:** noise-bleed **and** mid-cold twin still first-lock **2:1@1s**; `test:replay -- all` **broke jump**. Subayyal/Qiyam still PASS; Mac units 200/200. Isolated CTC `الم` at ~1 s is indistinguishable from genuine `longer` 2:1. This revision **restores jump** (score-only `alternativeHeardVerse`; skip `thinWrongChampion` only for exact muqattaʿāt ayah-1). **Acoustic 25:69 first-lock is unmet. Do not merge as green. Do not launch 02.**
 
 ## HANDOFF.md (required every PR)
 
@@ -57,7 +58,7 @@ npm test && npm run typecheck
 1. Mac custom replay: first lock **25:69**, **never 2:1**; short follow into 25:70+ if the clip supports it.
 2. Mac `npm run test:replay -- all` still **14/14**.
 3. `npm test` / typecheck pass.
-4. Honest residual fails noted; next launch is queue **02** (ahzab cold).
+4. Honest residual: Mac still first-locks **2:1@1s**; jump restored for Bot re-verify of **14/14**. **Do not** launch queue **02** until founder says.
 
 ## Deliverable
 

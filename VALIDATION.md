@@ -167,7 +167,7 @@ Rebased onto main `810ed4c` (Prompt Smith sharper brief). 2:1 `text_clean` is `�
 | `kawthar` | Mac-green on `c0b3b1d` |
 | `quraysh` | Mac-green on `c0b3b1d` |
 | `back-to-back` | Mac-green on main `11759a9`; leftover-crumb units kept |
-| `jump` | Mac-green on main `11759a9` (came free from #5); do not regress |
+| `jump` | Mac-green on main `11759a9` (came free from #5). **`08bce85` broke it**; this residual revision restores Kawthar leftover→Ikhlas 112:1 — Bot re-verify 14/14. |
 
 `npm test` 141/141; typecheck pass; lint still reports the pre-existing unused `openingScore` warning. Linux longer 2:1 first and nas/fatiha/short-surah Linux times above are from a **pre-rebase** tip. This workspace has no ONNX/WAV fixtures. Not a physical-device accuracy claim. **Only remaining merge gate: Mac `test:replay -- longer` first-lock 2:1.** Keep Mac nas/fatiha/asr/kawthar/quraysh/jump/back-to-back green.
 
@@ -273,12 +273,16 @@ Ready suites with a missing clip error `missing_clip` instead of skipping. Clip 
 
 This workspace (Linux/x64): `npm test` **194/194**; `npm run typecheck` pass. `npx tsx scripts/replay.ts imam-mid-surah-cold-qiyam` errors `missing_clip` (WAV not restored here) instead of skipping — expected ready behavior. Acoustic scoring and Mac `all` 14/14 were **not** run here. Not a physical-device, mosque, or license-clearance claim.
 
-## Masjid-e-Nabi acquire (25:69 ≠ 2:1)
+## Masjid-e-Nabi acquire (25:69 ≠ 2:1) — P0 residual
 
-Matcher/follower only. Prompt: `prompts/real-imam/algo/01-masjid-e-nabi-25-69-false-2-1.md`. Founder-labeled Masjid-e-Nabi Al-Furqan **25:69–77** was measured as a false first-lock on Baqarah **2:1**. Subayyal/Qiyam ready suites and liturgy were not retuned. Manifest `ready` was not flipped.
+Matcher/follower only. Prompt: `prompts/real-imam/algo/01-masjid-e-nabi-25-69-false-2-1.md`. Founder-labeled Masjid-e-Nabi Al-Furqan **25:69–77** false first-lock on Baqarah **2:1**. Subayyal/Qiyam ready suites and liturgy were not retuned. Manifest `ready` was not flipped.
 
-Cause class (token evidence, not clip IDs): a thin/noisy window can crown distant **2:1** `الم` because (1) `openingIsAtStart` treated `الم` *anywhere* after a Basmala tail as ayah-1 evidence, (2) short `الم` fragment-scores ~1.0 on any compact string that starts with it, so an alternative Furqan body could not beat the champion. Acquire now (1) requires muqattaʿāt to *open* the remainder after the Basmala tail, (2) refuses exact muqattaʿāt ayah-1 when leftover distinctive tokens are not explained by the same-surah neighborhood (2:2 `ذلك الكتب` still allows mixed 2:1+2:2), (3) strips a leading CTC `الم` before scoring a non-muqattaʿāt ayah, and (4) prefers an alternative with two more distinctive body hits than a short `الم` champion. Units in `tests/follower.test.ts` encode **25:69 ≠ 2:1** (including coincidental/prefixed `الم`), a thin Furqan opening that must not crown 2:1, isolated `الم` still locking 2:1, and 25:69→25:70 follow. No suite-ID hardcodes.
+**Mac verify of `08bce85` failed.** Noise-bleed **and** mid-cold twin still first-locked **2:1@1s** (want **25:69**). `npm run test:replay -- all` **broke jump** (was 14/14 on main). Subayyal/Qiyam still PASS; Mac units 200/200. **Do not claim acoustic green.**
 
-This workspace (Linux/x64, no imam WAVs, no ONNX replay): `npx tsx --test tests/follower.test.ts` **92/92**; full `npm test` **198/200** (two pre-existing ENOENT on missing `assets/model/quran.json`, same as prior founder-label sessions); `npm run typecheck` pass. Mosque-clip replay and `npm run test:replay -- all` were **not** scored here. Not a physical-device, mosque, or license-clearance claim. **Mac custom replay of the noise-bleed WAV must first-lock 25:69 and keep `all` 14/14.**
+Cause class (token evidence, not clip IDs): a thin/noisy window can crown distant **2:1** `الم` because (1) `openingIsAtStart` treated `الم` *anywhere* after a Basmala tail as ayah-1 evidence, (2) short `الم` fragment-scores ~1.0 on any compact string that starts with it. Acquire still (1) requires muqattaʿāt to *open* the remainder after the Basmala tail, (2) refuses exact muqattaʿāt ayah-1 when leftover distinctive tokens are not explained by the same-surah neighborhood (2:2 `ذلك الكتب` still allows mixed 2:1+2:2), and (3) strips a leading CTC `الم` before scoring a non-muqattaʿāt ayah. Distinctive-hit ranking of alternatives **was reverted** — it stole short correct champions and broke Mac jump. `alternativeHeardVerse` is score-only again and skips `thinWrongChampion` only for exact muqattaʿāt ayah-1 (Ikhlas 112:1 after Kawthar leftover must still lock).
+
+**P0 residual:** isolated CTC `الم` at ~1 s still locks **2:1** (`lockExactMuqattaatAyah1` / `canLock` with empty leftover). That is the same evidence as genuine Baqarah `longer` 2:1; refusing it would break 14/14. Units encode **25:69 ≠ 2:1** when Furqan body tokens are already in the window (coincidental/prefixed `الم`, thin Furqan opening, isolated `الم` still 2:1, 25:69→25:70, Kawthar leftover→112:1 jump concat). No suite-ID hardcodes.
+
+This workspace (Linux/x64, no imam WAVs, no ONNX replay): `npx tsx --test tests/follower.test.ts` **93/93**; full `npm test` **199/201** (two pre-existing ENOENT on missing `assets/model/quran.json`); `npm run typecheck` pass. Mosque-clip replay and `npm run test:replay -- all` were **not** scored here. Not a physical-device, mosque, or license-clearance claim. **Bot: re-verify jump / `all` 14/14. Custom replay will still first-lock 2:1@1s until a later fix. Do not merge as 25:69 success. Do not launch algo 02.**
 
 

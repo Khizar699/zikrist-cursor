@@ -2,7 +2,7 @@
 
 Label-fill **01** (`6df8ef3` / #18) + **02** (`c228533` / #19) are on main. Pack is **unheld**.
 
-Bot launches **one Cursor session at a time**, in order — **no mega-prompt**. **Next = P0** `02-ahzab-to-saba-cold-33-60-vs-33-62.md`.
+Bot launches **one Cursor session at a time**, in order — **no mega-prompt**. **P0 residual still** `01-masjid-e-nabi-25-69-false-2-1.md` (Mac first-lock still **2:1@1s**, want **25:69**). **Do not launch 02** until founder says.
 
 **Hard gate every session:** Mac `npm run test:replay -- all` = **14/14**. Continuity: `prompts/_SHARED-HANDOFF.md` + root `HANDOFF.md` tip in the same PR.
 
@@ -21,8 +21,8 @@ Shared notes: `_SHARED.md`. Ground truth: `prompts/real-imam/LABELS.md` + `label
 
 | # | Prompt | Status |
 |---|---|---|
-| 01 | masjid-e-nabi 25:69≠2:1 | **done this PR** — units 25:69≠2:1; Mac WAV re-measure is Bot/Sim; **no** `ready` flip |
-| 02 | ahzab cold 33:62≠33:60 | **P0 next** — launch after this merges |
+| 01 | masjid-e-nabi 25:69≠2:1 | **P0 residual** — Mac `08bce85` still **2:1@1s** on both named WAVs; jump broke then restored this revision; **no** `ready` flip; **do not merge as acoustic green** |
+| 02 | ahzab cold 33:62≠33:60 | queued — **do not launch** until founder says (01 residual remains) |
 | 03 | baqarah→imran ≠57:28 | queued |
 | 04 | hafiz-usama →27:15 | queued |
 
