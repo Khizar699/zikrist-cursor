@@ -12,7 +12,7 @@ Founder rule: update root `HANDOFF.md` **in the same PR** — what landed, open 
 
 ## Label-fill (next)
 
-Founder labels verified 2026-09-16. **Next:** `prompts/real-imam/label-fill/00-QUEUE.md` — start `01-mid-surah-cold-dr-subayyal.md`, then `02-mid-surah-cold-qiyam.md`. Mid-ayah-pause still blocked; Qunut≠Quran.
+Founder labels verified 2026-09-16. Mid-surah-cold false-lock is **Mac-green** (PR #17). **Next (unblocked):** `prompts/real-imam/label-fill/00-QUEUE.md` — start `01-mid-surah-cold-dr-subayyal.md`, then `02-mid-surah-cold-qiyam.md`. Mid-ayah-pause still blocked; Qunut≠Quran.
 
 Launch **one session at a time**:
 

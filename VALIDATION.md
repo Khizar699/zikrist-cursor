@@ -230,24 +230,22 @@ This workspace (Linux/x64): `npm test` **177/177**; `npm run typecheck` pass; li
 
 ## Mid-surah cold acquire (4:129 ≠ 41:34, 36:16 ≠ 78:4)
 
-Matcher/follower only. Prompt: `prompts/imam-mid-surah-cold-false-lock.md`. Mac-measured false first locks on founder-labeled mosque clips: Subayyal An-Nisa **4:129–130** first-locked **41:34** (~9 s, score ~0.63); Qiyam Ya-Sin **36:16–18** first-locked **78:4** (~2 s, score ~0.85). Fatir 35:1–8 already locked correctly and must not regress. Real-imam manifest stays `stub` (label-fill `01`/`02` after Mac green). Liturgy matcher thresholds were not retuned.
+Matcher/follower only. Prompt: `prompts/imam-mid-surah-cold-false-lock.md`. Pre-fix Mac probes first-locked Subayyal **41:34** (want 4:129) and Qiyam **78:4** (want 36:16). **Mac verify on this PR is GREEN.** Fatir 35:1–8 still OK. Real-imam manifest stays `stub` (label-fill `01`/`02` next; this PR does not flip `ready`). Liturgy matcher thresholds were not retuned.
 
 Cause class (token evidence, not clip IDs): early `ول-/تست-` can crown long **41:34** `ولا تستوي` instead of **4:129** `ولن تستطيعوا`; a thin window plus short-ayah scoring can crown **78:4** `كلا سيعلمون` from **36:16** `ربنا يعلم` (shared `علم` root / suffix). Acquire now (1) refuses a short mid-surah champion that leaves distinctive tokens unexplained, (2) holds a long ayah whose unique token is still confusable until a later body word (`الحسنه` vs `تعدلوا`), (3) locates around a rival’s reported ayah rather than only ayahs 1–7, and (4) can lock from two distinctive mid-ayah body tokens when the opening word was missed. Units in `tests/follower.test.ts` encode both confusions plus true 41:34 / 78:4 / Fatir 35:1 locks and 4:129→130 / 36:16→17–18 follow. No suite-ID hardcodes.
 
-This workspace (Linux/x64, no imam WAVs, no ONNX replay): `npm test` **186/186**; `npm run typecheck` pass; lint still reports the pre-existing unused `openingScore` warning. Mosque-clip replay and `npm run test:replay -- all` were **not** scored here. Synthetic `cold-start-mid` (Baqarah 2:2) is a different fixture and was not acoustically re-run.
+This workspace (Linux/x64, no imam WAVs at algorithm time): `npm test` **186/186**; `npm run typecheck` pass; lint still reports the pre-existing unused `openingScore` warning.
 
-**Mac verify (required — Linux ONNX has lied before):**
+**Mac verify (verify-pr17 / `19dcf06`) GREEN:**
 
-```bash
-npx tsx scripts/replay.ts \
-  artifacts/recitation/imam/imam-mid-surah-cold/qari-a/imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav
-# copy artifacts/qa-runs/replay-custom.json aside (both custom runs share that name)
-npx tsx scripts/replay.ts \
-  artifacts/recitation/imam/imam-mid-surah-cold/qari-a/imam-mid-surah-cold__qiyam-faisal__036-016-018__raw.wav
-npm run test:replay -- all
-npm test && npm run typecheck
-```
+| Run | Result |
+|---|---|
+| Subayyal custom WAV | first lock **4:129** @11s then **4:130** @19.5s; never 41:34; `failureMode` null |
+| Qiyam custom WAV | first lock **36:16** @4s then **36:17–18**; never 78:4; `failureMode` null |
+| Fatir 35:1–8 | still OK |
+| `npm run test:replay -- all` | all suite `failureMode` null (**14/14**). Nas soft `wrongSurahRate` ~0.14 unchanged |
+| `npm test` | **186/186** on Mac |
 
-Want: Subayyal first lock **4:129** never 41:34, then **4:130** (`wrongSurahRate` not 1.0 on a false champion). Qiyam first lock **36:16** never 78:4, then **36:17–18**. `all` stays **14/14**. JSON: `artifacts/qa-runs/replay-custom.json` per ad-hoc WAV (rename between runs). Next slice after Mac green: label-fill `01` then `02`. Not a physical-device, mosque, or license-clearance claim.
+Real-imam manifest stays `stub` (label-fill `01` then `02` next; this PR does not flip `ready`). JSON: `artifacts/qa-runs/replay-custom.json` per ad-hoc WAV (rename between runs). Not a physical-device, mosque, or license-clearance claim.
 
 

@@ -11,10 +11,11 @@ Founder rule: update root `HANDOFF.md` **in the same PR** — what landed, open 
 
 **Rules** — see `_SHARED.md`. One suite (or one new sibling suite id) per Cursor session. No matcher retune.
 
-## Hold (algorithm first)
+## Hold (cleared — Mac-green)
 
-Follower fix is in PR **#17** (`RecitationFollower`); **Mac verify pending**. Until Sim QA greens Subayyal **4:129** and Qiyam **36:16** (and `all` 14/14), treat Mac probe (2026-09-16) as current: Subayyal first-locks **41:34** (want **4:129**); Qiyam **78:4** (want **36:16**).  
-**Do not launch 01/02** and do **not** flip suites to `ready` until that Mac-green. Then 01 → 02.
+PR **#17** Mac verify (verify-pr17 / `19dcf06`): Subayyal **4:129→130** never 41:34; Qiyam **36:16→17–18** never 78:4; `all` **14/14**. Algorithm hold is **lifted**.
+
+**Launch 01 then 02** (one session each). Do **not** flip stub→ready in the algorithm PR — that is the label-fill session.
 
 ## Blocked
 
