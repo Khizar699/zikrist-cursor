@@ -236,19 +236,7 @@ Cause class (token evidence, not clip IDs): early `ول-/تست-` can crown long
 
 This workspace (Linux/x64, no imam WAVs, no ONNX replay): `npm test` **186/186**; `npm run typecheck` pass; lint still reports the pre-existing unused `openingScore` warning. Mosque-clip replay and `npm run test:replay -- all` were **not** scored here. Synthetic `cold-start-mid` (Baqarah 2:2) is a different fixture and was not acoustically re-run.
 
-**Mac verify (required — Linux ONNX has lied before):**
-
-```bash
-npx tsx scripts/replay.ts \
-  artifacts/recitation/imam/imam-mid-surah-cold/qari-a/imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav
-# copy artifacts/qa-runs/replay-custom.json aside (both custom runs share that name)
-npx tsx scripts/replay.ts \
-  artifacts/recitation/imam/imam-mid-surah-cold/qari-a/imam-mid-surah-cold__qiyam-faisal__036-016-018__raw.wav
-npm run test:replay -- all
-npm test && npm run typecheck
-```
-
-Want: Subayyal first lock **4:129** never 41:34, then **4:130** (`wrongSurahRate` not 1.0 on a false champion). Qiyam first lock **36:16** never 78:4, then **36:17–18**. `all` stays **14/14**. JSON: `artifacts/qa-runs/replay-custom.json` per ad-hoc WAV (rename between runs). Next slice after Mac green: label-fill `01` then `02`. Not a physical-device, mosque, or license-clearance claim.
+**#17 Mac-green on merge** (`2f056f7`) already scored those clips: Subayyal first lock **4:129** then **4:130**; Qiyam **36:16** then **36:17–18**; `all` **14/14**. The old 41:34 / 78:4 false locks are **cleared** — not unproven. Label-fill **01** is this PR (next section). Not a physical-device, mosque, or license-clearance claim.
 
 ## Real-imam label-fill 01 (`imam-mid-surah-cold` ready)
 

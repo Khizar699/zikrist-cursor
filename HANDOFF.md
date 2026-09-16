@@ -33,8 +33,8 @@ Skip overnight queues unless picking next work. Dictation above is what to **wri
 
 ## Tip state (update every PR)
 
-- **This PR:** real-imam label-fill **01** — suite `imam-mid-surah-cold` → **ready** (Dr Subayyal An-Nisa **4:129–130**). Manifest + harness contracts only; **no matcher/follower retune**. WAV stays gitignored (`imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav`).
-- **Prior:** [#17](https://github.com/Khizar699/zikrist-cursor/pull/17) Mac-green on merge (`2f056f7`): Subayyal **4:129→130**, Qiyam **36:16→18**, `all` **14/14**, units **186/186**. Prompt Smith unhold `438a5bc` + continuity #16 (`d4f448e`) already on main. Old known-fails (4:129≠41:34, 36:16≠78:4) are **cleared**.
+- **This PR:** real-imam label-fill **01** — suite `imam-mid-surah-cold` → **ready** (Dr Subayyal An-Nisa **4:129–130**). Manifest + harness contracts only; **no matcher/follower retune**. WAV stays gitignored (`imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav`). Rebased onto `origin/main` `d4f448e` (continuity #16).
+- **Prior:** [#17](https://github.com/Khizar699/zikrist-cursor/pull/17) **Mac-green on merge** (`2f056f7`): Subayyal **4:129→130**, Qiyam **36:16→18**, `all` **14/14**, units **186/186**. Prompt Smith unhold `438a5bc` + continuity #16 (`d4f448e`) already on main. Old known-fails (4:129≠41:34, 36:16≠78:4) are **cleared** — not unproven.
 - **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate. This PR does **not** claim Mac acoustic green for the ready suite — Bot/Sim QA scores `npm run test:replay -- imam-mid-surah-cold`.
 - **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (zip **uploaded**). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say`.
 - **Known fails:** mid-surah cold **cleared on Mac via #17**. Still blocked: `imam-mid-ayah-pause` (no pause mark); Qunut@s9P 4:56 = dua not Quran. Other real-imam rows stay **stub**.
