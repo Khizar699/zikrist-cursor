@@ -13,8 +13,8 @@ Founder rule: update root `HANDOFF.md` **in the same PR** — what landed, open 
 
 ## Hold (algorithm first)
 
-Bot Mac probe (2026-09-16): Subayyal still first-locks **41:34** (want **4:129**); Qiyam **78:4** (want **36:16**).  
-**Do not launch 01/02** until `prompts/imam-mid-surah-cold-false-lock.md` is Mac-green. Then 01 → 02.
+Follower fix is in PR **#17** (`RecitationFollower`); **Mac verify pending**. Until Sim QA greens Subayyal **4:129** and Qiyam **36:16** (and `all` 14/14), treat Mac probe (2026-09-16) as current: Subayyal first-locks **41:34** (want **4:129**); Qiyam **78:4** (want **36:16**).  
+**Do not launch 01/02** and do **not** flip suites to `ready` until that Mac-green. Then 01 → 02.
 
 ## Blocked
 

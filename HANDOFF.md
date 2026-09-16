@@ -21,11 +21,11 @@ A PR that ships code or prompts without these writes is incomplete.
 
 ## Tip state (update every PR)
 
-- **This PR:** Prompt Smith — founder continuity dictation: expand `prompts/_SHARED-HANDOFF.md` (HANDOFF tip always; VALIDATION + queue status when applicable), HANDOFF “Dictation for successor bots”, `.github/PULL_REQUEST_TEMPLATE.md`, bake into session prompts.
-- **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate.
+- **This PR:** [#17](https://github.com/Khizar699/zikrist-cursor/pull/17) — mid-surah cold false-lock fix in `RecitationFollower` (confusable `ول-/تست-` 4:129≠41:34; short `علم` 36:16≠78:4). Units only; **Mac verify pending**. Real-imam manifest stays **`stub`**.
+- **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate. Linux `npm test` 186/186 is not Subayyal/Qiyam evidence.
 - **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (tag `imam-fixtures-v1`, asset `zikrist-imam-fixtures-v1.zip`). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say` (Mac Majed).
-- **Known fails:** Subayyal want **4:129** currently **41:34**; Qiyam want **36:16** currently **78:4** — `prompts/imam-mid-surah-cold-false-lock.md`. Do not flip stub→ready until Mac-green.
-- **Open tracks:** liturgy TTS after thana (`tts-fill/03-ruku.md`); mid-surah-cold algo; real-imam label-fill **held**.
+- **Known fails:** until Mac-green, still treat Subayyal as want **4:129** currently **41:34** and Qiyam want **36:16** currently **78:4**. Do not flip stub→ready.
+- **Open tracks:** Mac verify Subayyal 4:129 + Qiyam 36:16 + `all` 14/14; **after Mac-green** label-fill `01` then `02`; liturgy TTS after thana (`tts-fill/03-ruku.md`); real-imam stays **stub**.
 
 ## For assistants / Grok bots — read first
 
@@ -60,6 +60,8 @@ Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that woul
 
 **Known fails (do not flip stub→ready until Mac-green)**
 
+Follower scoring for these pairs is in this PR; **acoustic Mac result is unproven**. Until Sim QA greens the two clips, keep these as the known fails:
+
 | Clip | Want | Current false lock | Prompt |
 |---|---|---|---|
 | Dr Subayyal | **4:129** | **41:34** | `prompts/imam-mid-surah-cold-false-lock.md` |
@@ -71,13 +73,14 @@ Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that woul
 - **Sim QA** — Mac acoustic replay / `test:replay`
 - **Chief Bot** — merges **only after Mac green**
 
-**Push / merge policy:** Mac verify before merge. Keep the 14 Quran suites green. Do not retune matcher/follower unless the open algorithm prompt says so. Do not flip real-imam suites to `ready` until that Mac-green false-lock work lands.
+**Push / merge policy:** Mac verify Subayyal **4:129**, Qiyam **36:16**, and `all` **14/14** before merge. Keep the 14 Quran suites green. Real-imam suites stay **`stub`** — do not flip to `ready` in this PR.
 
 **Current open tracks**
 
-- Liturgy TTS queue **after thana** — next `prompts/salah-liturgy/tts-fill/03-ruku.md` (`00-QUEUE.md`)
-- Mid-surah-cold algorithm — `prompts/imam-mid-surah-cold-false-lock.md`
-- Real-imam label-fill **held** — `prompts/real-imam/label-fill/00-QUEUE.md` (do not launch 01/02 until false-lock is Mac-green)
+- **Mac verify (this PR):** Subayyal 4:129 then 4:130; Qiyam 36:16 then 36:17–18; `npm run test:replay -- all` = **14/14**
+- **After Mac-green:** label-fill `01` then `02` (`prompts/real-imam/label-fill/00-QUEUE.md`)
+- Liturgy TTS queue **after thana** — next `prompts/salah-liturgy/tts-fill/03-ruku.md`
+- Real-imam manifest stays **stub** until those label-fill sessions
 
 Read `AGENTS.md` before implementing.
 
