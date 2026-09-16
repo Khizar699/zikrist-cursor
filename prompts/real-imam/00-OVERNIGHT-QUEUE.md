@@ -12,7 +12,9 @@ Founder rule: update root `HANDOFF.md` **in the same PR** — what landed, open 
 
 ## Label-fill
 
-**Label-fill UNBLOCKED** after #17 Mac-green. **01 done** (`imam-mid-surah-cold` ready, Subayyal 4:129–130). **02 done** (`imam-mid-surah-cold-qiyam` ready, Ya-Sin 36:16–18). Next: remaining founder-labeled clips (one prompt each) and liturgy TTS `tts-fill/03-ruku.md`. Mid-ayah-pause still blocked; Qunut≠Quran. Queue: `label-fill/00-QUEUE.md`.
+**Label-fill:** **01**+#**02** done on main (Subayyal + Qiyam sibling ready). Mid-ayah-pause still blocked; Qunut≠Quran. Queue: `label-fill/00-QUEUE.md`.
+
+**Next (algo):** founder-clip pack — `prompts/real-imam/algo/00-QUEUE.md`. **P0 / Next CloudAgent:** `01-masjid-e-nabi-25-69-false-2-1.md` → ahzab → baqarah→imran → hafiz-usama. One concern each; do not mega-merge with label-fill. Liturgy TTS `tts-fill/03-ruku.md` remains parallel.
 
 Launch **one session at a time**:
 
