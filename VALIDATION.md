@@ -271,6 +271,6 @@ npm run test:replay -- all                        # still 14/14
 
 Ready suites with a missing clip error `missing_clip` instead of skipping. Clip basename: `imam-mid-surah-cold__qiyam-faisal__036-016-018__raw.wav` staged under the sibling suite folder. Next open tracks: remaining founder-labeled clips (one prompt each) and liturgy TTS `tts-fill/03-ruku.md`.
 
-This workspace (Linux/x64): `npm test` and `npm run typecheck` recorded after the fill (see commit). `npx tsx scripts/replay.ts imam-mid-surah-cold-qiyam` errors `missing_clip` until the WAV is restored/copied — expected ready behavior. Acoustic scoring and Mac `all` 14/14 were **not** run here. Not a physical-device, mosque, or license-clearance claim.
+This workspace (Linux/x64): `npm test` **194/194**; `npm run typecheck` pass. `npx tsx scripts/replay.ts imam-mid-surah-cold-qiyam` errors `missing_clip` (WAV not restored here) instead of skipping — expected ready behavior. Acoustic scoring and Mac `all` 14/14 were **not** run here. Not a physical-device, mosque, or license-clearance claim.
 
 
