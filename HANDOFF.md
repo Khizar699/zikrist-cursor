@@ -33,12 +33,12 @@ Skip overnight queues unless picking next work. Dictation above is what to **wri
 
 ## Tip state (update every PR)
 
-- **This PR:** real-imam label-fill **02** — sibling suite `imam-mid-surah-cold-qiyam` → **ready** (Qiyam-ul-Lail Faisal Ya-Sin **36:16–18**). Manifest + harness registration + gitignored clip copy under the new suite id; **no matcher/follower retune**. WAV stays gitignored (`imam-mid-surah-cold__qiyam-faisal__036-016-018__raw.wav`). Does **not** overwrite `imam-mid-surah-cold` (Subayyal **4:129–130** stays ready).
-- **Prior:** [#18](https://github.com/Khizar699/zikrist-cursor/pull/18) label-fill **01** (`imam-mid-surah-cold` ready). [#17](https://github.com/Khizar699/zikrist-cursor/pull/17) **Mac-green on merge** (`2f056f7`): Subayyal **4:129→130**, Qiyam **36:16→18**, `all` **14/14**, units **186/186**. Old known-fails (4:129≠41:34, 36:16≠78:4) are **cleared**.
-- **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate. This PR does **not** claim Mac acoustic green for the ready sibling — Bot/Sim QA scores `npm run test:replay -- imam-mid-surah-cold-qiyam` (must PASS, not `missing_fixture`) and confirms Subayyal still PASS.
-- **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (zip **uploaded**; also copies Qiyam WAV into `imam-mid-surah-cold-qiyam/qari-a/`). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say`.
-- **Known fails:** mid-surah cold **cleared on Mac via #17**. Still blocked: `imam-mid-ayah-pause` (no pause mark); Qunut@s9P 4:56 = dua not Quran. Other real-imam rows stay **stub**.
-- **Open tracks:** remaining founder-labeled clips that are not yet ready (surah-switch / noise-bleed / other `suite_candidates` — one prompt each); liturgy TTS `tts-fill/03-ruku.md`.
+- **This PR:** Prompt Smith — founder-clip **algo** queue under `prompts/real-imam/algo/` (docs only). Label-fill **01**+#**02** done — pack is **unheld**. **Next CloudAgent (P0):** `prompts/real-imam/algo/01-masjid-e-nabi-25-69-false-2-1.md` (want **25:69**, refuse **2:1**). Then 02→03→04 one at a time. No matcher retune in this PR; no Mac-green claim for these four.
+- **Prior:** label-fill **02** on main (`c228533` / #19): sibling `imam-mid-surah-cold-qiyam` ready Ya-Sin **36:16–18**. Label-fill **01** (`6df8ef3` / #18) Subayyal ready. [#17](https://github.com/Khizar699/zikrist-cursor/pull/17) mid-surah cold Mac-green.
+- **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate. This PR **N/A** (docs/prompts only).
+- **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (zip **uploaded**). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say`.
+- **Known fails:** mid-surah cold **cleared on Mac via #17**. Still blocked: `imam-mid-ayah-pause` (no pause mark); Qunut@s9P 4:56 = dua not Quran. **Bot (pending Mac re-measure in algo sessions):** masjid **25:69≠2:1**; ahzab cold **33:62≠33:60**; baqarah→imran **≠57:28**; hafiz-usama Fatiha→**27:15** (not stuck at **1:2**).
+- **Open tracks:** **P0 now** `prompts/real-imam/algo/01-masjid-e-nabi-25-69-false-2-1.md` → algo 02→03→04. Liturgy TTS `tts-fill/03-ruku.md`.
 
 ## For assistants / Grok bots — read first
 
@@ -90,9 +90,9 @@ Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that woul
 
 **Current open tracks**
 
-- **Next:** remaining founder-labeled clips that are not yet ready (surah-switch / noise-bleed / other `labels.json` `suite_candidates` — one prompt each; do not mega-fill). Mid-ayah-pause still blocked until a founder pause mark.
-- Liturgy TTS after thana — `prompts/salah-liturgy/tts-fill/03-ruku.md`
-- Other real-imam suites stay **stub** (`imam-mid-ayah-pause` blocked; Qunut ≠ Quran)
+- **P0:** `prompts/real-imam/algo/01-masjid-e-nabi-25-69-false-2-1.md` → algo 02→03→04 (`algo/00-QUEUE.md`)
+- Liturgy TTS after thana Mac-green — `prompts/salah-liturgy/tts-fill/03-ruku.md`
+
 
 Read `AGENTS.md` before implementing.
 
