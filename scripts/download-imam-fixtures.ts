@@ -31,6 +31,11 @@ export const USER_AGENT = 'Zikrist/0.1 (evaluation imam fixtures)';
 export const DOWNLOAD_TIMEOUT_MS = 30 * 60 * 1000;
 export const MIN_WAV_BYTES = 1000;
 
+/** Zip still stores this clip under the original mid-surah-cold folder. */
+export const QIYAM_SIBLING_CLIP = 'imam-mid-surah-cold__qiyam-faisal__036-016-018__raw.wav';
+const QIYAM_SIBLING_SOURCE = path.join('imam-mid-surah-cold', 'qari-a', QIYAM_SIBLING_CLIP);
+const QIYAM_SIBLING_DEST_DIR = path.join('imam-mid-surah-cold-qiyam', 'qari-a');
+
 const PAYLOAD_MARKERS = [
   'LABELS.md',
   'labels.json',
@@ -125,6 +130,19 @@ export function imamFixturesAlreadyPresent(directory = imamDir()): boolean {
   return findSuiteWav(directory) !== null;
 }
 
+/** Copy Qiyam 36:16–18 under the sibling suite id so clipsFromStub resolves. */
+export function stageImamMidSurahColdQiyamClip(directory = imamDir()): boolean {
+  const src = path.join(directory, QIYAM_SIBLING_SOURCE);
+  if (!fs.existsSync(src) || !fs.statSync(src).isFile()) return false;
+  const destDir = path.join(directory, QIYAM_SIBLING_DEST_DIR);
+  const dest = path.join(destDir, QIYAM_SIBLING_CLIP);
+  fs.mkdirSync(destDir, { recursive: true });
+  const srcSize = fs.statSync(src).size;
+  if (fs.existsSync(dest) && fs.statSync(dest).size === srcSize) return true;
+  fs.copyFileSync(src, dest);
+  return true;
+}
+
 export function missingImamReleaseError(url: string, status = 404, tag = resolveImamReleaseTag()): Error {
   return new Error(
     [
@@ -166,8 +184,10 @@ export function nextSteps(tag: string): string[] {
   return [
     `Restored ${IMAM_AUDIO_ROOT}/ from GitHub Release tag ${tag}.`,
     'Ground truth labels stay in git: prompts/real-imam/LABELS.md and labels.json.',
-    'Real-imam suites stay stub until algorithm fixes land — do not treat this zip as ready.',
+    'Ready real-imam: imam-mid-surah-cold (Subayyal 4:129-130) and imam-mid-surah-cold-qiyam (Ya-Sin 36:16-18). Other suites stay stub.',
     'Continue:',
+    '  npm run test:replay -- imam-mid-surah-cold',
+    '  npm run test:replay -- imam-mid-surah-cold-qiyam',
     '  npm run liturgy:tts -- liturgy-takbeer --engine say',
     '  npm run test:replay -- all',
     '  npm run test:replay -- real-imam',
@@ -276,6 +296,7 @@ export async function restoreImamFixtures(options?: {
   const directory = imamDir(options?.repoRoot);
   if (!args.force && imamFixturesAlreadyPresent(directory)) {
     console.log(`Imam fixtures already present under ${path.relative(options?.repoRoot ?? root, directory)}. Use --force to re-download.`);
+    stageImamMidSurahColdQiyamClip(directory);
     for (const line of nextSteps(tag)) console.log(line);
     return { status: 'skipped', url, tag };
   }
@@ -298,6 +319,7 @@ export async function restoreImamFixtures(options?: {
   if (!imamFixturesAlreadyPresent(directory)) {
     console.warn('Unpacked zip, but LABELS.md plus a suite wav were not both found. Check the zip layout.');
   }
+  stageImamMidSurahColdQiyamClip(directory);
   for (const line of nextSteps(tag)) console.log(line);
   return { status: 'restored', url, tag };
 }

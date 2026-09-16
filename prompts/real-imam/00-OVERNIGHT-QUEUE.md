@@ -12,7 +12,7 @@ Founder rule: update root `HANDOFF.md` **in the same PR** — what landed, open 
 
 ## Label-fill
 
-**Label-fill UNBLOCKED** after #17 Mac-green. **01 done** (`imam-mid-surah-cold` ready, Subayyal 4:129–130). **Next:** `02-mid-surah-cold-qiyam.md`. Mid-ayah-pause still blocked; Qunut≠Quran. Queue: `label-fill/00-QUEUE.md`.
+**Label-fill UNBLOCKED** after #17 Mac-green. **01 done** (`imam-mid-surah-cold` ready, Subayyal 4:129–130). **02 done** (`imam-mid-surah-cold-qiyam` ready, Ya-Sin 36:16–18). Next: remaining founder-labeled clips (one prompt each) and liturgy TTS `tts-fill/03-ruku.md`. Mid-ayah-pause still blocked; Qunut≠Quran. Queue: `label-fill/00-QUEUE.md`.
 
 Launch **one session at a time**:
 
@@ -28,12 +28,13 @@ Do not mega-merge algorithm retunes with harness scaffolding.
 
 ## Harness registration (do not duplicate these prompts)
 
-Suite ids, naming, and `~/Desktop/zikrist-imam-clips/` are defined above and in `01-fixture-scaffold.md` / `FIXTURES.md`. Founder-verified labels (`LABELS.md`, `labels.json`) are ground truth; ignore hypothesized probe locks. Friends restore audio with `npm run fixtures:imam` (GitHub Release zip; see `HANDOFF.md`). The replay runner reads `prompts/real-imam/manifest.stub.json` — `imam-mid-surah-cold` is `ready`; other suites stay `stub` (see `MANIFEST-NOTE.md`).
+Suite ids, naming, and `~/Desktop/zikrist-imam-clips/` are defined above and in `01-fixture-scaffold.md` / `FIXTURES.md`. Founder-verified labels (`LABELS.md`, `labels.json`) are ground truth; ignore hypothesized probe locks. Friends restore audio with `npm run fixtures:imam` (GitHub Release zip; see `HANDOFF.md`). The replay runner reads `prompts/real-imam/manifest.stub.json` — `imam-mid-surah-cold` and sibling `imam-mid-surah-cold-qiyam` are `ready`; other suites stay `stub` (see `MANIFEST-NOTE.md`).
 
 ```bash
-npm run fixtures:imam                # GitHub Release zip → artifacts/recitation/imam/
+npm run fixtures:imam                # GitHub Release zip → artifacts/recitation/imam/ (also copies Qiyam under the sibling folder)
 npm run test:replay -- all           # hard gate: original 14 only
-npm run test:replay -- imam-mid-surah-cold  # ready: must PASS after restore (not skip)
+npm run test:replay -- imam-mid-surah-cold        # ready: Subayyal 4:129–130; must PASS after restore (not skip)
+npm run test:replay -- imam-mid-surah-cold-qiyam  # ready: Ya-Sin 36:16–18; must PASS after restore (not skip)
 npm run test:replay -- real-imam     # ready scores if WAV present; stubs SKIP with missing_fixture (not PASS)
 ```
 

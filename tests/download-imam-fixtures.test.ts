@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
   DEFAULT_IMAM_RELEASE_TAG,
   IMAM_RELEASE_ASSET,
+  QIYAM_SIBLING_CLIP,
   findSuiteWav,
   imamFixturesAlreadyPresent,
   imamFixturesReleaseUrl,
@@ -11,6 +12,7 @@ import {
   parseImamFixturesArgs,
   resolveImamPayloadRoot,
   resolveImamReleaseTag,
+  stageImamMidSurahColdQiyamClip,
 } from '../scripts/download-imam-fixtures';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -52,6 +54,23 @@ test('skip helper requires LABELS.md and a real suite wav', () => {
     fs.writeFileSync(wav, Buffer.alloc(1500, 1));
     assert.equal(findSuiteWav(dir), wav);
     assert.equal(imamFixturesAlreadyPresent(dir), true);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('qiyam sibling clip is copied under imam-mid-surah-cold-qiyam/qari-a', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zikrist-imam-qiyam-'));
+  try {
+    const srcDir = path.join(dir, 'imam-mid-surah-cold', 'qari-a');
+    fs.mkdirSync(srcDir, { recursive: true });
+    const src = path.join(srcDir, QIYAM_SIBLING_CLIP);
+    fs.writeFileSync(src, Buffer.alloc(1500, 2));
+    assert.equal(stageImamMidSurahColdQiyamClip(dir), true);
+    const dest = path.join(dir, 'imam-mid-surah-cold-qiyam', 'qari-a', QIYAM_SIBLING_CLIP);
+    assert.equal(fs.existsSync(dest), true);
+    assert.equal(fs.statSync(dest).size, 1500);
+    assert.equal(stageImamMidSurahColdQiyamClip(dir), true);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

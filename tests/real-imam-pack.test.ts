@@ -28,9 +28,10 @@ test('real-imam harness reads Prompt Smith stub manifest, not a duplicate pack',
     [...REAL_IMAM_SUITE_NAMES],
   );
   assert.equal(loadRealImamStubEntry('imam-mid-surah-cold').status, 'ready');
+  assert.equal(loadRealImamStubEntry('imam-mid-surah-cold-qiyam').status, 'ready');
   assert.equal(
     manifest.suites
-      .filter((row) => row.suite_id !== 'imam-mid-surah-cold')
+      .filter((row) => row.suite_id !== 'imam-mid-surah-cold' && row.suite_id !== 'imam-mid-surah-cold-qiyam')
       .every((row) => row.status === 'stub'),
     true,
   );
@@ -38,7 +39,7 @@ test('real-imam harness reads Prompt Smith stub manifest, not a duplicate pack',
   assert.equal(fs.existsSync(path.join(root, 'prompts/real-imam/FIXTURES.md')), true);
 });
 
-test('founder labels exist as ground truth; only label-fill 01 flips mid-surah-cold', () => {
+test('founder labels exist as ground truth; label-fill 01–02 flip mid-surah-cold siblings', () => {
   const labelsPath = path.join(root, 'prompts/real-imam/LABELS.md');
   const jsonPath = path.join(root, 'prompts/real-imam/labels.json');
   assert.equal(fs.existsSync(labelsPath), true);
@@ -66,9 +67,10 @@ test('founder labels exist as ground truth; only label-fill 01 flips mid-surah-c
   assert.ok(firstLocks.includes('4:129'));
   assert.ok(firstLocks.includes('36:16'));
   assert.equal(loadRealImamStubEntry('imam-mid-surah-cold').status, 'ready');
+  assert.equal(loadRealImamStubEntry('imam-mid-surah-cold-qiyam').status, 'ready');
   assert.equal(
     loadRealImamStubManifest().suites
-      .filter((row) => row.suite_id !== 'imam-mid-surah-cold')
+      .filter((row) => row.suite_id !== 'imam-mid-surah-cold' && row.suite_id !== 'imam-mid-surah-cold-qiyam')
       .every((row) => row.status === 'stub'),
     true,
   );
@@ -98,7 +100,7 @@ test('ready imam-mid-surah-cold maps to founder Subayyal 4:129–130; other suit
   assert.match(entry.notes, /4:129-130/);
   assert.equal(entry.license_status, 'unresolved');
   for (const name of REAL_IMAM_SUITE_NAMES) {
-    if (name === 'imam-mid-surah-cold') continue;
+    if (name === 'imam-mid-surah-cold' || name === 'imam-mid-surah-cold-qiyam') continue;
     const stub = loadRealImamStubEntry(name);
     const stubBlueprint = suiteBlueprint(name);
     assert.equal(stub.status, 'stub');
@@ -116,4 +118,36 @@ test('ready imam-mid-surah-cold maps to founder Subayyal 4:129–130; other suit
   assert.equal(suiteBlueprint('imam-multi-qari').clips.length, 2);
   assert.ok(suiteBlueprint('imam-multi-qari').clips[0]?.includes('/qari-a/'));
   assert.ok(suiteBlueprint('imam-multi-qari').clips[1]?.includes('/qari-b/'));
+});
+
+test('ready imam-mid-surah-cold-qiyam maps to founder Qiyam Ya-Sin 36:16–18', () => {
+  const entry = loadRealImamStubEntry('imam-mid-surah-cold-qiyam');
+  const blueprint = suiteBlueprint('imam-mid-surah-cold-qiyam');
+  assert.equal(entry.status, 'ready');
+  assert.equal(blueprint.readiness, 'ready');
+  assert.equal(suiteSkipsWhenClipMissing(blueprint), false);
+  assert.equal(entry.clip_path, 'imam-mid-surah-cold__qiyam-faisal__036-016-018__raw.wav');
+  assert.deepEqual(entry.expected_first_lock, { surah: 36, ayah: 16 });
+  assert.deepEqual(entry.expected_sequence, [
+    { surah: 36, ayah: 16 },
+    { surah: 36, ayah: 17 },
+    { surah: 36, ayah: 18 },
+  ]);
+  assert.deepEqual(blueprint.expect, entry.expected_sequence);
+  assert.deepEqual(blueprint.clips, [
+    'imam-mid-surah-cold-qiyam/qari-a/imam-mid-surah-cold__qiyam-faisal__036-016-018__raw.wav',
+  ]);
+  assert.equal(blueprint.clipDir, REAL_IMAM_CLIP_DIR);
+  assert.equal(blueprint.gate, 'ordered-sequence');
+  assert.equal(blueprint.expectedLocksPath, REAL_IMAM_MANIFEST);
+  assert.match(entry.notes, /36:16-18/);
+  assert.match(entry.notes, /sibling of imam-mid-surah-cold/);
+  assert.equal(entry.license_status, 'unresolved');
+  const subayyal = loadRealImamStubEntry('imam-mid-surah-cold');
+  assert.equal(subayyal.status, 'ready');
+  assert.equal(subayyal.clip_path, 'imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav');
+  assert.deepEqual(subayyal.expected_sequence, [
+    { surah: 4, ayah: 129 },
+    { surah: 4, ayah: 130 },
+  ]);
 });
