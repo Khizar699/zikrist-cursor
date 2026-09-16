@@ -251,8 +251,26 @@ npm run test:replay -- real-imam             # ready scores if WAV present; othe
 npm run test:replay -- all                   # still 14/14
 ```
 
-Ready suites with a missing clip error `missing_clip` instead of skipping. Clip basename: `imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav`. Do not use the `__UNKNOWN__` file. Next: label-fill `02-mid-surah-cold-qiyam.md`.
+Ready suites with a missing clip error `missing_clip` instead of skipping. Clip basename: `imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav`. Do not use the `__UNKNOWN__` file. Label-fill **02** is this PR (next section).
 
 This workspace (Linux/x64): `npm test` **192/192**; `npm run typecheck` pass. `npx tsx scripts/replay.ts imam-mid-surah-cold` errors `missing_clip` (WAV not restored here) instead of skipping — expected ready behavior. Acoustic scoring and Mac `all` 14/14 were **not** run here. Not a physical-device, mosque, or license-clearance claim.
+
+## Real-imam label-fill 02 (`imam-mid-surah-cold-qiyam` ready)
+
+One sibling suite only. Prompt: `prompts/real-imam/label-fill/02-mid-surah-cold-qiyam.md`. Manifest adds `imam-mid-surah-cold-qiyam` as `status: ready` with `clip_path` `imam-mid-surah-cold__qiyam-faisal__036-016-018__raw.wav` (resolved under `artifacts/recitation/imam/imam-mid-surah-cold-qiyam/qari-a/` after `npm run fixtures:imam` copies it from the original mid-surah-cold folder). Expect ordered Ya-Sin **36:16** then **36:17** then **36:18** from founder labels. Does **not** overwrite `imam-mid-surah-cold` (Subayyal **4:129–130** stays ready). Other real-imam suites stay stubs. Matcher / follower were **not** retuned (algorithm already landed in PR **#17**). WAV/MP3 is gitignored and is not in this PR.
+
+PR **#17** was **Mac-green on merge** (`2f056f7`): Subayyal **4:129→130**, Qiyam **36:16→18**, `npm run test:replay -- all` **14/14**. This label-fill session does **not** re-score those mosque clips and does **not** claim a new Mac acoustic green — Bot/Sim QA must run:
+
+```bash
+npm run fixtures:imam
+npm run test:replay -- imam-mid-surah-cold-qiyam  # must PASS, not missing_fixture skip
+npm run test:replay -- imam-mid-surah-cold        # still PASS
+npm run test:replay -- real-imam                  # ready scores if WAV present; other stubs skip
+npm run test:replay -- all                        # still 14/14
+```
+
+Ready suites with a missing clip error `missing_clip` instead of skipping. Clip basename: `imam-mid-surah-cold__qiyam-faisal__036-016-018__raw.wav` staged under the sibling suite folder. Next open tracks: remaining founder-labeled clips (one prompt each) and liturgy TTS `tts-fill/03-ruku.md`.
+
+This workspace (Linux/x64): `npm test` and `npm run typecheck` recorded after the fill (see commit). `npx tsx scripts/replay.ts imam-mid-surah-cold-qiyam` errors `missing_clip` until the WAV is restored/copied — expected ready behavior. Acoustic scoring and Mac `all` 14/14 were **not** run here. Not a physical-device, mosque, or license-clearance claim.
 
 

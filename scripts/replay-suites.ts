@@ -153,6 +153,7 @@ export const ALL_SUITE_NAMES = [
 /** Real-imam pack. Not part of default / `all`. Ready rows need restored WAVs; stubs skip. */
 export const REAL_IMAM_SUITE_NAMES = [
   'imam-mid-surah-cold',
+  'imam-mid-surah-cold-qiyam',
   'imam-mid-ayah-pause',
   'imam-surah-switch',
   'imam-noise-bleed',

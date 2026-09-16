@@ -16,6 +16,19 @@
       "license_status": "unresolved"
     },
     {
+      "suite_id": "imam-mid-surah-cold-qiyam",
+      "status": "ready",
+      "clip_path": "imam-mid-surah-cold__qiyam-faisal__036-016-018__raw.wav",
+      "expected_first_lock": { "surah": 36, "ayah": 16 },
+      "expected_sequence": [
+        { "surah": 36, "ayah": 16 },
+        { "surah": 36, "ayah": 17 },
+        { "surah": 36, "ayah": 18 }
+      ],
+      "notes": "Qiyam-ul-Lail Faisal short; Ya-Sin 36:16-18 mid-surah cold; founder-verified 2026-09-16; sibling of imam-mid-surah-cold; license unresolved",
+      "license_status": "unresolved"
+    },
+    {
       "suite_id": "imam-mid-ayah-pause",
       "status": "stub",
       "clip_path": "_stubs/imam-mid-ayah-pause__pending__STUB.txt",

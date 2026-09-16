@@ -89,6 +89,7 @@ test('parseSuiteSelection defaults to all suites and expands core', () => {
 test('real-imam selection is pending-only and stays out of default all', () => {
   assert.deepEqual([...REAL_IMAM_SUITE_NAMES], [
     'imam-mid-surah-cold',
+    'imam-mid-surah-cold-qiyam',
     'imam-mid-ayah-pause',
     'imam-surah-switch',
     'imam-noise-bleed',
@@ -111,6 +112,15 @@ test('real-imam selection is pending-only and stays out of default all', () => {
   assert.deepEqual(suiteBlueprint('imam-mid-surah-cold').expect, [
     { surah: 4, ayah: 129 },
     { surah: 4, ayah: 130 },
+  ]);
+  assert.deepEqual(parseSuiteSelection(['imam-mid-surah-cold-qiyam']), ['imam-mid-surah-cold-qiyam']);
+  assert.equal(suiteBlueprint('imam-mid-surah-cold-qiyam').readiness, 'ready');
+  assert.equal(suiteSkipsWhenClipMissing(suiteBlueprint('imam-mid-surah-cold-qiyam')), false);
+  assert.equal(suiteBlueprint('imam-mid-surah-cold-qiyam').clipDir, 'artifacts/recitation/imam');
+  assert.deepEqual(suiteBlueprint('imam-mid-surah-cold-qiyam').expect, [
+    { surah: 36, ayah: 16 },
+    { surah: 36, ayah: 17 },
+    { surah: 36, ayah: 18 },
   ]);
   assert.equal(suiteBlueprint('imam-mid-ayah-pause').readiness, 'pending');
   assert.equal(suiteSkipsWhenClipMissing(suiteBlueprint('imam-mid-ayah-pause')), true);

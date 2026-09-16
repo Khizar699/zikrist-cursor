@@ -35,6 +35,7 @@ artifacts/recitation/imam/
 Staged wav segments live under `artifacts/recitation/imam/` (gitignored). Naming follows the scaffold, for example:
 
 - `imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav`
+- `imam-mid-surah-cold__qiyam-faisal__036-016-018__raw.wav` (also staged under `imam-mid-surah-cold-qiyam/qari-a/` by `npm run fixtures:imam`)
 
 `suite_candidates` in `labels.json` list intended paths under that tree. Do not commit large wavs.
 
@@ -50,7 +51,7 @@ See `prompts/real-imam/00-OVERNIGHT-QUEUE.md` and `01-fixture-scaffold.md`.
 - `stub` — no ready evaluation yet; automated suite must **skip**, not PASS
 - `ready` — clip path + founder expect are wired; Mac must PASS after `npm run fixtures:imam`
 
-`imam-mid-surah-cold` is `ready` (Subayyal **4:129–130**, label-fill 01). Other rows in `manifest.stub.json` stay `stub`. Restoring the zip is not a readiness flip. See `MANIFEST-NOTE.md`.
+`imam-mid-surah-cold` is `ready` (Subayyal **4:129–130**, label-fill 01). Sibling `imam-mid-surah-cold-qiyam` is `ready` (Ya-Sin **36:16–18**, label-fill 02). Other rows in `manifest.stub.json` stay `stub`. Restoring the zip is not a readiness flip. See `MANIFEST-NOTE.md`.
 
 ## Label-fill (founder labels landed 2026-09-16)
 
@@ -58,8 +59,8 @@ See `prompts/real-imam/00-OVERNIGHT-QUEUE.md` and `01-fixture-scaffold.md`.
 
 | Priority | Prompt | Suite | Expect | Status |
 |---|---|---|---|---|
-| 1 | `label-fill/01-mid-surah-cold-dr-subayyal.md` | `imam-mid-surah-cold` | 4:129–130 | **done** (manifest ready; Mac score is Bot/Sim) |
-| 2 | `label-fill/02-mid-surah-cold-qiyam.md` | `imam-mid-surah-cold-qiyam` (sibling) | 36:16–18 | **next** |
+| 1 | `label-fill/01-mid-surah-cold-dr-subayyal.md` | `imam-mid-surah-cold` | 4:129–130 | **done** (#18; Mac score is Bot/Sim) |
+| 2 | `label-fill/02-mid-surah-cold-qiyam.md` | `imam-mid-surah-cold-qiyam` (sibling) | 36:16–18 | **done** (manifest ready; Mac score is Bot/Sim) |
 
 **Blocked:** `imam-mid-ayah-pause` (no pause mark). Qunut at s9P@4:56 is dua — not Quran. PR **#17** Mac-green on merge cleared the mid-surah false-lock hold.
 
