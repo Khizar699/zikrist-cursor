@@ -21,11 +21,12 @@ A PR that ships code or prompts without these writes is incomplete.
 
 ## Tip state (update every PR)
 
-- **This PR:** [#17](https://github.com/Khizar699/zikrist-cursor/pull/17) — mid-surah cold false-lock fix in `RecitationFollower` (confusable `ول-/تست-` 4:129≠41:34; short `علم` 36:16≠78:4). Units only; **Mac verify pending**. Real-imam manifest stays **`stub`**.
-- **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate. Linux `npm test` 186/186 is not Subayyal/Qiyam evidence.
+- **This PR:** Prompt Smith — unhold real-imam label-fill after [#17](https://github.com/Khizar699/zikrist-cursor/pull/17) Mac-green mid-surah cold false-lock. **Next CloudAgent:** `prompts/real-imam/label-fill/01-mid-surah-cold-dr-subayyal.md` (flip `imam-mid-surah-cold` → ready, 4:129–130). Then `02` (qiyam sibling 36:16–18).
+- **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate.
 - **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (tag `imam-fixtures-v1`, asset `zikrist-imam-fixtures-v1.zip`). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say` (Mac Majed).
-- **Known fails:** until Mac-green, still treat Subayyal as want **4:129** currently **41:34** and Qiyam want **36:16** currently **78:4**. Do not flip stub→ready.
-- **Open tracks:** Mac verify Subayyal 4:129 + Qiyam 36:16 + `all` 14/14; **after Mac-green** label-fill `01` then `02`; liturgy TTS after thana (`tts-fill/03-ruku.md`); real-imam stays **stub**.
+- **Known fails:** mid-surah cold Subayyal/Qiyam false locks **cleared on Mac via #17**. Still blocked: `imam-mid-ayah-pause` (no pause mark); Qunut@s9P 4:56 = dua not Quran.
+- **Open tracks:** **label-fill `01` (now)** → `02`; liturgy TTS next `tts-fill/03-ruku.md` after thana Mac-green; continuity #16 parallel OK (do not block label-fill).
+
 
 ## For assistants / Grok bots — read first
 
@@ -37,7 +38,7 @@ You have no prior thread. Do not invent product history, ayah numbers, or Mac re
 | Product | **Zikrist** — offline Expo ayah locator + salah liturgy (Android/iPhone, including mid-range). Algorithm and recognition correctness beat visual design this MVP. **No Figma** for the MVP. |
 | Hard gate | `npm run test:replay -- all` must stay **14/14** Quran. Linux ONNX is not that gate. |
 | Labels | Ground truth: `prompts/real-imam/LABELS.md` + `prompts/real-imam/labels.json` (Khizar, 2026-09-16). **Not** `probes/hypothesized-locks.txt`. Never invent ayah labels. |
-| Suites | `prompts/real-imam/manifest.stub.json` stays **`stub`**. Restoring wavs is not a `ready` flip. |
+| Suites | Flip to `ready` only via label-fill (one suite/session). Restoring wavs alone is not a `ready` flip. |
 
 **After clone**
 
@@ -58,14 +59,14 @@ npm run liturgy:tts -- <id> --engine say
 
 Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that would PASS.
 
-**Known fails (do not flip stub→ready until Mac-green)**
+**Mid-surah cold (Mac-green via #17 — label-fill may flip ready)**
 
 Follower scoring for these pairs is in this PR; **acoustic Mac result is unproven**. Until Sim QA greens the two clips, keep these as the known fails:
 
-| Clip | Want | Current false lock | Prompt |
+| Clip | Want | Status | Next |
 |---|---|---|---|
-| Dr Subayyal | **4:129** | **41:34** | `prompts/imam-mid-surah-cold-false-lock.md` |
-| Qiyam Faisal | **36:16** | **78:4** | same |
+| Dr Subayyal | **4:129–130** | Mac-green (#17) | label-fill `01` → ready |
+| Qiyam Faisal | **36:16–18** | Mac-green (#17) | label-fill `02` → ready (sibling suite) |
 
 **Teammate lanes** (if someone recreates bots)
 
@@ -73,15 +74,16 @@ Follower scoring for these pairs is in this PR; **acoustic Mac result is unprove
 - **Sim QA** — Mac acoustic replay / `test:replay`
 - **Chief Bot** — merges **only after Mac green**
 
-**Push / merge policy:** Mac verify Subayyal **4:129**, Qiyam **36:16**, and `all` **14/14** before merge. Keep the 14 Quran suites green. Real-imam suites stay **`stub`** — do not flip to `ready` in this PR.
+**Push / merge policy:** Mac `all` **14/14** before merge. Label-fill sessions may flip one suite to `ready` after Mac `test:replay -- <suite>` PASS. No matcher retune in fill PRs.
 
 **Current open tracks**
 
-- **Mac verify (this PR):** Subayyal 4:129 then 4:130; Qiyam 36:16 then 36:17–18; `npm run test:replay -- all` = **14/14**
-- **After Mac-green:** label-fill `01` then `02` (`prompts/real-imam/label-fill/00-QUEUE.md`)
-- Liturgy TTS queue **after thana** — next `prompts/salah-liturgy/tts-fill/03-ruku.md`
-- Real-imam manifest stays **stub** until those label-fill sessions
+- **P0:** label-fill `01` — `prompts/real-imam/label-fill/01-mid-surah-cold-dr-subayyal.md`
+- Then label-fill `02` — `prompts/real-imam/label-fill/02-mid-surah-cold-qiyam.md`
+- Liturgy TTS after thana Mac-green — `prompts/salah-liturgy/tts-fill/03-ruku.md`
+- Continuity CI (#16) parallel — do not block label-fill
 
+Read `AGENTS.md`
 Read `AGENTS.md` before implementing.
 
 ## Friend path

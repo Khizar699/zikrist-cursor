@@ -1,6 +1,6 @@
 # Shared rules — real-imam label-fill (stub → ready)
 
-**Ground truth:** `artifacts/recitation/imam/LABELS.md` + `labels.json` (founder-verified 2026-09-16).  
+**Ground truth:** `prompts/real-imam/LABELS.md` + `prompts/real-imam/labels.json` (founder-verified 2026-09-16; also under `artifacts/recitation/imam/` after `fixtures:imam`).  
 **Do not** use `probes/hypothesized-locks.txt` as labels (probe mismatches are documented in LABELS.md).
 
 ## Audio

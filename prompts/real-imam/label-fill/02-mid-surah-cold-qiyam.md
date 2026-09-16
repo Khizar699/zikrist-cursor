@@ -1,6 +1,10 @@
 # Fill: imam-mid-surah-cold-qiyam → ready (Faisal Qiyam 36:16–18)
 
-Read `_SHARED.md` first. **Depends on:** `01-mid-surah-cold-dr-subayyal` merged (or at least `imam-mid-surah-cold` already claiming 4:129–130 expect — do not overwrite that row).
+Read `_SHARED.md` first.
+
+**Unblocked:** PR #17 Mac-green (36:16 ≠ 78:4). Launch **after** `01` is merged ready. Restore with `npm run fixtures:imam` if needed.
+
+ **Depends on:** `01-mid-surah-cold-dr-subayyal` merged (or at least `imam-mid-surah-cold` already claiming 4:129–130 expect — do not overwrite that row).
 
 ## Why a sibling suite
 

@@ -2,6 +2,8 @@
 
 Read `prompts/real-imam/label-fill/_SHARED.md` first.
 
+**Unblocked:** PR #17 Mac-green (4:129 ≠ 41:34). Restore clip with `npm run fixtures:imam` if missing. Ground truth: `prompts/real-imam/LABELS.md` (also mirrored under `artifacts/…` after restore).
+
 ## Goal
 
 Flip suite `imam-mid-surah-cold` from stub → **ready** using the founder-labeled short clip (mid-surah cold start — not ayah 1).
