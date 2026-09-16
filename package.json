@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "tsx --test tests/*.test.ts",
+    "setup": "node scripts/setup.mjs",
     "assets:download": "node scripts/download-assets.mjs",
     "assets:verify": "node scripts/verify-assets.mjs",
     "liturgy:verify": "node scripts/verify-salah-liturgy.mjs",

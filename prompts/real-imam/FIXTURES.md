@@ -2,6 +2,8 @@
 
 Large audio is gitignored (no git LFS). Founder-verified **labels** stay in git. Friends restore clips from a GitHub Release zip. Founder can also drop source media in `~/Desktop/zikrist-imam-clips/`.
 
+Recognition standards for Cursor (premade suite + growing ratchet): `algo/README.md`, root `HANDOFF.md` tip, `.cursor/rules/zikrist-recognition-ratchet.mdc`.
+
 ## Friend restore
 
 See `HANDOFF.md`. After clone:

@@ -16,7 +16,7 @@ Do **not** trust `probes/hypothesized-locks.txt`.
 ## Last session proved / failed
 
 - **#17** cleared mid-surah cold; label-fill 01/02 context as in queue.
-- Algo **01–02** ahead in queue — this session **only** refuses **57:28** on this clip.
+- **Queue note:** deferred **P2**. Do not launch while Tip names follow P0 `04-hafiz-usama-…`. This session **only** refuses **57:28** on this clip.
 - Full raka handoff into 3:1 is desirable follow; do not mega-scope multi-raka liturgy.
 
 ## HANDOFF.md (required every PR)

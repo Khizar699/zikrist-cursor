@@ -2,7 +2,7 @@
 
 **Parallel to salah liturgy** — do not block on clips. Founder will drop recitation videos into `~/Desktop/zikrist-imam-clips/` later.
 
-**Hard gate every session:** Mac `npm run test:replay -- all` stays **14/14** (Quran synthetic fixtures). Soft optional: `prompts/nas-no-post-end-jump.md`. **Continuity docs:** bump `HANDOFF.md` tip in the same PR; update `VALIDATION.md` and queue status when they apply (`prompts/_SHARED-HANDOFF.md`).
+**Hard gate every session:** Mac `npm run test:replay -- all` stays **14/14** (Quran synthetic fixtures) — regression **floor** (honest N/14 if red). Algo sessions also need the Tip **product bar** + **ratchet lock** (`prompts/real-imam/algo/PRODUCT-BAR.md`, `RATCHET.md`; pack index `algo/README.md`). Soft optional: `prompts/nas-no-post-end-jump.md`. **Continuity docs:** bump `HANDOFF.md` tip in the same PR; update `VALIDATION.md` and queue status when they apply (`prompts/_SHARED-HANDOFF.md`). Cursor openers inherit always-on `.cursor/rules/zikrist-recognition-ratchet.mdc`.
 
 ## HANDOFF.md (required every PR)
 
@@ -14,7 +14,7 @@ Founder rule: update root `HANDOFF.md` **in the same PR** — what landed, open 
 
 **Label-fill:** **01**+#**02** done on main (Subayyal + Qiyam sibling ready). Mid-ayah-pause still blocked; Qunut≠Quran. Queue: `label-fill/00-QUEUE.md`.
 
-**Next (algo):** founder-clip pack — `prompts/real-imam/algo/00-QUEUE.md`. **P0 / Next CloudAgent:** `01-masjid-e-nabi-25-69-false-2-1.md` → ahzab → baqarah→imran → hafiz-usama. One concern each; do not mega-merge with label-fill. Liturgy TTS `tts-fill/03-ruku.md` remains parallel.
+**Next (algo):** founder-clip pack — `prompts/real-imam/algo/00-QUEUE.md`. **P0 / Next CloudAgent:** `04-hafiz-usama-1-2-vs-27-15.md` (**follow/handoff**: Fatiha→**27:15**, not stuck at **1:2**). False-first-lock 01→02→03 are **deferred P2**. One concern each; do not mega-merge with label-fill. Liturgy TTS `tts-fill/03-ruku.md` remains parallel.
 
 Launch **one session at a time**:
 

@@ -16,7 +16,7 @@ Do **not** trust `probes/hypothesized-locks.txt`.
 ## Last session proved / failed
 
 - **#17** mid-surah cold cleared; label-fill **01** on main; **02** done or in flight when launched.
-- Prior algo **01** (masjid 25:69≠2:1) should be green or explicitly residual before/while this runs — still **one concern** here: **33:60 vs 33:62** cold acquire on surah-switch audio.
+- **Queue note:** deferred **P2**. Do not launch while Tip names follow P0 `04-hafiz-usama-…`. After 04 (and any Tip-named advance work), one concern here: **33:60 vs 33:62** cold acquire on surah-switch audio.
 - Switch-to Saba **34:1** is **follow-on**; do not expand scope into a mega surah-switch rewrite unless required to keep first-lock correct.
 
 ## HANDOFF.md (required every PR)

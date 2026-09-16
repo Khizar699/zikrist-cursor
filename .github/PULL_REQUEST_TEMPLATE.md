@@ -11,10 +11,17 @@
 
 ## Gates
 
-- [ ] Mac `npm run test:replay -- all` = **14/14** (or docs-only / no Mac claim)
+- [ ] Mac `npm run test:replay -- all` = **14/14** when claiming floor-green (or honest N/14 / docs-only / no Mac claim)
 - [ ] No wav/mp3 committed
-- [ ] Real-imam suites left `stub` unless Mac-green false-lock + label-fill session
+- [ ] Real-imam suites left `stub` unless Mac-green + matching label-fill session
+
+## Recognition / follower / Tilawa (if touched)
+
+- [ ] Mac **Agent verify loop** run (`prompts/real-imam/algo/PRODUCT-BAR.md`) — not founder iOS-only
+- [ ] Tip product-bar clip / ready imam suites measured when relevant
+- [ ] **Ratchet lock** same PR: new/tighter unit and/or ready expect (`prompts/real-imam/algo/RATCHET.md`)
+- [ ] Tip known-fails shrunk only if locked; expects not weakened without stricter replacement
 
 ## Test plan
 
-<!-- Commands run; Mac vs Linux; honest fails. -->
+<!-- Commands run; Mac vs Linux; match sequences; honest fails. -->

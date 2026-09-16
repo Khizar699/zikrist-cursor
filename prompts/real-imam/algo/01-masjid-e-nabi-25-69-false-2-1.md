@@ -19,7 +19,8 @@ Do **not** trust `probes/hypothesized-locks.txt`.
 - **#17** mid-surah cold false-lock **cleared** on Mac (Subayyal 4:129, Qiyam 36:16); `all` **14/14**.
 - Label-fill **01** on main (`6df8ef3` / PR #18 area): `imam-mid-surah-cold` ready for Subayyal — **do not touch**.
 - Label-fill **02** (Qiyam sibling) in flight or merged when this launches — **do not retune labels/manifest ready**.
-- This session is **algo only** for the remaining founder-clip false lock **25:69 ≠ 2:1**.
+- **Queue note:** this prompt is **deferred P2**. Current algo **P0** is `04-hafiz-usama-1-2-vs-27-15.md` (follow/handoff). Do **not** launch this session while Tip still names 04.
+- When Tip names this file: algo only for remaining founder-clip false lock **25:69 ≠ 2:1** (acquire concern; still obey `PRODUCT-BAR.md` floor + Tip failure mode).
 
 ## HANDOFF.md (required every PR)
 

@@ -5,6 +5,17 @@ import path from 'node:path';
 const root = path.resolve(import.meta.dirname, '..');
 const [platform, ...args] = process.argv.slice(2);
 if (platform !== 'ios' && platform !== 'android') throw new Error('Expected ios or android.');
+
+const modelPath = path.join(root, 'assets/model/fastconformer_full_mixed.onnx');
+if (!existsSync(modelPath)) {
+  console.error(
+    'Recognition model missing (gitignored ~88 MB ONNX).\n' +
+      'Run:  npm run setup\n' +
+      'Or:   npm run assets:download && npm run assets:verify',
+  );
+  process.exit(1);
+}
+
 const env = { ...process.env };
 // This workspace may have a project-local CocoaPods installation. Do not
 // change the user's shell configuration or require it on other machines.
