@@ -12,6 +12,7 @@ import {
   loadRealImamStubEntry,
   loadRealImamStubManifest,
   suiteBlueprint,
+  suiteSkipsWhenClipMissing,
 } from '../scripts/replay-suites';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -26,12 +27,18 @@ test('real-imam harness reads Prompt Smith stub manifest, not a duplicate pack',
     manifest.suites.map((row) => row.suite_id),
     [...REAL_IMAM_SUITE_NAMES],
   );
-  assert.equal(manifest.suites.every((row) => row.status === 'stub'), true);
+  assert.equal(loadRealImamStubEntry('imam-mid-surah-cold').status, 'ready');
+  assert.equal(
+    manifest.suites
+      .filter((row) => row.suite_id !== 'imam-mid-surah-cold')
+      .every((row) => row.status === 'stub'),
+    true,
+  );
   assert.equal(fs.existsSync(path.join(root, 'prompts/real-imam/00-OVERNIGHT-QUEUE.md')), true);
   assert.equal(fs.existsSync(path.join(root, 'prompts/real-imam/FIXTURES.md')), true);
 });
 
-test('founder labels exist as ground truth and do not flip suites to ready', () => {
+test('founder labels exist as ground truth; only label-fill 01 flips mid-surah-cold', () => {
   const labelsPath = path.join(root, 'prompts/real-imam/LABELS.md');
   const jsonPath = path.join(root, 'prompts/real-imam/labels.json');
   assert.equal(fs.existsSync(labelsPath), true);
@@ -58,23 +65,52 @@ test('founder labels exist as ground truth and do not flip suites to ready', () 
   );
   assert.ok(firstLocks.includes('4:129'));
   assert.ok(firstLocks.includes('36:16'));
-  assert.equal(loadRealImamStubManifest().suites.every((row) => row.status === 'stub'), true);
+  assert.equal(loadRealImamStubEntry('imam-mid-surah-cold').status, 'ready');
+  assert.equal(
+    loadRealImamStubManifest().suites
+      .filter((row) => row.suite_id !== 'imam-mid-surah-cold')
+      .every((row) => row.status === 'stub'),
+    true,
+  );
 });
 
-test('stub suites map to artifacts/recitation/imam paths and skip, not PASS', () => {
+test('ready imam-mid-surah-cold maps to founder Subayyal 4:129–130; other suites stay stubs', () => {
   assert.equal(MISSING_FIXTURE, 'missing_fixture');
   assert.equal(SKIPPED_PENDING, 'skipped');
+  const entry = loadRealImamStubEntry('imam-mid-surah-cold');
+  const blueprint = suiteBlueprint('imam-mid-surah-cold');
+  assert.equal(entry.status, 'ready');
+  assert.equal(blueprint.readiness, 'ready');
+  assert.equal(suiteSkipsWhenClipMissing(blueprint), false);
+  assert.equal(entry.clip_path, 'imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav');
+  assert.deepEqual(entry.expected_first_lock, { surah: 4, ayah: 129 });
+  assert.deepEqual(entry.expected_sequence, [
+    { surah: 4, ayah: 129 },
+    { surah: 4, ayah: 130 },
+  ]);
+  assert.deepEqual(blueprint.expect, entry.expected_sequence);
+  assert.deepEqual(blueprint.clips, [
+    'imam-mid-surah-cold/qari-a/imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav',
+  ]);
+  assert.equal(blueprint.clipDir, REAL_IMAM_CLIP_DIR);
+  assert.equal(blueprint.gate, 'ordered-sequence');
+  assert.equal(blueprint.expectedLocksPath, REAL_IMAM_MANIFEST);
+  assert.match(entry.notes, /4:129-130/);
+  assert.equal(entry.license_status, 'unresolved');
   for (const name of REAL_IMAM_SUITE_NAMES) {
-    const entry = loadRealImamStubEntry(name);
-    const blueprint = suiteBlueprint(name);
-    assert.equal(blueprint.clipDir, REAL_IMAM_CLIP_DIR);
-    assert.equal(blueprint.readiness, 'pending');
-    assert.equal(blueprint.expectedLocksPath, REAL_IMAM_MANIFEST);
-    assert.ok(blueprint.clips.length >= 1);
-    assert.ok(blueprint.clips.every((clip) => clip.startsWith(`${name}/`)));
-    assert.ok(blueprint.clips.every((clip) => clip.endsWith('.wav')));
-    assert.deepEqual(blueprint.expect, entry.expected_sequence);
-    assert.equal(blueprint.expect.length, 0);
+    if (name === 'imam-mid-surah-cold') continue;
+    const stub = loadRealImamStubEntry(name);
+    const stubBlueprint = suiteBlueprint(name);
+    assert.equal(stub.status, 'stub');
+    assert.equal(stubBlueprint.clipDir, REAL_IMAM_CLIP_DIR);
+    assert.equal(stubBlueprint.readiness, 'pending');
+    assert.equal(suiteSkipsWhenClipMissing(stubBlueprint), true);
+    assert.equal(stubBlueprint.expectedLocksPath, REAL_IMAM_MANIFEST);
+    assert.ok(stubBlueprint.clips.length >= 1);
+    assert.ok(stubBlueprint.clips.every((clip) => clip.startsWith(`${name}/`)));
+    assert.ok(stubBlueprint.clips.every((clip) => clip.endsWith('.wav')));
+    assert.deepEqual(stubBlueprint.expect, stub.expected_sequence);
+    assert.equal(stubBlueprint.expect.length, 0);
   }
   assert.equal(suiteBlueprint('imam-multi-qari').clipRunMode, 'each-clip');
   assert.equal(suiteBlueprint('imam-multi-qari').clips.length, 2);

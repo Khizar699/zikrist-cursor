@@ -5,11 +5,14 @@
   "suites": [
     {
       "suite_id": "imam-mid-surah-cold",
-      "status": "stub",
-      "clip_path": "_stubs/imam-mid-surah-cold__pending__STUB.txt",
-      "expected_first_lock": null,
-      "expected_sequence": [],
-      "notes": "Fill when clips arrive",
+      "status": "ready",
+      "clip_path": "imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav",
+      "expected_first_lock": { "surah": 4, "ayah": 129 },
+      "expected_sequence": [
+        { "surah": 4, "ayah": 129 },
+        { "surah": 4, "ayah": 130 }
+      ],
+      "notes": "Dr Subayyal short; An-Nisa 4:129-130 mid-surah cold; founder-verified 2026-09-16; license unresolved",
       "license_status": "unresolved"
     },
     {

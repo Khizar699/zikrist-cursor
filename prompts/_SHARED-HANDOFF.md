@@ -28,7 +28,7 @@ Bots: Tip → `AGENTS.md` → the one prompt Tip names (HANDOFF **Bot start prot
 
 - Merging to `main` without a `HANDOFF.md` tip diff
 - Chat-only continuity (“Bot knows”) with no file write
-- Flipping real-imam suites to `ready` except in a label-fill session after Mac `test:replay -- <suite>` PASS (false-lock already Mac-green via #17)
+- Flipping extra real-imam suites to `ready` outside the matching label-fill session (one suite per session; false-lock already Mac-green via #17)
 - Committing wav/mp3
 
 See **Maintainer rule**, **Dictation for successor bots**, and **Bot start protocol** in `HANDOFF.md`. Use the PR template checklist.

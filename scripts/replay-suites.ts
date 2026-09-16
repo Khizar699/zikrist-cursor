@@ -150,7 +150,7 @@ export const ALL_SUITE_NAMES = [
   'stall-after-lock',
 ] as const;
 
-/** Pending real-imam pack. Not part of default / `all`. No audio until founder drops clips. */
+/** Real-imam pack. Not part of default / `all`. Ready rows need restored WAVs; stubs skip. */
 export const REAL_IMAM_SUITE_NAMES = [
   'imam-mid-surah-cold',
   'imam-mid-ayah-pause',
@@ -761,7 +761,11 @@ export function wrongSurahStats(
 
 export function suiteHelpText(): string {
   const ready = ALL_SUITE_NAMES.map((name) => `  ${name.padEnd(22)} ${SUITES[name].description}`);
-  const pending = REAL_IMAM_SUITE_NAMES.map((name) => `  ${name.padEnd(22)} [pending] ${SUITES[name].description}`);
+  const pending = REAL_IMAM_SUITE_NAMES.map((name) => {
+    const suite = SUITES[name];
+    const tag = suite.readiness === 'ready' ? '[ready — restore WAV then score]' : '[pending]';
+    return `  ${name.padEnd(22)} ${tag} ${suite.description}`;
+  });
   const liturgy = LITURGY_SUITE_NAMES.map((name) => {
     const suite = SUITES[name];
     const tag = suite.readiness === 'ready' ? '[ready — generate WAV then score]' : '[pending]';
@@ -786,7 +790,7 @@ export function suiteHelpText(): string {
     'Ready (default all, 14 suites):',
     ...ready,
     '',
-    'Pending real-imam (skip with missing_fixture, not PASS; not in default all):',
+    'Real-imam (not in default all; stubs skip missing_fixture; ready suites need restored WAV):',
     ...pending,
     '',
     'Salah liturgy (not in default all; stubs skip missing_fixture; ready suites need generated WAV):',
