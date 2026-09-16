@@ -2,10 +2,24 @@ const { withAppDelegate, withAndroidManifest, withDangerousMod, withPodfile, wit
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
+function readShellScript(value) {
+  if (typeof value !== 'string' || !value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    // Fresh Expo templates can embed raw newlines inside the quoted pbxproj
+    // string, which is not valid JSON. Unquote and unescape manually.
+    let script = value;
+    if (script.startsWith('"') && script.endsWith('"')) script = script.slice(1, -1);
+    return script.replace(/\\"/g, '"').replace(/\\n/g, '\n');
+  }
+}
+
 function quoteBuildPhases(project) {
   for (const phase of Object.values(project.hash.project.objects.PBXShellScriptBuildPhase ?? {})) {
-    if (typeof phase !== 'object' || !phase.shellScript) continue;
-    const script = JSON.parse(phase.shellScript);
+    if (typeof phase !== 'object') continue;
+    const script = readShellScript(phase.shellScript);
+    if (!script) continue;
     // Quote the path returned by Node, so the workspace may contain spaces.
     phase.shellScript = JSON.stringify(script.replace(/^`(.+react-native-xcode\.sh.+)`$/m, '"$($1)"'));
   }
@@ -60,3 +74,4 @@ module.exports = function withPrivateStorage(config) {
   }]);
 };
 module.exports.quoteBuildPhases = quoteBuildPhases;
+module.exports.readShellScript = readShellScript;

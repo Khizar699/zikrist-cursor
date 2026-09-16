@@ -34,13 +34,13 @@ Skip overnight queues unless picking next work. Dictation above is what to **wri
 
 ## Tip state (update every PR)
 
-- **This PR:** Prompt Smith + local Mac Agent — product-bar, **Agent verify loop**, **continuous ratchet**, and Cursor always-on rule `.cursor/rules/zikrist-recognition-ratchet.mdc` so any new Cursor opener inherits the premade suite + growing-lock standard (`README`, `AGENTS`, `algo/README.md`). Algo **P0** = follow/handoff `04-hafiz-usama-…` (or restore floor). No matcher/follower code in this PR.
-- **Prior:** label-fill **02** (`c228533` / #19) Qiyam ready; **01** (`6df8ef3` / #18) Subayyal; [#17](https://github.com/Khizar699/zikrist-cursor/pull/17) mid-surah cold. False-lock algo P0 superseded by follow P0.
-- **Gate (floor) — Mac re-measure this session (darwin/arm64):** `npm run test:replay -- all` = **12/14 FAIL** (not green). Failures: `jump:stall_missing_112:1_after_3_matches` (Kawthar OK, no Ikhlas); `english-negative:verse_lock_20:1`. Soft extras (gate still null): Nas after 114:6 → **2:1**; back-to-back after Quraysh → **2:1**. Units **194/194**; typecheck pass.
-- **Product bar baseline (same Mac, no code fix):** Hafiz Usama custom replay — Fatiha **1:2@2.75→1:7@19.25** then **2:1@38.25** (want **27:15**). Clip class `fatiha-to-body`. **FAIL handoff** (not stuck at 1:2 on this run; wrong Baqarah after Fatiha). Subayyal ready PASS 4:129→130 (+131). Qiyam ready PASS 36:16→18 (+19–20) after `fixtures:imam` sibling copy.
-- **Ratchet:** daily launches must leave a **new lock** (unit and/or ready expect) when claiming a fix; tip known-fails only shrink when locked. Ready imam suites stay in verify loop; promote into default floor only via dedicated harness PR (`RATCHET.md`).
-- **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (zip **uploaded**; sibling Qiyam needs restore if missing). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say`.
-- **Known fails:** floor **jump** + **english-negative** (Mac now). Handoff: hafiz-usama →**27:15** (got **2:1**). Still blocked: `imam-mid-ayah-pause`; Qunut@s9P 4:56. Deferred P2: masjid **25:69≠2:1**; ahzab **33:62≠33:60**; baqarah→imran **≠57:28**.
+- **This PR:** Local Mac Agent — iOS boot unblock: `NSMicrophoneUsageDescription` in `app.json` infoPlist; fix `plugins/with-private-storage.cjs` `quoteBuildPhases` so Expo prebuild no longer dies on raw-newline shell scripts (`JSON.parse` → tolerant `readShellScript`). Clean `expo prebuild --platform ios` now applies mic permission, private-storage AppDelegate, and `onnxruntime-c` pod. Also ran `npm run assets:download` locally (gitignored model). **No matcher/follower code.** Recognition P0 unchanged.
+- **Prior tip:** Prompt Smith + ratchet / product-bar docs; algo P0 = `04-hafiz-usama-…` handoff or restore floor. label-fill **02** Qiyam / **01** Subayyal / #17 mid-surah cold.
+- **Gate (floor) — last Mac measure (unchanged this session):** `npm run test:replay -- all` = **12/14 FAIL**. Failures: `jump` (no Ikhlas); `english-negative` (20:1). Soft: Nas→**2:1**; Quraysh→**2:1**. Units were **194/194**.
+- **Product bar baseline (unchanged):** Hafiz Usama — Fatiha then **2:1** (want **27:15**). Subayyal / Qiyam ready PASS after fixtures.
+- **Ratchet:** floor/handoff known-fails unchanged (no recognition fix this PR).
+- **Restore:** `npm i` → `npm run assets:download` → `npm run fixtures:recitation` → `npm run fixtures:imam`. After plugin/app.json native changes: `npx expo prebuild --platform ios --clean` then `npm run ios`. Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say`.
+- **Known fails:** floor **jump** + **english-negative**. Handoff: hafiz-usama →**27:15** (got **2:1**). Still blocked: `imam-mid-ayah-pause`; Qunut@s9P 4:56. Deferred P2: masjid **25:69≠2:1**; ahzab **33:62≠33:60**; baqarah→imran **≠57:28**.
 - **Open tracks:** **P0** restore floor **14/14** (jump + english-negative) **or** `04-hafiz-usama-…` handoff — each with same-PR test lock. Liturgy TTS `tts-fill/03-ruku.md`.
 
 ## For assistants / Grok bots — read first

@@ -4,7 +4,12 @@
     "orientation": "portrait", "userInterfaceStyle": "light",
     "ios": {
       "bundleIdentifier": "app.zikrist.mobile", "supportsTablet": true,
-      "infoPlist": { "ITSAppUsesNonExemptEncryption": false, "UIFileSharingEnabled": false, "LSSupportsOpeningDocumentsInPlace": false }
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIFileSharingEnabled": false,
+        "LSSupportsOpeningDocumentsInPlace": false,
+        "NSMicrophoneUsageDescription": "Zikrist listens to identify Quran verses and show their translation on your phone. Audio is processed on the device and is not saved."
+      }
     },
     "android": { "package": "app.zikrist.mobile", "allowBackup": false },
     "plugins": [
