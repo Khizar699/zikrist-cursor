@@ -265,6 +265,6 @@ npm run test:replay -- all                   # still 14/14
 
 Ready suites with a missing clip error `missing_clip` instead of skipping. Clip basename: `imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav`. Do not use the `__UNKNOWN__` file. Next: label-fill `02-mid-surah-cold-qiyam.md`.
 
-This workspace (Linux/x64): `npm test` and `npm run typecheck` are the VM bar. Acoustic `imam-mid-surah-cold` scoring and Mac `all` 14/14 were **not** run here. Not a physical-device, mosque, or license-clearance claim.
+This workspace (Linux/x64): `npm test` **192/192**; `npm run typecheck` pass. `npx tsx scripts/replay.ts imam-mid-surah-cold` errors `missing_clip` (WAV not restored here) instead of skipping — expected ready behavior. Acoustic scoring and Mac `all` 14/14 were **not** run here. Not a physical-device, mosque, or license-clearance claim.
 
 
