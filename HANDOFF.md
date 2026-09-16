@@ -4,7 +4,7 @@ Friends and **new Grok / Cursor agents** (no chat history) start here. Large rec
 
 ## Maintainer rule (founder)
 
-Every PR that merges to `main` **must** update this file **in the same PR**: what landed, tip state, open tracks, gates (`npm run test:replay -- all` = **14/14** Quran), fixture restore commands, known fails. Prompt Smith / cloud agents follow `prompts/_SHARED-HANDOFF.md`. A PR without a `HANDOFF.md` bump is not mergeable. CI: `.github/workflows/handoff-required.yml`.
+Every PR that merges to `main` **must** update this file **in the same PR**: what landed, tip state, open tracks, gates (`npm run test:replay -- all` = **14/14** Quran regression floor; algo Tip work also notes product bar from `prompts/real-imam/algo/PRODUCT-BAR.md`), fixture restore commands, known fails. Prompt Smith / cloud agents follow `prompts/_SHARED-HANDOFF.md`. A PR without a `HANDOFF.md` bump is not mergeable. CI: `.github/workflows/handoff-required.yml`.
 
 
 ## Dictation for successor bots
@@ -27,18 +27,21 @@ Cheap read order (do not load every `prompts/**` file up front):
 1. **Tip state** only first (next section).
 2. Then `AGENTS.md`.
 3. Then the **single** open-track prompt named in Tip.
-4. Restore fixtures if missing: `npm run fixtures:recitation` then `npm run fixtures:imam`.
+4. If Tip is recognition / algo / follower: obey always-on `.cursor/rules/zikrist-recognition-ratchet.mdc` and skim `prompts/real-imam/algo/PRODUCT-BAR.md` + `RATCHET.md` (index: `algo/README.md`).
+5. Restore fixtures if missing: `npm run fixtures:recitation` then `npm run fixtures:imam`.
 
-Skip overnight queues unless picking next work. Dictation above is what to **write** in the PR. Local Cursor Agent/Composer: `.cursor/rules/zikrist-continuity.mdc` (`alwaysApply`) — same read order; do not duplicate dictation here.
+Skip overnight queues unless picking next work. Dictation above is what to **write** in the PR. Local Cursor Agent/Composer: `.cursor/rules/zikrist-continuity.mdc` + `zikrist-recognition-ratchet.mdc` (`alwaysApply`) — same read order; do not duplicate dictation here.
 
 ## Tip state (update every PR)
 
-- **This PR:** Prompt Smith — founder-clip **algo** queue under `prompts/real-imam/algo/` (docs only). Label-fill **01**+#**02** done — pack is **unheld**. **Next CloudAgent (P0):** `prompts/real-imam/algo/01-masjid-e-nabi-25-69-false-2-1.md` (want **25:69**, refuse **2:1**). Then 02→03→04 one at a time. No matcher retune in this PR; no Mac-green claim for these four.
-- **Prior:** label-fill **02** on main (`c228533` / #19): sibling `imam-mid-surah-cold-qiyam` ready Ya-Sin **36:16–18**. Label-fill **01** (`6df8ef3` / #18) Subayyal ready. [#17](https://github.com/Khizar699/zikrist-cursor/pull/17) mid-surah cold Mac-green.
-- **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate. This PR **N/A** (docs/prompts only).
-- **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (zip **uploaded**). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say`.
-- **Known fails:** mid-surah cold **cleared on Mac via #17**. Still blocked: `imam-mid-ayah-pause` (no pause mark); Qunut@s9P 4:56 = dua not Quran. **Bot (pending Mac re-measure in algo sessions):** masjid **25:69≠2:1**; ahzab cold **33:62≠33:60**; baqarah→imran **≠57:28**; hafiz-usama Fatiha→**27:15** (not stuck at **1:2**).
-- **Open tracks:** **P0 now** `prompts/real-imam/algo/01-masjid-e-nabi-25-69-false-2-1.md` → algo 02→03→04. Liturgy TTS `tts-fill/03-ruku.md`.
+- **This PR:** Prompt Smith + local Mac Agent — product-bar, **Agent verify loop**, **continuous ratchet**, and Cursor always-on rule `.cursor/rules/zikrist-recognition-ratchet.mdc` so any new Cursor opener inherits the premade suite + growing-lock standard (`README`, `AGENTS`, `algo/README.md`). Algo **P0** = follow/handoff `04-hafiz-usama-…` (or restore floor). No matcher/follower code in this PR.
+- **Prior:** label-fill **02** (`c228533` / #19) Qiyam ready; **01** (`6df8ef3` / #18) Subayyal; [#17](https://github.com/Khizar699/zikrist-cursor/pull/17) mid-surah cold. False-lock algo P0 superseded by follow P0.
+- **Gate (floor) — Mac re-measure this session (darwin/arm64):** `npm run test:replay -- all` = **12/14 FAIL** (not green). Failures: `jump:stall_missing_112:1_after_3_matches` (Kawthar OK, no Ikhlas); `english-negative:verse_lock_20:1`. Soft extras (gate still null): Nas after 114:6 → **2:1**; back-to-back after Quraysh → **2:1**. Units **194/194**; typecheck pass.
+- **Product bar baseline (same Mac, no code fix):** Hafiz Usama custom replay — Fatiha **1:2@2.75→1:7@19.25** then **2:1@38.25** (want **27:15**). Clip class `fatiha-to-body`. **FAIL handoff** (not stuck at 1:2 on this run; wrong Baqarah after Fatiha). Subayyal ready PASS 4:129→130 (+131). Qiyam ready PASS 36:16→18 (+19–20) after `fixtures:imam` sibling copy.
+- **Ratchet:** daily launches must leave a **new lock** (unit and/or ready expect) when claiming a fix; tip known-fails only shrink when locked. Ready imam suites stay in verify loop; promote into default floor only via dedicated harness PR (`RATCHET.md`).
+- **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (zip **uploaded**; sibling Qiyam needs restore if missing). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say`.
+- **Known fails:** floor **jump** + **english-negative** (Mac now). Handoff: hafiz-usama →**27:15** (got **2:1**). Still blocked: `imam-mid-ayah-pause`; Qunut@s9P 4:56. Deferred P2: masjid **25:69≠2:1**; ahzab **33:62≠33:60**; baqarah→imran **≠57:28**.
+- **Open tracks:** **P0** restore floor **14/14** (jump + english-negative) **or** `04-hafiz-usama-…` handoff — each with same-PR test lock. Liturgy TTS `tts-fill/03-ruku.md`.
 
 ## For assistants / Grok bots — read first
 
@@ -48,9 +51,12 @@ You have no prior thread. Do not invent product history, ayah numbers, or Mac re
 |---|---|
 | Repo | https://github.com/Khizar699/zikrist-cursor |
 | Product | **Zikrist** — offline Expo ayah locator + salah liturgy (Android/iPhone, including mid-range). Algorithm and recognition correctness beat visual design this MVP. **No Figma** for the MVP. |
-| Hard gate | `npm run test:replay -- all` must stay **14/14** Quran. Linux ONNX is not that gate. |
+| Cursor always-on | `.cursor/rules/zikrist-continuity.mdc` + `.cursor/rules/zikrist-recognition-ratchet.mdc` |
+| Premade test + ratchet | `prompts/real-imam/algo/PRODUCT-BAR.md`, `RATCHET.md`, pack index `algo/README.md` — Agent runs Mac verify; every fix locks a permanent test; corpus grows |
+| Regression floor | `npm run test:replay -- all` must stay **14/14** Quran when claiming green (honest N/14 if red). Linux ONNX is not that gate. |
+| Product bar | Algo/follower sessions: Tip clip must show **correct lock + ordered advance** while audio continues. 14/14 alone ≠ done. Famous-short EveryAyah green ≠ all-surah / prayer-follow ready. |
 | Labels | Ground truth: `prompts/real-imam/LABELS.md` + `prompts/real-imam/labels.json` (Khizar, 2026-09-16). **Not** `probes/hypothesized-locks.txt`. Never invent ayah labels. |
-| Suites | `imam-mid-surah-cold` is **`ready`** (Subayyal **4:129–130**). Sibling `imam-mid-surah-cold-qiyam` is **`ready`** (Qiyam **36:16–18**). Other `prompts/real-imam/manifest.stub.json` rows stay **`stub`**. Restoring wavs is not a `ready` flip. |
+| Suites | `imam-mid-surah-cold` is **`ready`** (Subayyal **4:129–130**). Sibling `imam-mid-surah-cold-qiyam` is **`ready`** (Qiyam **36:16–18**). Other `prompts/real-imam/manifest.stub.json` rows stay **`stub`**. Restoring wavs is not a `ready` flip. Short ready sequences ≠ Fatiha→body handoff. |
 
 **After clone**
 
@@ -86,11 +92,11 @@ Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that woul
 - **Sim QA** — Mac acoustic replay / `test:replay`
 - **Chief Bot** — merges **only after Mac green**
 
-**Push / merge policy:** Mac `all` **14/14** before merge. Flip only the matching label-fill suite. Never invent ayah labels. Do not retune matcher/follower in a fill PR.
+**Push / merge policy:** Mac `all` **14/14** before merge when claiming floor-green (honest N/14 if red). Algo claims also need Tip product bar + **ratchet lock** (`algo/PRODUCT-BAR.md`, `algo/RATCHET.md`). Flip only the matching label-fill suite. Never invent ayah labels. Do not retune matcher/follower in a fill PR.
 
 **Current open tracks**
 
-- **P0:** `prompts/real-imam/algo/01-masjid-e-nabi-25-69-false-2-1.md` → algo 02→03→04 (`algo/00-QUEUE.md`)
+- **P0:** restore floor (jump + english-negative) **or** `prompts/real-imam/algo/04-hafiz-usama-1-2-vs-27-15.md` — each fix must lock a permanent test (`RATCHET.md`); then deferred false-lock 01→02→03
 - Liturgy TTS after thana Mac-green — `prompts/salah-liturgy/tts-fill/03-ruku.md`
 
 

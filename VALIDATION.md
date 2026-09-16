@@ -273,4 +273,37 @@ Ready suites with a missing clip error `missing_clip` instead of skipping. Clip 
 
 This workspace (Linux/x64): `npm test` **194/194**; `npm run typecheck` pass. `npx tsx scripts/replay.ts imam-mid-surah-cold-qiyam` errors `missing_clip` (WAV not restored here) instead of skipping — expected ready behavior. Acoustic scoring and Mac `all` 14/14 were **not** run here. Not a physical-device, mosque, or license-clearance claim.
 
+## Product bar vs regression floor (docs, 2026-09-16)
+
+Founder process change (Prompt Smith docs only; no matcher/follower retune in this entry).
+
+- **Regression floor:** Mac `npm run test:replay -- all` = **14/14** Quran remains mandatory before merge. It is mostly famous-short EveryAyah fixtures plus a few synthetic gates. Green here means “do not regress that corpus,” not “live prayer follows” or “all surahs cold-start.”
+- **Product bar:** `prompts/real-imam/algo/PRODUCT-BAR.md`. Algo/follower sessions must Mac-measure the Tip clip for (1) first correct lock, (2) ordered `verse_match` advance while audio continues, (3) stall/`failureMode` if any, (4) clip class. Claiming done on 14/14 or units alone is forbidden when Tip named a follow/handoff or coverage concern.
+- **Who runs verify:** the **editing agent** on Mac runs the Agent verify loop in `PRODUCT-BAR.md` after recognition patches. Founder iOS preview is optional smoke only — not the gate.
+- **Engine split:** Tilawa locate/patches ≠ Zikrist `RecitationFollower` + ContinuationGate follow path.
+- **Queue:** `prompts/real-imam/algo/00-QUEUE.md` — **P0** is Hafiz Usama Fatiha→**27:15**. False-first-lock prompts 01–03 are deferred P2.
+- **Ratchet:** `prompts/real-imam/algo/RATCHET.md` — daily/version launches must lock each fix into units and/or ready expects so the next day cannot repeat the same miss.
+
+### Mac baseline (same session, darwin/arm64, no follower code change)
+
+| Check | Result |
+|---|---|
+| `npm test` | **194/194** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **12/14 FAIL** — `jump:stall_missing_112:1_after_3_matches`; `english-negative:verse_lock_20:1` |
+| Hafiz Usama custom wav | Fatiha **1:2→1:7** then **2:1@38s** (want **27:15**) — product-bar **FAIL** handoff |
+| `imam-mid-surah-cold` | PASS 4:129→130 (also committed 131) |
+| `imam-mid-surah-cold-qiyam` | PASS 36:16→18 after fixture sibling copy (also 19–20) |
+
+Do **not** claim floor 14/14 until jump + english-negative are re-green **and** locked so they stay green. Not a physical-device claim.
+
+## Cursor inheritance (docs, same process PR)
+
+Any new Cursor opener gets always-on rules:
+
+- `.cursor/rules/zikrist-continuity.mdc`
+- `.cursor/rules/zikrist-recognition-ratchet.mdc` — premade verify commands, dual bar, **corpus only grows**
+
+Entry docs: root `README.md`, `AGENTS.md`, `HANDOFF.md`, `prompts/real-imam/README.md`, `prompts/real-imam/algo/README.md`. PR template checklist includes ratchet lock.
+
 

@@ -25,15 +25,15 @@ Hafs ‘an ‘Asim is the initial corpus assumption, not a claim to support ever
 
 ## Workflow and implementation prompts
 
-0. Read `HANDOFF.md` **Tip state** (and **Dictation for successor bots**) before implementing. Local Cursor Agent/Composer also loads `.cursor/rules/zikrist-continuity.mdc` (`alwaysApply`).
+0. Read `HANDOFF.md` **Tip state** (and **Dictation for successor bots**) before implementing. Local Cursor Agent/Composer also loads `.cursor/rules/zikrist-continuity.mdc` and `.cursor/rules/zikrist-recognition-ratchet.mdc` (`alwaysApply`).
 1. Read this file and inspect relevant code and the current user request.
 2. Use applicable skills available in the session. Do not invent or require missing skills from the reference project.
 3. Verify version-sensitive APIs in installed package types/source and official documentation.
 4. Before a substantial implementation, save a focused prompt in `prompts/` with goal, scope, inspected code/docs, assumptions, files, architecture/security requirements, acceptance criteria, checks and manual device tests.
 5. Existing user authorization to implement is sufficient. Do not ask for the same approval again or turn prompt creation into a second permission gate. Ask only for a material unresolved decision or an unauthorized consequential external action.
 6. Implement within that scope. Keep code small and typed; avoid unrelated refactors and unnecessary dependencies.
-7. Run relevant checks, inspect the application where possible, and report precisely what was and was not tested.
-8. Update run instructions, source notices, outstanding limitations, and **continuity docs** in the same PR (`prompts/_SHARED-HANDOFF.md`). **Your session is incomplete without a `HANDOFF.md` tip bump.** Also update `VALIDATION.md` when verify paths or Mac-green results change, and queue status when a queue moves.
+7. Run relevant checks, inspect the application where possible, and report precisely what was and was not tested. For recognition/follower/Tilawa changes on Mac: run the Agent verify loop in `prompts/real-imam/algo/PRODUCT-BAR.md` yourself; do not substitute founder iOS vibe-testing.
+8. Update run instructions, source notices, outstanding limitations, and **continuity docs** in the same PR (`prompts/_SHARED-HANDOFF.md`). **Your session is incomplete without a `HANDOFF.md` tip bump.** Also update `VALIDATION.md` when verify paths or Mac-green results change, and queue status when a queue moves. Recognition fixes must **ratchet-lock** (unit and/or ready expect) per `prompts/real-imam/algo/RATCHET.md` so the next Cursor session inherits a larger permanent suite.
 
 The user authorized creating this file from a biasly reference and building the initial MVP. That reference supplied workflow ideas, not a requirement to use Next.js, web shadcn, scraping, Oxylabs, Gemini, pgvector, Vercel, or cloud-first data storage.
 
@@ -114,6 +114,10 @@ Keep commands in `package.json` and `README.md` accurate. Initial expected check
 - `npm test`: meaningful tracker, buffering, content integrity and persistence-contract checks.
 - `npm run assets:verify`: checksums and Quran/translation integrity.
 - Expo native export/build checks when dependencies, native configuration or assets change.
+
+Recognition continuity (bots / overnight): Mac `npm run test:replay -- all` = **14/14** is the **regression floor**, not the product finish line. Algo and follower sessions must also meet the Tip **product bar** in `prompts/real-imam/algo/PRODUCT-BAR.md` (correct lock plus ordered advance on continuing audio for the Tip clip). Tilawa locate speed and Zikrist follow/handoff are separate concerns — do not treat famous-short EveryAyah green as prayer-follow or all-surah coverage.
+
+**Continuous ratchet:** `prompts/real-imam/algo/RATCHET.md`. Every claimed fix must add or tighten a permanent lock (unit test and/or ready replay expect) in the same change set so the next daily launch cannot silently reintroduce the bug. Known fails in `HANDOFF.md` only shrink when locked green. Do not weaken expects without a stricter replacement.
 
 Build for Android and iOS where toolchains are available. If one toolchain or physical devices are unavailable, report that limitation explicitly. Simulator success is not evidence of real microphone/mosque performance, battery consumption, or locked-screen reliability.
 
