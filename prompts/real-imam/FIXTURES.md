@@ -48,25 +48,25 @@ See `prompts/real-imam/00-OVERNIGHT-QUEUE.md` and `01-fixture-scaffold.md`.
 ## Status
 
 - `stub` — no ready evaluation yet; automated suite must **skip**, not PASS
-- `ready` — clip present + Mac-verified notes **and** algorithm good enough to flip
+- `ready` — clip path + founder expect are wired; Mac must PASS after `npm run fixtures:imam`
 
-All suites in `manifest.stub.json` stay `stub` until algorithm fixes land. Restoring the zip is not a readiness flip. See `MANIFEST-NOTE.md`.
+`imam-mid-surah-cold` is `ready` (Subayyal **4:129–130**, label-fill 01). Other rows in `manifest.stub.json` stay `stub`. Restoring the zip is not a readiness flip. See `MANIFEST-NOTE.md`.
 
 ## Label-fill (founder labels landed 2026-09-16)
 
 **Prompts:** `prompts/real-imam/label-fill/` — one suite per session; no matcher retune.
 
-| Priority | Prompt | Suite | Expect |
-|---|---|---|---|
-| 1 | `label-fill/01-mid-surah-cold-dr-subayyal.md` | `imam-mid-surah-cold` | 4:129–130 |
-| 2 | `label-fill/02-mid-surah-cold-qiyam.md` | `imam-mid-surah-cold-qiyam` (sibling) | 36:16–18 |
+| Priority | Prompt | Suite | Expect | Status |
+|---|---|---|---|---|
+| 1 | `label-fill/01-mid-surah-cold-dr-subayyal.md` | `imam-mid-surah-cold` | 4:129–130 | **done** (manifest ready; Mac score is Bot/Sim) |
+| 2 | `label-fill/02-mid-surah-cold-qiyam.md` | `imam-mid-surah-cold-qiyam` (sibling) | 36:16–18 | **next** |
 
-**Blocked:** `imam-mid-ayah-pause` (no pause mark). Qunut at s9P@4:56 is dua — not Quran. Do not launch 01/02 until the mid-surah false-lock algorithm is Mac-green.
+**Blocked:** `imam-mid-ayah-pause` (no pause mark). Qunut at s9P@4:56 is dua — not Quran. PR **#17** Mac-green on merge cleared the mid-surah false-lock hold.
 
-## Mac baseline (2026-09-16)
+## Mac baseline (2026-09-16) — superseded for Subayyal/Qiyam false locks
 
-Informal Mac probes. **Do not** treat these locks as labels.
+Informal Mac probes **before** PR #17. **Do not** treat these locks as labels.
 
 - Fatir 35:1–8 locks OK
-- Subayyal expected 4:129 locks wrong 41:34
-- Qiyam expected 36:16 locks wrong 78:4
+- Subayyal expected 4:129 locked wrong 41:34 — **cleared** on #17 Mac-green (4:129→130)
+- Qiyam expected 36:16 locked wrong 78:4 — **cleared** on #17 Mac-green (36:16→18)

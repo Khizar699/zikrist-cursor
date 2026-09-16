@@ -1,7 +1,8 @@
 # Stub manifest → ready via label-fill
 
-`manifest.stub.json` is the replay registry. Suites start as `status: stub`.
+`manifest.stub.json` is the replay registry.
 
-Flip to **`ready` only** in a dedicated label-fill session (`prompts/real-imam/label-fill/`), one suite at a time, after Mac `test:replay -- <suite>` PASS. Algo gate for mid-surah cold: PR **#17** (Mac-green).
+- `imam-mid-surah-cold` is `status: ready` (label-fill **01**, Dr Subayyal An-Nisa **4:129–130**). Restore the WAV with `npm run fixtures:imam`; Mac must PASS (not skip). This file flip is not a Mac acoustic claim.
+- Other suite rows remain `status: stub`. Restoring the zip is not a `ready` flip.
 
-Founder labels (`LABELS.md`, `labels.json`) are ground truth — not alone a readiness flip. Restoring wavs via `fixtures:imam` is not a readiness flip.
+Flip additional suites **only** in a dedicated label-fill session, one at a time. Algo gate for mid-surah cold: PR **#17** (Mac-green). Founder labels (`LABELS.md`, `labels.json`) are ground truth. Next fill: `label-fill/02-mid-surah-cold-qiyam.md`.

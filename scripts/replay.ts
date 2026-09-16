@@ -374,11 +374,13 @@ if (cli.list) {
     const suite = suiteBlueprint(name);
     console.log(`${name}\tready\t${suite.description}`);
   }
-  console.log('Pending real-imam (`npm run test:replay -- real-imam`; stubs skip with missing_fixture, not PASS):');
+  console.log('Real-imam (`npm run test:replay -- real-imam`; stubs skip missing_fixture; ready suites need restored WAV):');
   for (const name of REAL_IMAM_SUITE_NAMES) {
     const suite = suiteBlueprint(name);
     const missing = missingClips(suite);
-    const status = missing.length ? SKIPPED_PENDING : 'ready';
+    const status = missing.length
+      ? (suiteSkipsWhenClipMissing(suite) ? SKIPPED_PENDING : 'missing')
+      : 'ready';
     console.log(`${name}\t${status}\t${suite.description}`);
   }
   console.log('Salah liturgy (`npm run test:replay -- liturgy`; stubs skip missing_fixture; ready suites need generated WAV):');
@@ -407,7 +409,7 @@ if (cli.checkFixtures) {
   const restore = liturgyOnly
     ? 'Ready: npm run liturgy:tts -- liturgy-takbeer or liturgy-thana --engine say (Mac; ffmpeg on PATH e.g. /tmp/ffmpeg-static; say Majed ar_001). Stubs skip missing_fixture until their fill session. Mixed suites reuse EveryAyah Fatiha WAVs from artifacts/recitation/ after npm run fixtures:recitation. Do not invent silent WAVs.'
     : imamOnly
-      ? 'Drop 16 kHz mono WAV under artifacts/recitation/imam/<suite-id>/<qari>/ from ~/Desktop/zikrist-imam-clips/ (prompts/real-imam/FIXTURES.md)'
+      ? 'Ready: npm run fixtures:imam (tag imam-fixtures-v1). Stubs skip missing_fixture until their fill session. Do not invent silent WAVs.'
       : 'npm run fixtures:recitation';
   console.log(JSON.stringify({
     recitationDir: path.relative(root, recitationDir),
@@ -441,7 +443,9 @@ for (const name of selectedSuites) {
     }
     const hint = suite.scoreLiturgy === true
       ? `. Generate with: npm run liturgy:tts -- ${suite.label}`
-      : '';
+      : isRealImamSuiteName(suite.label)
+        ? '. Restore with: npm run fixtures:imam'
+        : '';
     throw new Error(`missing_clip:${missing.map((clip) => path.basename(clip)).join(',')}${hint}`);
   }
   const missingQuran = missingQuranClips(suite);

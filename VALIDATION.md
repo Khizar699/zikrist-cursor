@@ -230,7 +230,7 @@ This workspace (Linux/x64): `npm test` **177/177**; `npm run typecheck` pass; li
 
 ## Mid-surah cold acquire (4:129 ≠ 41:34, 36:16 ≠ 78:4)
 
-Matcher/follower only. Prompt: `prompts/imam-mid-surah-cold-false-lock.md`. Mac-measured false first locks on founder-labeled mosque clips: Subayyal An-Nisa **4:129–130** first-locked **41:34** (~9 s, score ~0.63); Qiyam Ya-Sin **36:16–18** first-locked **78:4** (~2 s, score ~0.85). Fatir 35:1–8 already locked correctly and must not regress. Real-imam manifest stays `stub` (label-fill `01`/`02` after Mac green). Liturgy matcher thresholds were not retuned.
+Matcher/follower only. Prompt: `prompts/imam-mid-surah-cold-false-lock.md`. Mac-measured false first locks on founder-labeled mosque clips: Subayyal An-Nisa **4:129–130** first-locked **41:34** (~9 s, score ~0.63); Qiyam Ya-Sin **36:16–18** first-locked **78:4** (~2 s, score ~0.85). Fatir 35:1–8 already locked correctly and must not regress. **#17 Mac-green on merge** cleared those false locks (Subayyal 4:129→130, Qiyam 36:16→18, `all` 14/14). Label-fill **01** now flips `imam-mid-surah-cold` ready (see next section). Liturgy matcher thresholds were not retuned.
 
 Cause class (token evidence, not clip IDs): early `ول-/تست-` can crown long **41:34** `ولا تستوي` instead of **4:129** `ولن تستطيعوا`; a thin window plus short-ayah scoring can crown **78:4** `كلا سيعلمون` from **36:16** `ربنا يعلم` (shared `علم` root / suffix). Acquire now (1) refuses a short mid-surah champion that leaves distinctive tokens unexplained, (2) holds a long ayah whose unique token is still confusable until a later body word (`الحسنه` vs `تعدلوا`), (3) locates around a rival’s reported ayah rather than only ayahs 1–7, and (4) can lock from two distinctive mid-ayah body tokens when the opening word was missed. Units in `tests/follower.test.ts` encode both confusions plus true 41:34 / 78:4 / Fatir 35:1 locks and 4:129→130 / 36:16→17–18 follow. No suite-ID hardcodes.
 
@@ -249,5 +249,22 @@ npm test && npm run typecheck
 ```
 
 Want: Subayyal first lock **4:129** never 41:34, then **4:130** (`wrongSurahRate` not 1.0 on a false champion). Qiyam first lock **36:16** never 78:4, then **36:17–18**. `all` stays **14/14**. JSON: `artifacts/qa-runs/replay-custom.json` per ad-hoc WAV (rename between runs). Next slice after Mac green: label-fill `01` then `02`. Not a physical-device, mosque, or license-clearance claim.
+
+## Real-imam label-fill 01 (`imam-mid-surah-cold` ready)
+
+One suite only. Prompt: `prompts/real-imam/label-fill/01-mid-surah-cold-dr-subayyal.md`. Manifest `imam-mid-surah-cold` is `status: ready` with `clip_path` `imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav` (resolved under `artifacts/recitation/imam/imam-mid-surah-cold/qari-a/`). Expect ordered An-Nisa **4:129** then **4:130** from founder labels. Other real-imam suites stay stubs. Matcher / follower were **not** retuned (algorithm already landed in PR **#17**). WAV/MP3 is gitignored and is not in this PR.
+
+PR **#17** was **Mac-green on merge** (`2f056f7`): Subayyal **4:129→130**, Qiyam **36:16→18**, `npm run test:replay -- all` **14/14**, units **186/186**. The old known-fails (Subayyal first-lock **41:34**, Qiyam first-lock **78:4**) are **cleared**. This label-fill session does **not** re-score those mosque clips and does **not** claim a new Mac acoustic green for the ready suite — Bot/Sim QA must run:
+
+```bash
+npm run fixtures:imam
+npm run test:replay -- imam-mid-surah-cold   # must PASS, not missing_fixture skip
+npm run test:replay -- real-imam             # ready scores if WAV present; other stubs skip
+npm run test:replay -- all                   # still 14/14
+```
+
+Ready suites with a missing clip error `missing_clip` instead of skipping. Clip basename: `imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav`. Do not use the `__UNKNOWN__` file. Next: label-fill `02-mid-surah-cold-qiyam.md`.
+
+This workspace (Linux/x64): `npm test` and `npm run typecheck` are the VM bar. Acoustic `imam-mid-surah-cold` scoring and Mac `all` 14/14 were **not** run here. Not a physical-device, mosque, or license-clearance claim.
 
 

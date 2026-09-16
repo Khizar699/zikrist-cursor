@@ -33,14 +33,12 @@ Skip overnight queues unless picking next work. Dictation above is what to **wri
 
 ## Tip state (update every PR)
 
-- **This PR:** Continuity #16 — `handoff-required` CI + `.cursor/rules/zikrist-continuity.mdc` (`alwaysApply`) for local Cursor. Docs/CI only; no follower retune. **#17 tip preserved.**
-- **#17 landed (`2f056f7`):** Mac-green mid-surah cold false-lock. Subayyal **4:129** / Qiyam **36:16** cleared.
-- **P0 next:** label-fill `01` — `prompts/real-imam/label-fill/01-mid-surah-cold-dr-subayyal.md` (flip `imam-mid-surah-cold` → ready, 4:129–130). Then `02`.
-- **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate. This PR **N/A** (docs + CI).
+- **This PR:** real-imam label-fill **01** — suite `imam-mid-surah-cold` → **ready** (Dr Subayyal An-Nisa **4:129–130**). Manifest + harness contracts only; **no matcher/follower retune**. WAV stays gitignored (`imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav`).
+- **Prior:** [#17](https://github.com/Khizar699/zikrist-cursor/pull/17) Mac-green on merge (`2f056f7`): Subayyal **4:129→130**, Qiyam **36:16→18**, `all` **14/14**, units **186/186**. Prompt Smith unhold `438a5bc` + continuity #16 (`d4f448e`) already on main. Old known-fails (4:129≠41:34, 36:16≠78:4) are **cleared**.
+- **Gate:** Mac `npm run test:replay -- all` = **14/14**. Linux ONNX is not that gate. This PR does **not** claim Mac acoustic green for the ready suite — Bot/Sim QA scores `npm run test:replay -- imam-mid-surah-cold`.
 - **Restore:** `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (zip **uploaded**). Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say`.
-- **Known fails:** mid-surah cold **cleared on Mac via #17**. Still blocked: `imam-mid-ayah-pause` (no pause mark); Qunut@s9P 4:56 = dua not Quran.
-- **Open tracks:** **label-fill `01` (in flight)** → `02`; liturgy TTS `tts-fill/03-ruku.md`.
-
+- **Known fails:** mid-surah cold **cleared on Mac via #17**. Still blocked: `imam-mid-ayah-pause` (no pause mark); Qunut@s9P 4:56 = dua not Quran. Other real-imam rows stay **stub**.
+- **Open tracks:** next label-fill `02-mid-surah-cold-qiyam.md` (sibling `imam-mid-surah-cold-qiyam`); liturgy TTS `tts-fill/03-ruku.md`.
 
 ## For assistants / Grok bots — read first
 
@@ -52,7 +50,7 @@ You have no prior thread. Do not invent product history, ayah numbers, or Mac re
 | Product | **Zikrist** — offline Expo ayah locator + salah liturgy (Android/iPhone, including mid-range). Algorithm and recognition correctness beat visual design this MVP. **No Figma** for the MVP. |
 | Hard gate | `npm run test:replay -- all` must stay **14/14** Quran. Linux ONNX is not that gate. |
 | Labels | Ground truth: `prompts/real-imam/LABELS.md` + `prompts/real-imam/labels.json` (Khizar, 2026-09-16). **Not** `probes/hypothesized-locks.txt`. Never invent ayah labels. |
-| Suites | Flip to `ready` only via label-fill (one suite/session). Restoring wavs alone is not a `ready` flip. |
+| Suites | `imam-mid-surah-cold` is **`ready`** (Subayyal **4:129–130**). Other `prompts/real-imam/manifest.stub.json` rows stay **`stub`**. Restoring wavs is not a `ready` flip. |
 
 **After clone**
 
@@ -73,13 +71,13 @@ npm run liturgy:tts -- <id> --engine say
 
 Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that would PASS.
 
-**Mid-surah cold (Mac-green via #17 — label-fill may flip ready)**
+**Mid-surah cold (Mac-green via #17)**
 
-#17 cleared the false first-locks. Label-fill `01`/`02` may flip those suites to `ready` after Mac `test:replay -- <suite>` PASS.
+#17 cleared the false first-locks. Label-fill **01** now marks `imam-mid-surah-cold` **ready**. This session does **not** claim a new Mac acoustic score — Bot/Sim QA runs `npm run test:replay -- imam-mid-surah-cold` (must PASS, not `missing_fixture`) plus `all` **14/14**.
 
 | Clip | Want | Status | Next |
 |---|---|---|---|
-| Dr Subayyal | **4:129–130** | Mac-green (#17) | label-fill `01` → ready |
+| Dr Subayyal | **4:129–130** | Mac-green (#17); **ready** this PR | Bot/Sim `test:replay -- imam-mid-surah-cold` |
 | Qiyam Faisal | **36:16–18** | Mac-green (#17) | label-fill `02` → ready (sibling suite) |
 
 **Teammate lanes** (if someone recreates bots)
@@ -88,13 +86,13 @@ Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that woul
 - **Sim QA** — Mac acoustic replay / `test:replay`
 - **Chief Bot** — merges **only after Mac green**
 
-**Push / merge policy:** Mac `all` **14/14** before merge. Label-fill sessions may flip one suite to `ready` after Mac `test:replay -- <suite>` PASS. No matcher retune in fill PRs.
+**Push / merge policy:** Mac `all` **14/14** before merge. Flip only the matching label-fill suite. Never invent ayah labels. Do not retune matcher/follower in a fill PR.
 
 **Current open tracks**
 
-- **P0:** label-fill `01` — `prompts/real-imam/label-fill/01-mid-surah-cold-dr-subayyal.md`
-- Then label-fill `02` — `prompts/real-imam/label-fill/02-mid-surah-cold-qiyam.md`
-- Liturgy TTS after thana Mac-green — `prompts/salah-liturgy/tts-fill/03-ruku.md`
+- **Next:** label-fill `02` — `prompts/real-imam/label-fill/02-mid-surah-cold-qiyam.md` (sibling `imam-mid-surah-cold-qiyam`, Ya-Sin **36:16–18**)
+- Liturgy TTS after thana — `prompts/salah-liturgy/tts-fill/03-ruku.md`
+- Other real-imam suites stay **stub** (`imam-mid-ayah-pause` blocked; Qunut ≠ Quran)
 
 Read `AGENTS.md` before implementing.
 
@@ -127,7 +125,7 @@ The zip unpacks **into** `artifacts/recitation/imam/`, merging `LABELS.md`, `lab
 
 Asset is live. A 404 means the tag/asset disappeared or `ZIKRIST_IMAM_RELEASE_TAG` is wrong; the script still names https://github.com/Khizar699/zikrist-cursor/releases.
 
-Flip to `ready` only via label-fill (one suite/session). Restoring wavs is not a readiness flip. `npm run test:replay -- real-imam` still **skips** stub suites (`missing_fixture`, not PASS).
+`imam-mid-surah-cold` is `ready` (Subayyal 4:129–130). Other real-imam suites stay `stub`. Restoring wavs is not a readiness flip. `npm run test:replay -- real-imam` **skips** remaining stubs with `missing_fixture` (not PASS). The ready suite errors `missing_clip` until `npm run fixtures:imam` restores the WAV; Mac must then PASS (not skip).
 
 ## Liturgy TTS wavs (gitignored)
 
