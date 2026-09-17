@@ -24,6 +24,8 @@
     "liturgy:tts": "tsx scripts/gen-liturgy-tts.ts",
     "fixtures:recitation": "tsx scripts/download-recitation-fixtures.ts",
     "fixtures:imam": "tsx scripts/download-imam-fixtures.ts",
+    "test:coverage": "tsx scripts/coverage-sample.ts",
+    "findings:report": "tsx scripts/findings-report.ts",
     "benchmark": "tsx scripts/replay.ts"
   },
   "dependencies": {

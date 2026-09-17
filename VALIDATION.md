@@ -281,8 +281,9 @@ Founder process change (Prompt Smith docs only; no matcher/follower retune in th
 - **Product bar:** `prompts/real-imam/algo/PRODUCT-BAR.md`. Algo/follower sessions must Mac-measure the Tip clip for (1) first correct lock, (2) ordered `verse_match` advance while audio continues, (3) stall/`failureMode` if any, (4) clip class. Claiming done on 14/14 or units alone is forbidden when Tip named a follow/handoff or coverage concern.
 - **Who runs verify:** the **editing agent** on Mac runs the Agent verify loop in `PRODUCT-BAR.md` after recognition patches. Founder iOS preview is optional smoke only — not the gate.
 - **Engine split:** Tilawa locate/patches ≠ Zikrist `RecitationFollower` + ContinuationGate follow path.
-- **Queue:** `prompts/real-imam/algo/00-QUEUE.md` — **P0** is Hafiz Usama Fatiha→**27:15**. False-first-lock prompts 01–03 are deferred P2.
+- **Queue:** `prompts/real-imam/algo/00-QUEUE.md` — **co-P0** floor restore (jump + english-negative) **or** Hafiz Usama Fatiha→**27:15**. False-first-lock prompts 01–03 are deferred P2.
 - **Ratchet:** `prompts/real-imam/algo/RATCHET.md` — daily/version launches must lock each fix into units and/or ready expects so the next day cannot repeat the same miss.
+- **Coverage scoreboard:** `prompts/real-imam/algo/COVERAGE.md` + `npm run test:coverage` (Tier A cold starts, honest M/N). Findings ledger: `prompts/real-imam/findings/`. Not a merge floor until promoted. Training opt-in schema only: `prompts/real-imam/algo/TRAINING-DATA.md` (no silent recording).
 
 ### Mac baseline (same session, darwin/arm64, no follower code change)
 
@@ -296,6 +297,18 @@ Founder process change (Prompt Smith docs only; no matcher/follower retune in th
 | `imam-mid-surah-cold-qiyam` | PASS 36:16→18 after fixture sibling copy (also 19–20) |
 
 Do **not** claim floor 14/14 until jump + english-negative are re-green **and** locked so they stay green. Not a physical-device claim.
+
+## Mushaf coverage + findings ledger (harness, 2026-09-17)
+
+Docs + tools only (no matcher/follower retune):
+
+- Failure taxonomy / tiers: `prompts/real-imam/algo/COVERAGE.md`
+- Opt-in training schema (design only): `prompts/real-imam/algo/TRAINING-DATA.md`
+- Ledger: `prompts/real-imam/findings/ledger.jsonl` + `schema.json` (seeded with tip known-fails as `finding_id`s)
+- Commands: `npm run test:coverage -- --list` | `--dry-run` | full Mac replay; `npm run findings:report`
+- Unit lock: `tests/findings-coverage.test.ts`
+
+This workspace verified list/dry-run/report + units; full Tier A ONNX M/N is a Mac scoreboard, not claimed here. Floor remains **12/14** until jump + english-negative are locked green.
 
 ## Cursor inheritance (docs, same process PR)
 

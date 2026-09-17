@@ -110,12 +110,15 @@ npm run typecheck
 npm run test:replay -- all                    # floor: 14 EveryAyah-style suites; record honest N/14
 npm run test:replay -- imam-mid-surah-cold    # ready mosque; must PASS
 npm run test:replay -- imam-mid-surah-cold-qiyam
+npm run test:coverage -- --list               # Tier A sample (scoreboard)
+npm run test:coverage -- --dry-run            # fixture presence only
+npm run findings:report                       # open finding_ids for Tip
 # Tip / product-bar clip example (current handoff concern):
 npx tsx scripts/replay.ts \
   artifacts/recitation/imam/imam-multi-qari/qari-a/imam-multi-qari__hafiz-usama__001-027-015__raw.wav
 ```
 
-**Standards:** [PRODUCT-BAR.md](prompts/real-imam/algo/PRODUCT-BAR.md) (verify loop + dual bar) · [RATCHET.md](prompts/real-imam/algo/RATCHET.md) (every fix adds a permanent lock; corpus grows) · tip known-fails in [HANDOFF.md](HANDOFF.md). `all` green ≠ prayer-follow or all-surah coverage. Linux ONNX is not the Mac floor gate.
+**Standards:** [PRODUCT-BAR.md](prompts/real-imam/algo/PRODUCT-BAR.md) · [RATCHET.md](prompts/real-imam/algo/RATCHET.md) · [COVERAGE.md](prompts/real-imam/algo/COVERAGE.md) · findings [`prompts/real-imam/findings/`](prompts/real-imam/findings/) · tip known-fails in [HANDOFF.md](HANDOFF.md). `all` green ≠ prayer-follow or all-surah coverage. Linux ONNX is not the Mac floor gate.
 
 To add a liturgy phrase later: append a row in `assets/content/salah-liturgy.json` with the eight required fields; set `arabic_recognition_normalized` via `normalizeLiturgyArabic`; set `sha256` to SHA-256 of `id`, `category`, `arabic_uthmani`, `arabic_recognition_normalized`, `english`, `source_note`, and `license_status` joined by newlines; then run `npm run liturgy:verify`. Do not put contested qunoot in the live list. Liturgy replay: generate takbeer/thana WAV on Mac with `npm run liturgy:tts -- liturgy-takbeer` or `npm run liturgy:tts -- liturgy-thana --engine say` (founder Mac: edge-tts 403; `say` Majed `ar_001`; ffmpeg on PATH e.g. `/tmp/ffmpeg-static`; same dest as clip_path), then `npm run test:replay -- liturgy-takbeer` / `liturgy-thana` (ready path; not skip). Other liturgy suites still skip until filled; see `prompts/salah-liturgy/04-replay-suites.md`.
 

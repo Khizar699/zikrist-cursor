@@ -36,14 +36,14 @@ Skip overnight queues unless picking next work. Dictation above is what to **wri
 
 ## Tip state (update every PR)
 
-- **This PR:** Local Mac Agent — [SETUP.md](SETUP.md) ordered first-clone commands; `npm run setup` (+ optional `--fixtures`); `run-native` fail-fast if ONNX missing; README/HANDOFF point at SETUP. Same branch: iOS mic/prebuild unblock (`NSMicrophoneUsageDescription`, tolerant `quoteBuildPhases`). **No matcher/follower code.** Recognition P0 unchanged.
-- **Prior tip:** Prompt Smith + ratchet / product-bar docs; algo P0 = `04-hafiz-usama-…` handoff or restore floor. label-fill **02** Qiyam / **01** Subayyal / #17 mid-surah cold.
-- **Gate (floor) — last Mac measure (unchanged this session):** `npm run test:replay -- all` = **12/14 FAIL**. Failures: `jump` (no Ikhlas); `english-negative` (20:1). Soft: Nas→**2:1**; Quraysh→**2:1**. Units were **194/194**.
+- **This PR:** Local Mac Agent — **recognition consistency system (docs + harness skeleton, no matcher retune):** [prompts/real-imam/algo/COVERAGE.md](prompts/real-imam/algo/COVERAGE.md) failure taxonomy + tiers; [TRAINING-DATA.md](prompts/real-imam/algo/TRAINING-DATA.md) opt-in schema; findings ledger [`prompts/real-imam/findings/`](prompts/real-imam/findings/) (`ledger.jsonl` + schema); `npm run test:coverage` / `npm run findings:report`; unit lock `tests/findings-coverage.test.ts`. **P0 unchanged:** restore floor (**jump** + **english-negative**, findings `floor-jump-ikhlas` / `floor-english-negative-20-1`) **or** product bar `product-hafiz-usama-27-15` — Tip names one. Tier A M/N is a scoreboard, not a merge floor.
+- **Prior tip:** SETUP.md + `npm run setup`; iOS mic/prebuild unblock; product-bar/ratchet docs.
+- **Gate (floor) — last Mac measure (unchanged this session):** `npm run test:replay -- all` = **12/14 FAIL**. Failures: `jump` (no Ikhlas); `english-negative` (20:1). Soft: Nas→**2:1**; Quraysh→**2:1**. Units **198/198** this PR (includes findings-coverage); typecheck pass.
 - **Product bar baseline (unchanged):** Hafiz Usama — Fatiha then **2:1** (want **27:15**). Subayyal / Qiyam ready PASS after fixtures.
-- **Ratchet:** floor/handoff known-fails unchanged (no recognition fix this PR).
-- **Restore:** `npm ci` → `npm run setup` (or `setup -- --fixtures`) → `npm run ios`. After plugin/app.json native changes: `npx expo prebuild --platform ios --clean` then `npm run ios`. Liturgy: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say`.
-- **Known fails:** floor **jump** + **english-negative**. Handoff: hafiz-usama →**27:15** (got **2:1**). Still blocked: `imam-mid-ayah-pause`; Qunut@s9P 4:56. Deferred P2: masjid **25:69≠2:1**; ahzab **33:62≠33:60**; baqarah→imran **≠57:28**.
-- **Open tracks:** **P0** restore floor **14/14** (jump + english-negative) **or** `04-hafiz-usama-…` handoff — each with same-PR test lock. Liturgy TTS `tts-fill/03-ruku.md`.
+- **Ratchet:** floor/handoff known-fails unchanged (no recognition algorithm fix this PR). Coverage harness + ledger are the new permanent locks for process.
+- **Restore:** `npm ci` → `npm run setup` (or `setup -- --fixtures`) → `npm run ios`. Coverage: `npm run test:coverage -- --list` / `--dry-run` / full Mac replay. After plugin/app.json native changes: `npx expo prebuild --platform ios --clean` then `npm run ios`.
+- **Known fails:** floor **jump** (`floor-jump-ikhlas`) + **english-negative** (`floor-english-negative-20-1`). Handoff: hafiz-usama →**27:15** (`product-hafiz-usama-27-15`, got **2:1**). Soft deferred: `soft-nas-to-2-1`, `soft-quraysh-to-2-1`. Still blocked: `imam-mid-ayah-pause`; Qunut@s9P 4:56. Deferred P2: masjid **25:69≠2:1**; ahzab **33:62≠33:60**; baqarah→imran **≠57:28**.
+- **Open tracks:** **P0** tip picks **one** finding_id — prefer floor restore (`floor-jump-ikhlas` / `floor-english-negative-20-1`) **or** `product-hafiz-usama-27-15` / `04-hafiz-usama-…` — each with same-PR test lock. Then `npm run findings:report`. Liturgy TTS `tts-fill/03-ruku.md`.
 
 ## For assistants / Grok bots — read first
 
@@ -54,7 +54,7 @@ You have no prior thread. Do not invent product history, ayah numbers, or Mac re
 | Repo | https://github.com/Khizar699/zikrist-cursor |
 | Product | **Zikrist** — offline Expo ayah locator + salah liturgy (Android/iPhone, including mid-range). Algorithm and recognition correctness beat visual design this MVP. **No Figma** for the MVP. |
 | Cursor always-on | `.cursor/rules/zikrist-continuity.mdc` + `.cursor/rules/zikrist-recognition-ratchet.mdc` |
-| Premade test + ratchet | `prompts/real-imam/algo/PRODUCT-BAR.md`, `RATCHET.md`, pack index `algo/README.md` — Agent runs Mac verify; every fix locks a permanent test; corpus grows |
+| Premade test + ratchet | `prompts/real-imam/algo/PRODUCT-BAR.md`, `RATCHET.md`, `COVERAGE.md`, findings `prompts/real-imam/findings/`, pack index `algo/README.md` — Agent runs Mac verify; every fix locks a permanent test; corpus grows; Tier A coverage is honest M/N scoreboard |
 | Regression floor | `npm run test:replay -- all` must stay **14/14** Quran when claiming green (honest N/14 if red). Linux ONNX is not that gate. |
 | Product bar | Algo/follower sessions: Tip clip must show **correct lock + ordered advance** while audio continues. 14/14 alone ≠ done. Famous-short EveryAyah green ≠ all-surah / prayer-follow ready. |
 | Labels | Ground truth: `prompts/real-imam/LABELS.md` + `prompts/real-imam/labels.json` (Khizar, 2026-09-16). **Not** `probes/hypothesized-locks.txt`. Never invent ayah labels. |

@@ -6,7 +6,8 @@ Mosque-clip harness, labels, and recognition algo sessions.
 |---|---|
 | Root tip | [`HANDOFF.md`](../../HANDOFF.md) |
 | Cursor rules | `.cursor/rules/zikrist-continuity.mdc` + `zikrist-recognition-ratchet.mdc` |
-| Algo standards | [`algo/README.md`](./algo/README.md) → PRODUCT-BAR, RATCHET, queue |
+| Algo standards | [`algo/README.md`](./algo/README.md) → PRODUCT-BAR, RATCHET, COVERAGE, TRAINING-DATA, queue |
+| Findings ledger | [`findings/`](./findings/) — `finding_id` rows for Tip / multi-agent triage |
 | Labels | [`LABELS.md`](./LABELS.md), [`labels.json`](./labels.json) |
 | Manifest | [`manifest.stub.json`](./manifest.stub.json), [`MANIFEST-NOTE.md`](./MANIFEST-NOTE.md) |
 | Fixtures | [`FIXTURES.md`](./FIXTURES.md) — `npm run fixtures:imam` |

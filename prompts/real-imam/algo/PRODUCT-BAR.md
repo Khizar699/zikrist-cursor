@@ -17,6 +17,8 @@ Founder live iOS preview is optional smoke only. It is **not** a substitute for 
 
 Famous short-surah EveryAyah suites (Fatiha / Ikhlas / Nas / …) are a **don't-regress** corpus. They are **not** evidence that live listening follows verses or that all surahs cold-start equally.
 
+Stratified mushaf coverage (Tier A sample, honest M/N) is documented in [COVERAGE.md](./COVERAGE.md) (`npm run test:coverage`). Coverage is a **scoreboard**, not a substitute for floor 14/14 or the Tip product-bar clip.
+
 ## Agent verify loop (run after every recognition patch)
 
 Prereqs once per machine: `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` (ffmpeg on `PATH`).

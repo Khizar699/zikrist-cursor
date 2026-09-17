@@ -102,6 +102,8 @@ Only re-run `npm run setup` after a fresh clone or if assets were deleted.
 npm test
 npm run typecheck
 npm run test:replay -- all
+npm run test:coverage -- --list
+npm run findings:report
 ```
 
-Continuity for agents: [HANDOFF.md](HANDOFF.md) Tip state → [AGENTS.md](AGENTS.md). Product bar / ratchet: [prompts/real-imam/algo/PRODUCT-BAR.md](prompts/real-imam/algo/PRODUCT-BAR.md).
+Continuity for agents: [HANDOFF.md](HANDOFF.md) Tip state → [AGENTS.md](AGENTS.md). Product bar / ratchet / coverage: [prompts/real-imam/algo/PRODUCT-BAR.md](prompts/real-imam/algo/PRODUCT-BAR.md), [COVERAGE.md](prompts/real-imam/algo/COVERAGE.md), [findings/](prompts/real-imam/findings/).

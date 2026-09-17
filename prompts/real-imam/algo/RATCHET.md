@@ -49,6 +49,10 @@ If step 5 is skipped, the day did **not** ratchet — tomorrow will rediscover t
 
 Today’s regression floor is the 14 EveryAyah-style suites in `scripts/replay-suites.ts` (`test:replay -- all`).
 
+**Floor restore before floor expansion:** while the tip reports red (e.g. 12/14), P0 includes restoring **jump** + **english-negative** with same-PR locks. Do not promote Tier A coverage or ready imam suites into the default gate until the floor is honestly 14/14 (or tip records a deliberate, locked expect change).
+
+Mushaf consistency scoreboard (not the merge floor): [COVERAGE.md](./COVERAGE.md) + `npm run test:coverage` (honest M/N) + findings ledger [`../findings/`](../findings/).
+
 Ratchet intent:
 
 1. Keep those **green** (or restore them first — a red floor blocks “daily perfect” claims).

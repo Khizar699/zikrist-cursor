@@ -15,6 +15,8 @@ Applies to **anyone** opening this repo in Cursor (Agent / Composer / cloud), in
 | `AGENTS.md` | Product + engineering law |
 | `prompts/real-imam/algo/PRODUCT-BAR.md` | Dual bar + **Agent verify loop** (you run Mac replay) |
 | `prompts/real-imam/algo/RATCHET.md` | Fix → measure → **permanent lock**; corpus only grows |
+| `prompts/real-imam/algo/COVERAGE.md` | Failure taxonomy + Tier A/B/C mushaf scoreboard (honest M/N) |
+| `prompts/real-imam/findings/` | Multi-agent findings ledger (`finding_id` on Tip) |
 | `prompts/real-imam/algo/00-QUEUE.md` | Next recognition Tip (P0 first) |
 | `prompts/real-imam/LABELS.md` + `labels.json` | Founder ground truth only |
 
@@ -28,6 +30,8 @@ Applies to **anyone** opening this repo in Cursor (Agent / Composer / cloud), in
 `npm run test:replay -- imam-mid-surah-cold` and `imam-mid-surah-cold-qiyam` must PASS (not skip). More suites join when label-fill flips `ready`.
 
 **Product bar:** Tip-named wav via `npx tsx scripts/replay.ts <path>` — prove lock + **ordered advance**, not phase=`following` alone.
+
+**Coverage scoreboard (not floor):** `npm run test:coverage` — Tier A cold starts, honest M/N; `npm run findings:report`. See `COVERAGE.md`.
 
 Restore audio: `npm run fixtures:recitation` then `npm run fixtures:imam`.
 
