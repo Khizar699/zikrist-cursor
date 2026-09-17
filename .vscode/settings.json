@@ -1,0 +1,8 @@
+{
+  "terminal.integrated.env.osx": {
+    "GH_CONFIG_DIR": "${env:HOME}/.config/gh-khizar699"
+  },
+  "terminal.integrated.env.linux": {
+    "GH_CONFIG_DIR": "${env:HOME}/.config/gh-khizar699"
+  }
+}
