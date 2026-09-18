@@ -134,11 +134,15 @@ test('parseReplayCli extracts include-pending and list flags', () => {
     list: true,
     checkFixtures: false,
     includePending: false,
+    engine: 'tilawa',
     wavArgs: [],
     namedArgs: ['real-imam'],
   });
   assert.equal(parseReplayCli(['all', '--include-pending']).includePending, true);
   assert.deepEqual(parseReplayCli(['--list', 'liturgy']).namedArgs, ['liturgy']);
+  assert.equal(parseReplayCli(['--engine', 'tilawa', 'nas']).engine, 'tilawa');
+  assert.deepEqual(parseReplayCli(['--engine', 'tilawa', 'nas']).namedArgs, ['nas']);
+  assert.equal(parseReplayCli(['--engine=muno459-streaming', 'nas']).engine, 'muno459-streaming');
 });
 
 test('salah liturgy selection is pending-only and stays out of default all', () => {

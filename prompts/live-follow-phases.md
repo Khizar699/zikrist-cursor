@@ -10,7 +10,7 @@ History stays honest: only accepted `verse_match` is an occurrence. Sequential f
 
 Inspected: founder report (locate improved; follow late then skips), `Zikrist-research.md`, `src/core/{follower,audio-queue,sequential,display-hold,continuation-gate,timeline}.ts`, `src/services/listening.ts`, `src/ui/SyncedVersePanes.tsx`, Tilavet / cache-aware FastConformer / karaoke forced-alignment notes.
 
-Phase A landed. **This session implements Phase B** (expected tape). Do not swap the shipping ONNX model. Do not retune Hafiz Usama 27:15 or english-negative in this prompt.
+Phase A landed. Phase B landed. **This session implements Phase C** (model bakeoff). Do not swap the shipping ONNX model. Do not retune Hafiz Usama 27:15 or english-negative in this prompt.
 
 ## Phases
 
@@ -22,17 +22,17 @@ Phase A landed. **This session implements Phase B** (expected tape). Do not swap
 4. Arabic word highlight from `word_progress`. Translation is verse-level (not 1:1).
 5. Timeline records same-surah skipped hops (committed N+2 while N+1 never occurred).
 
-### Phase B (this session) — expected tape
+### Phase B (landed) — expected tape
 
 Score a token stream against current remainder + mushaf-next (+1), not a 1.2 s blob vs the whole mushaf. Forced-align expected phonemes to the CTC decode when that is cheaper than another fuzzy locate. Generic class tests (shared tail, short next, joined ayahs), not verse-numbered patches. Follow hops transcribe with `locate=false`; leftover distinctive tokens may still token-search.
 
-### Phase C (only if A+B still miss the tracking clock on a phone)
+### Phase C (landed) — bakeoff, default stays Tilawa
 
-Bakeoff behind `TranscribeFn`. Default stays Tilawa FastConformer until a streaming encoder wins **follow latency + skip rate** on the same clips, with a license that allows a possibly commercial app. See `prompts/model-bakeoff.md`.
+Bakeoff behind `TranscribeFn`. Default stays Tilawa FastConformer until a streaming encoder wins **follow latency + skip rate** on the same clips, with a license that allows a possibly commercial app. See `prompts/model-bakeoff.md`. Muno459 streaming is NPL-1.1 and is not evaluated or shipped. `npm run test:bakeoff` measures Tilawa control clocks.
 
 ## Files
 
-`src/core/{expected-tape,follower,audio-queue,sequential,timeline,word-highlight}.ts`, `src/services/listening.ts`, `src/ui/{SyncedVersePanes,theme}.tsx`, tests listed below, `HANDOFF.md`, `VALIDATION.md`, `prompts/real-imam/algo/00-QUEUE.md`.
+`src/core/{expected-tape,follower,audio-queue,sequential,timeline,word-highlight,bakeoff}.ts`, `src/services/{listening,model}.ts`, `src/ui/{SyncedVersePanes,theme}.tsx`, `scripts/{replay,bakeoff}.ts`, tests listed below, `HANDOFF.md`, `VALIDATION.md`, `prompts/real-imam/algo/00-QUEUE.md`.
 
 ## Architecture / security
 
@@ -52,6 +52,11 @@ Phase B:
 - Expected phoneme score is remainder+next vs the CTC decode, not a distant host ayah.
 - Typecheck, lint, `npm test`. Mac replay honest N/14. Do not claim 14/14 while english-negative is red.
 
+Phase C:
+- `--engine` other than Tilawa is blocked (NPL / missing Quran-token head / cloud / Apple-only).
+- Bakeoff JSON reports the five clocks + skip rate; Tilawa remains `src/services/model.ts`.
+- Typecheck, lint, `npm test`, `npm run test:bakeoff`. Honest N/14.
+
 ## Checks and device tests
 
-`npm test`, `npm run typecheck`, `npm run lint`. When fixtures exist: `npm run test:replay -- nas fatiha ikhlas jump all`. Manual: Nas / Fatiha — highlight should move; the next ayah should focus near the end of the current one; a late confirm must not blank the ayah just shown.
+`npm test`, `npm run typecheck`, `npm run lint`. When fixtures exist: `npm run test:replay -- nas fatiha ikhlas jump all` and `npm run test:bakeoff`. Manual: Nas / Fatiha — highlight should move; the next ayah should focus near the end of the current one; a late confirm must not blank the ayah just shown.

@@ -26,6 +26,7 @@
     "fixtures:imam": "tsx scripts/download-imam-fixtures.ts",
     "test:coverage": "tsx scripts/coverage-sample.ts",
     "findings:report": "tsx scripts/findings-report.ts",
+    "test:bakeoff": "tsx scripts/bakeoff.ts",
     "benchmark": "tsx scripts/replay.ts"
   },
   "dependencies": {

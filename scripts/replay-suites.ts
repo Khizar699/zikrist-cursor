@@ -438,16 +438,33 @@ export function parseReplayCli(args: string[]): {
   list: boolean;
   checkFixtures: boolean;
   includePending: boolean;
+  engine: string;
   wavArgs: string[];
   namedArgs: string[];
 } {
+  let engine = 'tilawa';
+  const rest: string[] = [];
+  for (let index = 0; index < args.length; index++) {
+    const arg = args[index]!;
+    if (arg === '--engine') {
+      engine = args[index + 1] ?? '';
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith('--engine=')) {
+      engine = arg.slice('--engine='.length);
+      continue;
+    }
+    rest.push(arg);
+  }
   return {
-    help: args.includes('--help') || args.includes('-h'),
-    list: args.includes('--list'),
-    checkFixtures: args.includes('--check-fixtures'),
-    includePending: args.includes('--include-pending'),
-    wavArgs: args.filter((arg) => arg.endsWith('.wav') || arg.endsWith('.WAV')),
-    namedArgs: args.filter((arg) => !arg.startsWith('--') && !arg.endsWith('.wav') && !arg.endsWith('.WAV')),
+    help: rest.includes('--help') || rest.includes('-h'),
+    list: rest.includes('--list'),
+    checkFixtures: rest.includes('--check-fixtures'),
+    includePending: rest.includes('--include-pending'),
+    engine: engine.trim() || 'tilawa',
+    wavArgs: rest.filter((arg) => arg.endsWith('.wav') || arg.endsWith('.WAV')),
+    namedArgs: rest.filter((arg) => !arg.startsWith('--') && !arg.endsWith('.wav') && !arg.endsWith('.WAV')),
   };
 }
 
@@ -785,6 +802,8 @@ export function suiteHelpText(): string {
     '  npm run test:replay -- --check-fixtures',
     '  npm run test:replay -- --list',
     '  npm run test:replay -- artifacts/recitation/112001.wav ...',
+    '  npm run test:replay -- --engine tilawa',
+    '  npm run test:bakeoff',
     '  npm run liturgy:tts -- liturgy-takbeer',
     '  npm run liturgy:tts -- liturgy-thana --engine say',
     '',
