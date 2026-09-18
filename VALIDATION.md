@@ -388,7 +388,32 @@ After lock, follow was still a 1.2 s blob that could Tilawa-locate the mushaf on
 | `imam-mid-surah-cold` | PASS 4:129→130 |
 | `imam-mid-surah-cold-qiyam` | PASS 36:16→18 |
 
-Hafiz Usama **27:15** was not re-measured. Not a physical-device claim. Reload Metro before live mic.
+Hafiz Usama **27:15** was not re-measured in Phase B. Not a physical-device claim. Reload Metro before live mic.
+
+## Live follow Phase C (model bakeoff, 2026-09-18)
+
+Phase C measures follow clocks behind `TranscribeFn` without swapping the shipping model (`prompts/model-bakeoff.md`). `npm run test:bakeoff` + replay `--engine`. Default remains Tilawa `fastconformer_full_mixed.onnx`. Muno459 `fastconformer-quran-streaming` is Quran-Lab NPL-1.1 (no profit); `--engine muno459-streaming` exits blocked. No streaming Quran-token ONNX was downloaded or committed.
+
+Tilawa control (headless Mac ONNX CPU, not phone):
+
+| Suite | First lock | Advance | tracking p50/p95 ms | skip rate |
+|---|---|---|---|---|
+| nas | 114:1@4s | 114:1–6 | 48 / 158 | 0 |
+| fatiha | 1:2@9s | 1:2–7 | 47 / 52 | 0 |
+| ikhlas | 112:1@2s | 112:1–4 | 46 / 47 | 0 |
+| jump | 108:1@5s | 108:1–3, 112:1@16.75–4 | 47 / 50 | 0 |
+| imam-mid-surah-cold | 4:129@11s | 4:129–130 | 46 / 49 | 0 |
+| imam-mid-surah-cold-qiyam | 36:16@4s | 36:16–18 | 46 / 52 | 0 |
+| Hafiz Usama | 1:2@2.75s | 1:2–7; no 27:15 | 46 / 49 | 0 |
+
+Cold ready ~1374 ms. Display clock is 0 in this harness (`ContinuationGate` is sync). Floor remains **13/14** (`english-negative:verse_lock_20:1`). Units: `tests/bakeoff.test.ts` (245/245). Decision: stay on Tilawa.
+
+| Check | Result |
+|---|---|
+| `npm test` | **245/245** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **13/14 FAIL** — `english-negative:verse_lock_20:1` |
+| `npm run test:bakeoff` | Tilawa control as table; Hafiz Usama known stall; default not swapped |
 
 ## Cursor inheritance (docs, same process PR)
 

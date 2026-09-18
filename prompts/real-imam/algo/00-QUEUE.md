@@ -4,7 +4,7 @@ Label-fill **01** (`6df8ef3` / #18) + **02** (`c228533` / #19) are on main. Pack
 
 Bot launches **one Cursor session at a time**, in order — **no mega-prompt**.
 
-**Next = current Tip** floor restore **english-negative** (`floor-english-negative-20-1`) **or** Hafiz Usama **27:15**. Live follow Phase A+B landed (`prompts/live-follow-phases.md`). Jump (`floor-jump-ikhlas`) and live shared-tail (`live-follow-shared-tail`) are **closed**. Do not swap Tilawa until `prompts/model-bakeoff.md`.
+**Next = current Tip** floor restore **english-negative** (`floor-english-negative-20-1`) **or** Hafiz Usama **27:15**. Live follow Phase A+B+C landed (`prompts/live-follow-phases.md`, `prompts/model-bakeoff.md`). Jump (`floor-jump-ikhlas`) and live shared-tail (`live-follow-shared-tail`) are **closed**. Default stays Tilawa; a streaming swap needs a commercial Quran-token head that wins `npm run test:bakeoff`.
 
 **Do not** expand the default replay floor or treat Tier A coverage M/N as merge-green while floor is red.
 
@@ -37,7 +37,7 @@ Shared notes: `_SHARED.md`. Product bar: `PRODUCT-BAR.md`. Ground truth: `prompt
 
 | # | Prompt | Status |
 |---|---|---|
-| live-follow | Phase A+B smoothness / expected tape | **closed this session** — splice 0.25 s, backlog keeps lock, sequential focus, word highlight; follow hops `locate=false` and score remainder+next. Phase C bakeoff only if a phone still misses the tracking clock (`prompts/model-bakeoff.md`) |
+| live-follow | Phase A+B smoothness / expected tape + Phase C bakeoff | **closed this session** — splice 0.25 s, backlog keeps lock, sequential focus, word highlight; follow hops `locate=false` and score remainder+next. Phase C: Tilawa control clocks + skip rate on the same clips; Muno459 NPL-1.1 blocked; default not swapped (`npm run test:bakeoff`) |
 | floor | english-negative | **co-P0** — finding `floor-english-negative-20-1`. Jump (`floor-jump-ikhlas`) **closed**. Live shared-tail stall (`live-follow-shared-tail`) **closed** Mac 2026-09-18: nas 114:1–6, fatiha 1:2–7, ikhlas 112:1–4 |
 | 04 | hafiz-usama →27:15 (follow/handoff) | **co-P0** — finding `product-hafiz-usama-27-15`. Mac 2026-09-18: **2:1** false lock cleared; stall after **1:7** (no **27:15**; Naml CTC is `الم`) |
 | 01 | masjid-e-nabi 25:69≠2:1 | deferred P2 — after follow P0 |

@@ -36,14 +36,14 @@ Skip overnight queues unless picking next work. Dictation above is what to **wri
 
 ## Tip state (update every PR)
 
-- **This PR:** Local Mac Agent — **live follow Phase B** (`prompts/live-follow-phases.md`). After lock, follow transcribes only (`locate=false`) and scores the CTC token stream against current remainder + mushaf-next. Shared-tail / short-next / joined-ayah classes are unit-locked; a stem of the current body is not enough to hear next. Same-surah advance still uses leftover evidence, not a blob-vs-mushaf locate. Default model is still Tilawa. Phase C bakeoff is `prompts/model-bakeoff.md` only if a phone still misses the tracking clock.
-- **Prior tip:** live follow Phase A — splice 0.25 s, backlog keeps lock, sequential focus, word highlight, timeline skip.
-- **Gate (floor) — this Mac session:** `npm test` **238/238**; typecheck pass. `npm run test:replay -- all` = **13/14 FAIL**. Remaining: `english-negative:verse_lock_20:1`. `fatiha` 1:2–7; `nas` 114:1–6; `ikhlas` 112:1–4; `jump` 108:1–3 then 112:1@16.75–112:4. Do not claim 14/14.
-- **Product bar:** Famous-short ordered advance: Fatiha 1:2@9s then 1:3–7; Nas 114:1–6; Ikhlas 112:1–4; jump 108:1–3 then 112:1@16.75–4. Ready `imam-mid-surah-cold` PASS (4:129–130); `imam-mid-surah-cold-qiyam` PASS (36:16–18). Hafiz Usama →27:15 was **not** re-measured. Clip class: `famous-short` follow. Not a physical-device claim.
-- **Ratchet:** units lock expected-tape classes (shared tail, short next, joined remainder+next, formula opening, CTC cousin الله≈اله, current-body stem is not next) plus follow hops `locate=false` with no `bestJoint03Match` while the tape explains. Finding `live-follow-late-skip` **closed**. Finding `live-follow-expected-tape` **closed**.
+- **This PR:** Local Mac Agent — **live follow Phase C** (`prompts/model-bakeoff.md`). Bakeoff harness swaps only `TranscribeFn` (`npm run test:bakeoff`). Default stays Tilawa. Muno459 streaming is NPL-1.1 (no profit) and is blocked from `--engine`. No Quran-token streaming ONNX ran. Tilawa control: Nas/Fatiha/Ikhlas/jump + ready imam skip rate 0; follow tracking p95 ~47–158 ms desktop ONNX; Hafiz Usama still stalls after **1:7** (no **27:15**). Not a phone claim.
+- **Prior tip:** live follow Phase B — expected tape / CTC align; follow hops `locate=false`.
+- **Gate (floor) — this Mac session:** `npm test` **245/245**; typecheck pass. `npm run test:replay -- all` = **13/14 FAIL**. Remaining: `english-negative:verse_lock_20:1`. `fatiha` 1:2–7; `nas` 114:1–6; `ikhlas` 112:1–4; `jump` 108:1–3 then 112:1@16.75–112:4. Do not claim 14/14.
+- **Product bar:** Famous-short ordered advance: Fatiha 1:2@9s then 1:3–7; Nas 114:1–6; Ikhlas 112:1–4; jump 108:1–3 then 112:1@16.75–4. Ready `imam-mid-surah-cold` PASS (4:129–130); `imam-mid-surah-cold-qiyam` PASS (36:16–18). Hafiz Usama 1:2@2.75s then 1:3–7; stall `stall_missing_27:15_after_6_matches`. Clip class: bakeoff `famous-short` + `fatiha-to-body`. Not a physical-device claim.
+- **Ratchet:** units lock Tilawa as the only default-eligible runnable engine, NPL-1.1 Muno459 cannot become `TranscribeFn`, five clocks + skip-rate math, streaming wins follow only if tracking p95 drops and skip rate does not rise, live `model.ts` still pins `fastconformer_full_mixed.onnx`.
 - **Restore:** `npm ci` → `npm run setup` (or `setup -- --fixtures`) → `npm run ios`. Reload Metro after this follow change.
-- **Known fails:** floor **english-negative** (`floor-english-negative-20-1`). Handoff: hafiz-usama →**27:15** (`product-hafiz-usama-27-15`, stall after **1:7**, **2:1** cleared). Soft deferred: `soft-nas-to-2-1`, `soft-quraysh-to-2-1`. Still blocked: `imam-mid-ayah-pause`; Qunut@s9P 4:56. Deferred P2: masjid **25:69≠2:1**; ahzab **33:62≠33:60**; baqarah→imran **≠57:28**. Jump and live shared-tail stall remain **cleared**.
-- **Open tracks:** **P0** floor restore (`floor-english-negative-20-1`) **or** `product-hafiz-usama-27-15`. Phase C bakeoff only if a phone still misses follow latency. Then `npm run findings:report`. Do not swap Tilawa until `prompts/model-bakeoff.md`. Liturgy TTS `tts-fill/03-ruku.md`.
+- **Known fails:** floor **english-negative** (`floor-english-negative-20-1`). Handoff: hafiz-usama →**27:15** (`product-hafiz-usama-27-15`, stall after **1:7**, **2:1** cleared). Soft deferred: `soft-nas-to-2-1`, `soft-quraysh-to-2-1`. Still blocked: `imam-mid-ayah-pause`; Qunut@s9P 4:56. Deferred P2: masjid **25:69≠2:1**; ahzab **33:62≠33:60**; baqarah→imran **≠57:28**. Jump and live shared-tail stall remain **cleared**. Phase C streaming swap **not taken**.
+- **Open tracks:** **P0** floor restore (`floor-english-negative-20-1`) **or** `product-hafiz-usama-27-15`. Live follow Phase A+B+C landed; do not swap Tilawa until a commercially licensed streaming Quran-token head wins `npm run test:bakeoff`. Then `npm run findings:report`. Liturgy TTS `tts-fill/03-ruku.md`.
 
 
 ## For assistants / Grok bots — read first
@@ -108,7 +108,7 @@ Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that woul
 
 **Current open tracks**
 
-- **P0:** floor restore english-negative (`floor-english-negative-20-1`) **or** `prompts/real-imam/algo/04-hafiz-usama-1-2-vs-27-15.md` — each fix must lock a permanent test (`RATCHET.md`). Live follow Phase A+B landed. Do not swap Tilawa until `prompts/model-bakeoff.md`.
+- **P0:** floor restore english-negative (`floor-english-negative-20-1`) **or** `prompts/real-imam/algo/04-hafiz-usama-1-2-vs-27-15.md` — each fix must lock a permanent test (`RATCHET.md`). Live follow Phase A+B+C landed. Default stays Tilawa (`npm run test:bakeoff`).
 - Liturgy TTS after thana Mac-green — `prompts/salah-liturgy/tts-fill/03-ruku.md`
 
 
