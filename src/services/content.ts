@@ -6,6 +6,7 @@ import canonical from '../../assets/content/quran-display.json';
 import { packsToEvict } from '../core/pack-policy';
 import { splitOpeningBasmala } from '../core/basmala';
 import { neighborhoodSurahs } from '../core/sequential';
+import { handoffCandidateSurahs } from '../core/salah-prior';
 import { passageWindow } from '../core/passage';
 import { refKey, type DisplayVerse, type Language, type Translation, type VerseRef } from '../core/types';
 import { storage } from './storage';
@@ -108,8 +109,7 @@ export class Content {
     this.cache.set(refKey(ref), verse);
     return verse;
   }
-  /** Load this surah and the following surah. The passage lists read this
-   * cache; sequential scrolling must not query SQLite again. */
+  /** Load the recited surah in full. Mushaf-next is not dumped here. */
   async preloadNeighborhood(ref: VerseRef): Promise<void> {
     const surahs = neighborhoodSurahs(ref.surah);
     if (surahs.length === 0) return;
@@ -122,6 +122,23 @@ export class Content {
     });
     this.preload = { key, promise };
     return promise;
+  }
+
+  /** Opening ayahs of the handoff pool so a body surah can display without
+   * keeping all of Al-Baqarah in RAM during Al-Fatihah. Merges into cache. */
+  async preloadHandoffOpenings(ref: VerseRef): Promise<void> {
+    if (!this.db) return;
+    const mushafNext = ref.surah < 114 ? ref.surah + 1 : null;
+    const surahs = handoffCandidateSurahs(ref.surah, mushafNext);
+    if (surahs.length === 0) return;
+    const rows = await this.db.getAllAsync<TranslationRow>(
+      `SELECT sura, aya, translation, footnotes FROM translations WHERE sura IN (${surahs.map(() => '?').join(', ')}) AND aya <= 2`,
+      ...surahs,
+    );
+    for (const row of rows) {
+      const verseRef = { surah: row.sura, ayah: row.aya };
+      this.cache.set(refKey(verseRef), this.buildVerse(verseRef, row));
+    }
   }
 
   private async loadSurahs(surahs: number[], generation: number): Promise<void> {

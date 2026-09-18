@@ -21,6 +21,7 @@ Do **not** trust `probes/hypothesized-locks.txt`.
 - **#17** mid-surah cleared; label-fill 01/02 context as in `00-QUEUE.md`.
 - False-first-lock prompts **01–03** are **deferred** — this session is **only** Fatiha→body-surah handoff for Hafiz Usama.
 - Prefer handoff / follow evidence (Fatiha complete → unique Naml tokens) over multi-qari mega-refactor or acquire-only patches.
+- **Mac 2026-09-18:** first lock **1:2@2.75**, ordered **1:2–1:7**, **2:1** no longer commits (reacquire CTC `الم` / `الم الي`). **27:15** still missing — Tilawa never emits داود/سليمان on this clip. Not product-green.
 
 ## HANDOFF.md (required every PR)
 

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   TRACKING_COMPLETION_COVERAGE, VISUAL_ADVANCE_COVERAGE,
+  approachingSurahEnd, ayahsRemainingInSurah,
   isSequentialSuccessor, neighborhoodSurahs, nextSequentialRef, previousSequentialRef, shouldRevealSequentialNext,
 } from '../src/core/sequential';
 import type { VerseRef } from '../src/core/types';
@@ -25,7 +26,11 @@ test('An-Nas has no following surah, and Al-Fatihah has no previous surah', () =
   assert.deepEqual(previousSequentialRef({ surah: 3, ayah: 1 }, hasVerse), { surah: 2, ayah: 286 });
   assert.deepEqual(previousSequentialRef({ surah: 112, ayah: 2 }, hasVerse), { surah: 112, ayah: 1 });
   assert.deepEqual(neighborhoodSurahs(114), [114]);
-  assert.deepEqual(neighborhoodSurahs(112), [112, 113]);
+  assert.deepEqual(neighborhoodSurahs(112), [112]);
+  assert.equal(ayahsRemainingInSurah({ surah: 112, ayah: 3 }, hasVerse), 1);
+  assert.equal(ayahsRemainingInSurah({ surah: 112, ayah: 4 }, hasVerse), 0);
+  assert.equal(approachingSurahEnd({ surah: 112, ayah: 3 }, hasVerse), true);
+  assert.equal(approachingSurahEnd({ surah: 112, ayah: 1 }, hasVerse), false);
 });
 
 test('coverage does not move the focused ayah before a confirmed match', () => {

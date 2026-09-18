@@ -27,9 +27,37 @@ export function previousSequentialRef(ref: VerseRef, hasVerse: (ref: VerseRef) =
   return null;
 }
 
+/** Cache the recited surah in full. Mushaf-next is not preloaded here — handoff
+ * openings are a separate, smaller fetch so Fatiha does not dump Al-Baqarah. */
 export function neighborhoodSurahs(surah: number): number[] {
   if (surah < 1 || surah > 114) return [];
-  return surah < 114 ? [surah, surah + 1] : [surah];
+  return [surah];
+}
+
+/** 0 = last ayah of this surah, 1 = second-last. Caps at `limit` so callers
+ * can arm a handoff pool near the end without walking the whole mushaf. */
+export function ayahsRemainingInSurah(
+  ref: VerseRef,
+  hasVerse: (next: VerseRef) => boolean,
+  limit = 3,
+): number {
+  let count = 0;
+  let cursor = ref;
+  while (count < limit) {
+    const next = nextSequentialRef(cursor, hasVerse);
+    if (!next || next.surah !== ref.surah) return count;
+    count += 1;
+    cursor = next;
+  }
+  return count;
+}
+
+export function approachingSurahEnd(
+  ref: VerseRef,
+  hasVerse: (next: VerseRef) => boolean,
+  within = 2,
+): boolean {
+  return ayahsRemainingInSurah(ref, hasVerse, within) < within;
 }
 
 export function isSequentialSuccessor(from: VerseRef, to: VerseRef, hasVerse: (ref: VerseRef) => boolean): boolean {

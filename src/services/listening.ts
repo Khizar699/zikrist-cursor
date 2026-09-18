@@ -11,7 +11,7 @@ import { RecitationFollower } from '../core/follower';
 import { shouldReplaceHeldVerse } from '../core/display-hold';
 import { samePassage } from '../core/passage';
 import { isCaptureGap, isLongPause, isSpeech } from '../core/capture-policy';
-import { nextSequentialRef } from '../core/sequential';
+import { nextSequentialRef, approachingSurahEnd } from '../core/sequential';
 import type { DisplayVerse, RecognitionMessage } from '../core/types';
 import { content } from './content';
 import { loadModel } from './model';
@@ -284,6 +284,10 @@ class Listening {
       this.show(this.state.current);
     }).catch((error) => this.update({ error: `Next verses could not be prepared: ${errorText(error)}` }));
     void content.preloadNeighborhood(verse).then(() => {
+      if (approachingSurahEnd(verse, (ref) => content.hasVerse(ref))) {
+        return content.preloadHandoffOpenings(verse);
+      }
+    }).then(() => {
       if (this.state.status !== 'listening' || !this.state.current) return;
       this.show(this.state.current);
     }).catch((error) => this.update({ error: `Next verses could not be prepared: ${errorText(error)}` }));

@@ -310,6 +310,21 @@ Docs + tools only (no matcher/follower retune):
 
 This workspace verified list/dry-run/report + units; full Tier A ONNX M/N is a Mac scoreboard, not claimed here. Floor remains **12/14** until jump + english-negative are locked green.
 
+## Fatiha handoff pool (Mac, 2026-09-18)
+
+Follower change (not liturgy, no `ready` flip): famous handoff includes Naml; mushaf-next is scored; after a lock, `الم الي` / remembered `الم` / reacquire isolated `الم` must not display **2:1**; same-surah leftover beats the pool.
+
+| Check | Result |
+|---|---|
+| `npm test` | **207/207** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **12/14 FAIL** — `jump:stall_missing_112:1_after_3_matches`; `english-negative:verse_lock_20:1` |
+| Hafiz Usama custom wav | **1:2@2.75** then **1:3–1:7@19.25**; **no 2:1**; **no 27:15** — product-bar **FAIL** (stall after Fatiha) |
+| `imam-mid-surah-cold` | PASS 4:129→130 (also 131) |
+| `imam-mid-surah-cold-qiyam` | PASS 36:16→18 (also 19–20) |
+
+Clip class `fatiha-to-body`. Not physical mic / locked screen. Do not claim floor 14/14. Do not claim Usama **27:15**.
+
 ## Cursor inheritance (docs, same process PR)
 
 Any new Cursor opener gets always-on rules:

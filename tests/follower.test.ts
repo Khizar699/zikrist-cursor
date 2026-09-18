@@ -36,6 +36,8 @@ const corpus = [
   verse(14, 40, ['rabbi', 'ijalni', 'muqima', 'alsalah', 'wamin', 'dhurriyyati', 'rabbana', 'wataqabbal', 'dua'], 'Ibrahim'),
   verse(14, 41, ['rabbana', 'ighfir', 'li', 'waliwalidayya'], 'Ibrahim'),
   verse(14, 42, ['wala', 'tahsabanna', 'allaha', 'ghafilan'], 'Ibrahim'),
+  verse(27, 1, ['ta', 'seen'], 'An-Naml'),
+  verse(27, 15, ['walaqad', 'atayna', 'dawuda', 'wasulaymana', 'ilman', 'waqala', 'alhamdu', 'lillahi', 'alladhi', 'faddalana'], 'An-Naml'),
   verse(36, 1, ['ya', 'seen'], 'Ya-Sin'),
   verse(108, 1, ['inna', 'aatayna', 'kalkawthar'], 'Al-Kawthar'),
   verse(108, 2, ['fasalli', 'lirabbika', 'wanhar'], 'Al-Kawthar'),
@@ -463,6 +465,171 @@ test('Basmala after Al-Fatihah does not continue into Al-Baqarah', async () => {
   assert.deepEqual(refs(await engine.feed(audio(1))), ['1:7']);
   assert.deepEqual(refs(await engine.feed(audio(FOLLOW_TRIGGER_SEC))), []);
   assert.equal(engine.phase, 'following');
+});
+
+test('Fatiha leftover with Naml body tokens locks 27:15, not 2:1', async () => {
+  const seven = corpus.find((item) => item.surah === 1 && item.ayah === 7)!;
+  const naml = corpus.find((item) => item.surah === 27 && item.ayah === 15)!;
+  const mixed = `${seven.phonemes_joined} ${naml.phonemes_joined}`;
+  const engine = follower([
+    spoken(1, 7),
+    {
+      text: mixed,
+      rawPhonemes: mixed,
+      championMatch: champion(2, 1, 0.9),
+    },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['1:7']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['27:15']);
+  assert.equal(engine.phase, 'following');
+});
+
+test('Yasin tokens at Fatiha 1:6 hand off to 36:1 without showing 2:1', async () => {
+  const yasin = corpus.find((item) => item.surah === 36 && item.ayah === 1)!;
+  const engine = follower([
+    spoken(1, 6),
+    {
+      text: yasin.phonemes_joined,
+      rawPhonemes: yasin.phonemes_joined,
+      championMatch: champion(2, 1, 0.9),
+    },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['1:6']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['36:1']);
+});
+
+test('Fatiha leftover الم الي does not default to 2:1', async () => {
+  const engine = follower([
+    spoken(1, 7),
+    {
+      text: 'الم الي',
+      rawPhonemes: 'الم الي',
+      championMatch: champion(2, 1, 0.99),
+    },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['1:7']);
+  const next = refs(await engine.feed(hop()));
+  assert.ok(!next.includes('2:1') && !next.includes('7:1'), `must not default to 2:1/7:1, got ${next.join(',')}`);
+});
+
+test('Fatiha reacquire الل after الم الي does not lock 2:1 from remembered letters', async () => {
+  const fatiha7 = verse(1, 7, ['sirata', 'alladhina', 'anamta', 'alayhim', 'ghayri', 'almaghdubi', 'alayhim', 'wala', 'alddallin'], 'Al-Fatihah');
+  const baqarah1 = verse(2, 1, ['الم'], 'Al-Baqarah');
+  const naml15 = verse(27, 15, ['walaqad', 'atayna', 'dawuda', 'wasulaymana', 'ilman'], 'An-Naml');
+  const local = [fatiha7, baqarah1, naml15];
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: fatiha7.phonemes_joined,
+        rawPhonemes: fatiha7.phonemes_joined,
+        championMatch: {
+          surah: 1, ayah: 7, text: fatiha7.phonemes_joined, phonemes_joined: fatiha7.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: 'نهايهدرس', rawPhonemes: 'نهايهدرس' },
+      { text: 'نهايهدرس', rawPhonemes: 'نهايهدرس' },
+      { text: 'نهايهدرس', rawPhonemes: 'نهايهدرس' },
+      { text: 'الم الي', rawPhonemes: 'الم الي' },
+      { text: 'الل', rawPhonemes: 'الل' },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['1:7']);
+  for (let index = 0; index < 5; index++) {
+    const got = refs(await engine.feed(hop()));
+    assert.ok(!got.includes('2:1'), `hop ${index + 1} must not lock 2:1, got ${got.join(',')}`);
+  }
+});
+
+test('Fatiha reacquire isolated الم does not lock 2:1', async () => {
+  const fatiha7 = verse(1, 7, ['sirata', 'alladhina', 'anamta', 'alayhim', 'ghayri', 'almaghdubi', 'alayhim', 'wala', 'alddallin'], 'Al-Fatihah');
+  const baqarah1 = verse(2, 1, ['الم'], 'Al-Baqarah');
+  const naml15 = verse(27, 15, ['walaqad', 'atayna', 'dawuda', 'wasulaymana', 'ilman'], 'An-Naml');
+  const local = [fatiha7, baqarah1, naml15];
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: fatiha7.phonemes_joined,
+        rawPhonemes: fatiha7.phonemes_joined,
+        championMatch: {
+          surah: 1, ayah: 7, text: fatiha7.phonemes_joined, phonemes_joined: fatiha7.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: 'نهايهدرس', rawPhonemes: 'نهايهدرس' },
+      { text: 'نهايهدرس', rawPhonemes: 'نهايهدرس' },
+      { text: 'نهايهدرس', rawPhonemes: 'نهايهدرس' },
+      { text: 'الم', rawPhonemes: 'الم' },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['1:7']);
+  for (let index = 0; index < 4; index++) {
+    const got = refs(await engine.feed(hop()));
+    assert.ok(!got.includes('2:1'), `hop ${index + 1} must not lock 2:1, got ${got.join(',')}`);
+  }
+});
+
+test('Fatiha leftover المستقيم does not default to 2:1', async () => {
+  const engine = follower([
+    spoken(1, 7),
+    {
+      text: 'sirata alladhina anamta alayhim ghayri almaghdubi alayhim wala alddallin almustaqeem',
+      rawPhonemes: 'sirata alladhina anamta alayhim ghayri almaghdubi alayhim wala alddallin almustaqeem',
+      championMatch: champion(2, 1, 0.99),
+    },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['1:7']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.equal(engine.phase, 'following');
+});
+
+test('Fatiha leftover الم still locks 2:1 when those letters are heard', async () => {
+  const fatiha7 = verse(1, 7, ['sirata', 'alladhina', 'anamta', 'alayhim', 'ghayri', 'almaghdubi', 'alayhim', 'wala', 'alddallin'], 'Al-Fatihah');
+  const baqarah1 = verse(2, 1, ['الم'], 'Al-Baqarah');
+  const naml15 = verse(27, 15, ['walaqad', 'atayna', 'dawuda', 'wasulaymana', 'ilman'], 'An-Naml');
+  const local = [fatiha7, baqarah1, naml15];
+  const mixed = `${fatiha7.phonemes_joined} الم`;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: fatiha7.phonemes_joined,
+        rawPhonemes: fatiha7.phonemes_joined,
+        championMatch: {
+          surah: 1, ayah: 7, text: fatiha7.phonemes_joined, phonemes_joined: fatiha7.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      {
+        text: mixed,
+        rawPhonemes: mixed,
+        championMatch: {
+          surah: 2, ayah: 1, text: baqarah1.phonemes_joined, phonemes_joined: baqarah1.phonemes_joined,
+          score: 0.9, raw_score: 0.9, bonus: 0,
+        },
+      },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['1:7']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['2:1']);
+});
+
+test('Fatiha leftover Nas opening locks 114, not 2:1', async () => {
+  const seven = corpus.find((item) => item.surah === 1 && item.ayah === 7)!;
+  const nas = corpus.find((item) => item.surah === 114 && item.ayah === 1)!;
+  const mixed = `${seven.phonemes_joined} ${nas.phonemes_joined}`;
+  const engine = follower([
+    spoken(1, 7),
+    {
+      text: mixed,
+      rawPhonemes: mixed,
+      championMatch: champion(2, 1, 0.9),
+    },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['1:7']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['114:1']);
 });
 
 test('Al-Falaq can take over after Al-Fatihah even when An-Nas stays a close rival', async () => {
@@ -928,6 +1095,30 @@ test('a short next ayah advances from unique later words when the opening was ga
   );
   assert.deepEqual(refs(await engine.feed(audio(1))), ['106:2']);
   assert.deepEqual(refs(await engine.feed(hop())), ['106:3']);
+});
+
+test('Quraysh second-last leftover still advances to 106:4 instead of the handoff pool', async () => {
+  const local = [
+    verse(106, 3, ['فليعبدوا', 'رب', 'هذا', 'البيت'], 'Quraysh'),
+    verse(106, 4, ['الذي', 'اطعمهم', 'من', 'جوع'], 'Quraysh'),
+    verse(107, 1, ['ارايت', 'الذي', 'يكذب', 'بالدين'], 'Al-Maun'),
+  ];
+  const three = local[0]!;
+  const four = local[1]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 106, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: `${three.phonemes_joined} ${four.phonemes_joined}`, rawPhonemes: `${three.phonemes_joined} ${four.phonemes_joined}` },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['106:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['106:4']);
 });
 
 test('a garbled unique opening of the next short ayah still advances', async () => {

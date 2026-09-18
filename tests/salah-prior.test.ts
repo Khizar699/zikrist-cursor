@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { remainingAfter, rerankChampion, surahBonus, TIE_BREAK_MARGIN, salahPrior } from '../src/core/salah-prior';
+import { remainingAfter, handoffCandidateSurahs, rerankChampion, surahBonus, TIE_BREAK_MARGIN, salahPrior } from '../src/core/salah-prior';
 import type { QuranChampionMatch } from '@tilawa/core';
 
 function match(surah: number, ayah: number, score: number, rival?: { surah: number; ayah: number; score: number }): QuranChampionMatch {
@@ -41,6 +41,16 @@ test('within the margin, remaining-after Kawthar prefers Ikhlas over Al-Baqarah'
 });
 
 test('the famous list is data, not a closed identity of the product', () => {
-  assert.deepEqual(salahPrior.famous, [55, 36, 12, 4]);
+  assert.deepEqual(salahPrior.famous, [55, 36, 27, 18, 67, 12, 4]);
   assert.equal(salahPrior.tieBreakMax, TIE_BREAK_MARGIN);
+});
+
+test('handoff candidates include famous Naml and mushaf-next without making 2 the default', () => {
+  const afterFatiha = handoffCandidateSurahs(1, 2);
+  assert.ok(afterFatiha.includes(27));
+  assert.ok(afterFatiha.includes(36));
+  assert.ok(afterFatiha.includes(55));
+  assert.ok(afterFatiha.includes(2));
+  assert.ok(afterFatiha.includes(114));
+  assert.ok(afterFatiha.indexOf(114) < afterFatiha.indexOf(2));
 });

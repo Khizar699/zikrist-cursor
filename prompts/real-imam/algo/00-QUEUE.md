@@ -38,7 +38,7 @@ Shared notes: `_SHARED.md`. Product bar: `PRODUCT-BAR.md`. Ground truth: `prompt
 | # | Prompt | Status |
 |---|---|---|
 | floor | jump + english-negative | **co-P0** — findings `floor-jump-ikhlas`, `floor-english-negative-20-1` |
-| 04 | hafiz-usama →27:15 (follow/handoff) | **co-P0** — finding `product-hafiz-usama-27-15` |
+| 04 | hafiz-usama →27:15 (follow/handoff) | **co-P0** — finding `product-hafiz-usama-27-15`. Mac 2026-09-18: **2:1** false lock cleared; stall after **1:7** (no **27:15**; Naml CTC is `الم`) |
 | 01 | masjid-e-nabi 25:69≠2:1 | deferred P2 — after follow P0 |
 | 02 | ahzab cold 33:62≠33:60 | deferred P2 |
 | 03 | baqarah→imran ≠57:28 | deferred P2 |
