@@ -39,9 +39,9 @@ function VersePane({
     extraData={focusKey}
     keyExtractor={(item) => refKey(item)}
     showsVerticalScrollIndicator={false}
-    initialNumToRender={3}
-    maxToRenderPerBatch={3}
-    windowSize={3}
+    initialNumToRender={8}
+    maxToRenderPerBatch={8}
+    windowSize={5}
     onScrollToIndexFailed={({ index: failed, averageItemLength }) => {
       list.current?.scrollToOffset({ offset: Math.max(0, averageItemLength * failed), animated: false });
       requestAnimationFrame(() => scrollToAyah(list.current, failed, false));

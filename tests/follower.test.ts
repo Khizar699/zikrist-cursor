@@ -271,7 +271,9 @@ test('shared Alhamdulillah does not lock Ibrahim 14:39', async () => {
     rawPhonemes: 'alhamdu lillahi',
     championMatch: champion(14, 39, 0.9),
   }]);
-  assert.deepEqual(refs(await engine.feed(audio(1))), []);
+  const messages = await engine.feed(audio(1));
+  assert.deepEqual(refs(messages), []);
+  assert.deepEqual(heard(messages), ['alhamdu', 'lillahi']);
   assert.equal(engine.phase, 'acquiring');
 });
 
@@ -330,7 +332,9 @@ test('live Arabic الحمد لله does not lock 14:39, and رب العلمين
       },
     }]),
   );
-  assert.deepEqual(refs(await prefix.feed(audio(1))), []);
+  const prefixMessages = await prefix.feed(audio(1));
+  assert.deepEqual(refs(prefixMessages), []);
+  assert.deepEqual(heard(prefixMessages), ['الحمد', 'لله']);
   assert.equal(prefix.phase, 'acquiring');
 
   const engine = new RecitationFollower(

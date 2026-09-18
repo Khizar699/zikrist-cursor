@@ -65,6 +65,22 @@ test('an unknown phrase id does not invent English or a liturgy pane', () => {
   assert.equal(listeningSurface(state).mode, 'empty');
 });
 
+test('heard Arabic words display before a lock, then a Fatiha lock keeps upcoming ayahs', () => {
+  let state = reduceListeningDisplay(emptyListeningDisplay(), {
+    type: 'heard_words', words: ['الحمد', 'لله'],
+  });
+  assert.deepEqual(listeningSurface(state), { mode: 'heard_words', words: ['الحمد', 'لله'] });
+
+  const passage = [ayah(1, 1), ayah(1, 2), ayah(1, 3), ayah(1, 4), ayah(1, 5), ayah(1, 6), ayah(1, 7)];
+  state = reduceListeningDisplay(state, { type: 'verse_match', verse: ayah(1, 2), passage });
+  const surface = listeningSurface(state);
+  assert.equal(surface.mode, 'passage');
+  if (surface.mode !== 'passage') throw new Error('expected passage');
+  assert.equal(surface.current.ayah, 2);
+  assert.deepEqual(surface.passage.map((item) => item.ayah), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(state.draftWords, []);
+});
+
 test('a liturgy lock takes over a held ayah, then a verse_match restores passage UI', () => {
   const fatiha = ayah(1, 2);
   const nextAyah = ayah(1, 3);
