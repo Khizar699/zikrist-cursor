@@ -20,18 +20,29 @@ test('capture queues serialize inference, preserve order, and own bounded pendin
   assert.deepEqual(results, [1, 2]);
   await queue.close();
 });
-test('overflow discards pending and late outputs, then resets before new evidence', async () => {
+test('overflow drops oldest pending audio and keeps the in-flight lock', async () => {
   const first = deferred<number>();
   const results: number[] = [];
-  let runs = 0; let resets = 0; let gaps = 0;
-  const queue = new AudioQueue({ maxSamples: 8, process: async () => ++runs === 1 ? first.promise : runs,
-    result: (value) => results.push(value), reset() { resets++; }, gap() { gaps++; }, error(error) { throw error; } });
+  let runs = 0; let resets = 0; let gaps = 0; let dropped = 0;
+  const queue = new AudioQueue({
+    maxSamples: 8,
+    process: async () => ++runs === 1 ? first.promise : runs,
+    result: (value) => results.push(value),
+    reset() { resets++; },
+    gap() { gaps++; },
+    drop(samples) { dropped += samples; },
+    error(error) { throw error; },
+  });
   queue.push({ samples: new Float32Array(4), endMs: 250 });
   await tick();
   for (let index = 0; index < 3; index++) queue.push({ samples: new Float32Array(4), endMs: 500 + index * 250 });
-  assert.equal(gaps, 1); assert.equal(resets, 0, 'Do not mutate a tracker during inference');
+  assert.equal(gaps, 0);
+  assert.equal(resets, 0);
+  assert.ok(dropped >= 4);
   first.resolve(1); await tick();
-  assert.deepEqual(results, [2]); assert.equal(resets, 1);
+  assert.deepEqual(results[0], 1, 'In-flight output must still apply');
+  assert.ok(results.length >= 2);
+  assert.equal(resets, 0);
   await queue.close();
 });
 test('stop discards queued audio and ignores the in-flight output', async () => {
@@ -67,7 +78,7 @@ test('backlog coalesces in order without crossing activity boundaries or losing 
   queue.push({ samples: new Float32Array(4), endMs: 1000, voicedMs: 750, voiced: false });
   queue.push({ samples: new Float32Array([4, 4, 4, 4]), endMs: 1250, voicedMs: 1000, voiced: true });
   first.resolve(1);
-  await new Promise<void>((resolve) => setTimeout(resolve, 50));
+  await new Promise<void>((resolve) => setTimeout(resolve, 120));
   assert.deepEqual(batches, [[1, 1, 1, 1], [2, 2, 2, 2, 3, 3, 3, 3], [0, 0, 0, 0], [4, 4, 4, 4]]);
   assert.deepEqual(ends, [250, 750, 1000, 1250]);
   assert.deepEqual(voiced, [250, 750, 750, 1000]);

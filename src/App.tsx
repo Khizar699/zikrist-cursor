@@ -27,11 +27,12 @@ function LivePassage({ urdu, ready, displayError }: { urdu: boolean; ready: bool
   const passage = useListening((state) => state.passage);
   const draftWords = useListening((state) => state.draftWords);
   const liturgy = useListening((state) => state.liturgy);
+  const wordProgress = useListening((state) => state.wordProgress);
   const surface = listeningSurface({ liturgy, current, passage, draftWords });
   if (surface.mode === 'liturgy') return <LiturgyPanes liturgy={surface.liturgy} />;
   if (surface.mode === 'heard_words') return <HeardWordPanes words={surface.words} />;
   if (surface.mode === 'passage') {
-    return <SyncedVersePanes verses={surface.passage} focus={surface.current} urdu={urdu} />;
+    return <SyncedVersePanes verses={surface.passage} focus={surface.current} urdu={urdu} wordProgress={wordProgress} />;
   }
   return <View style={[s.panes, { justifyContent: 'center', alignItems: 'center' }]}>
     {!ready && !displayError ? <ActivityIndicator color={colors.muted} /> : null}

@@ -1,6 +1,6 @@
 import type { VerseRef } from './types';
 
-/** Acoustic completion of the current ayah. Display still waits for a match. */
+/** Acoustic completion of the current ayah. Sequential focus may move; history still waits for a match. */
 export const TRACKING_COMPLETION_COVERAGE = 0.82;
 export const VISUAL_ADVANCE_COVERAGE = TRACKING_COMPLETION_COVERAGE;
 export const MAX_AYAH = 286;
@@ -65,9 +65,10 @@ export function isSequentialSuccessor(from: VerseRef, to: VerseRef, hasVerse: (r
   return next !== null && next.surah === to.surah && next.ayah === to.ayah;
 }
 
-/** Focused translation follows an accepted verse_match only. Coverage, elapsed
- * time, and a preloaded neighbor must not preview the next ayah. */
-export function shouldRevealSequentialNext(_options: {
+/** Same-surah sequential focus when the displayed ayah is acoustically
+ * complete. History still waits for verse_match. Next-surah, jumps, and
+ * skipped-ahead neighbors are not previews. */
+export function shouldRevealSequentialNext(options: {
   displayed: VerseRef;
   prepared: VerseRef | null;
   wordIndex: number;
@@ -75,5 +76,11 @@ export function shouldRevealSequentialNext(_options: {
   hasVerse: (ref: VerseRef) => boolean;
   coverage?: number;
 }): boolean {
-  return false;
+  const prepared = options.prepared;
+  if (!prepared) return false;
+  if (prepared.surah !== options.displayed.surah) return false;
+  if (!isSequentialSuccessor(options.displayed, prepared, options.hasVerse)) return false;
+  if (options.totalWords <= 0 || options.wordIndex <= 0) return false;
+  const coverage = options.coverage ?? VISUAL_ADVANCE_COVERAGE;
+  return options.wordIndex / options.totalWords >= coverage;
 }

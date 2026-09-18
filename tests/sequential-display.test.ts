@@ -33,13 +33,14 @@ test('An-Nas has no following surah, and Al-Fatihah has no previous surah', () =
   assert.equal(approachingSurahEnd({ surah: 112, ayah: 1 }, hasVerse), false);
 });
 
-test('coverage does not move the focused ayah before a confirmed match', () => {
+test('same-surah coverage may focus the sequential next ayah without writing history', () => {
   const displayed = { surah: 112, ayah: 1 };
   const prepared = { surah: 112, ayah: 2 };
   assert.equal(VISUAL_ADVANCE_COVERAGE, TRACKING_COMPLETION_COVERAGE);
   assert.equal(shouldRevealSequentialNext({ displayed, prepared, wordIndex: 4, totalWords: 10, hasVerse }), false);
-  assert.equal(shouldRevealSequentialNext({ displayed, prepared, wordIndex: 9, totalWords: 10, hasVerse }), false);
-  assert.equal(shouldRevealSequentialNext({ displayed, prepared, wordIndex: 3, totalWords: 3, hasVerse }), false);
+  assert.equal(shouldRevealSequentialNext({ displayed, prepared, wordIndex: 8, totalWords: 10, hasVerse }), false);
+  assert.equal(shouldRevealSequentialNext({ displayed, prepared, wordIndex: 9, totalWords: 10, hasVerse }), true);
+  assert.equal(shouldRevealSequentialNext({ displayed, prepared, wordIndex: 3, totalWords: 3, hasVerse }), true);
 });
 
 test('a jump or a skip ahead is not treated as sequential display', () => {

@@ -1,8 +1,11 @@
-import type { Occurrence, RecognitionMessage } from './types';
+import type { Occurrence, RecognitionMessage, VerseRef } from './types';
+
+export type FollowSkip = { from: VerseRef; to: VerseRef; missed: number; segment: number };
 
 /** Confirmed verse_match events only. Do not adopt Tilawa's final_sequence. */
 export class Timeline {
   readonly occurrences: Occurrence[] = [];
+  readonly skips: FollowSkip[] = [];
   private segment = 0;
   breakSegment(): void { this.segment++; }
 
@@ -18,6 +21,14 @@ export class Timeline {
     if (message.type !== 'verse_match') return null;
     const last = this.occurrences.at(-1);
     if (last && last.surah === message.surah && last.ayah === message.ayah && last.segment === this.segment) return null;
+    if (last && last.segment === this.segment && last.surah === message.surah && message.ayah > last.ayah + 1) {
+      this.skips.push({
+        from: { surah: last.surah, ayah: last.ayah },
+        to: { surah: message.surah, ayah: message.ayah },
+        missed: message.ayah - last.ayah - 1,
+        segment: this.segment,
+      });
+    }
     const occurrence: Occurrence = {
       index: this.occurrences.length, surah: message.surah, ayah: message.ayah,
       confirmedAtMs: now, audioOffsetMs, score: message.confidence,

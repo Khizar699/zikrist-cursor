@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { FlatList, Text, View } from 'react-native';
 import { CONTEXT_OPACITY, passageIndex } from '../core/passage';
 import type { LiturgyDisplay } from '../core/salah-liturgy-display';
-import { refKey, type DisplayVerse } from '../core/types';
+import { highlightHeardWordCount, splitDisplayWords } from '../core/word-highlight';
+import { refKey, type DisplayVerse, type WordProgress } from '../core/types';
 import { fonts, styles as s } from './theme';
 
 type Pane = 'arabic' | 'translation';
@@ -12,8 +13,31 @@ function scrollToAyah(list: FlatList<DisplayVerse> | null, index: number, animat
   list.scrollToIndex({ index, animated, viewPosition: 0.5 });
 }
 
+function ArabicVerseText({ arabic, heard }: { arabic: string; heard: number }) {
+  const words = splitDisplayWords(arabic);
+  if (!words.length) return null;
+  if (heard <= 0) {
+    return <Text selectable style={[s.arabic, s.arabicUnread]}>{arabic}</Text>;
+  }
+  if (heard >= words.length) {
+    return <Text selectable style={s.arabic}>{arabic}</Text>;
+  }
+  return <Text selectable style={s.arabic}>
+    {words.map((word, index) => (
+      <Text key={`${index}-${word}`} style={index < heard ? undefined : s.arabicUnread}>
+        {index > 0 ? ' ' : ''}{word}
+      </Text>
+    ))}
+  </Text>;
+}
+
+function heardFor(verse: DisplayVerse, progress: WordProgress | null): number {
+  if (!progress || verse.surah !== progress.surah || verse.ayah !== progress.ayah) return 0;
+  return highlightHeardWordCount(splitDisplayWords(verse.arabic).length, progress.wordIndex, progress.totalWords);
+}
+
 function VersePane({
-  pane, verses, focusKey, urdu, padding, index,
+  pane, verses, focusKey, urdu, padding, index, wordProgress,
 }: {
   pane: Pane;
   verses: DisplayVerse[];
@@ -21,9 +45,11 @@ function VersePane({
   urdu: boolean;
   padding: number;
   index: number;
+  wordProgress: WordProgress | null;
 }) {
   const list = useRef<FlatList<DisplayVerse>>(null);
   const lastFocus = useRef<string | null>(null);
+  const progressKey = wordProgress ? `${wordProgress.surah}:${wordProgress.ayah}:${wordProgress.wordIndex}` : '';
 
   useEffect(() => {
     const animated = lastFocus.current !== null && lastFocus.current !== focusKey;
@@ -36,7 +62,7 @@ function VersePane({
     ref={list}
     style={s.pane}
     data={verses}
-    extraData={focusKey}
+    extraData={`${focusKey}:${progressKey}`}
     keyExtractor={(item) => refKey(item)}
     showsVerticalScrollIndicator={false}
     initialNumToRender={8}
@@ -52,7 +78,7 @@ function VersePane({
       return <View style={[s.verseRow, { opacity: focused ? 1 : CONTEXT_OPACITY }]}>
         {pane === 'arabic' ? <>
           {!!item.basmala && <Text selectable style={s.arabic}>{item.basmala}</Text>}
-          <Text selectable style={s.arabic}>{item.arabic}</Text>
+          <ArabicVerseText arabic={item.arabic} heard={heardFor(item, wordProgress)} />
         </> : <Text
           selectable
           style={[s.translation, urdu && { fontFamily: fonts.arabic, writingDirection: 'rtl' }]}
@@ -89,14 +115,21 @@ export function HeardWordPanes({ words }: { words: string[] }) {
   </View>;
 }
 
-export function SyncedVersePanes({ verses, focus, urdu }: { verses: DisplayVerse[]; focus: DisplayVerse; urdu: boolean }) {
+export function SyncedVersePanes({
+  verses, focus, urdu, wordProgress = null,
+}: {
+  verses: DisplayVerse[];
+  focus: DisplayVerse;
+  urdu: boolean;
+  wordProgress?: WordProgress | null;
+}) {
   const focusKey = refKey(focus);
   const index = passageIndex(verses, focus);
   const [paneHeight, setPaneHeight] = useState(0);
   const padding = Math.max(24, paneHeight * 0.38);
 
   return <View style={s.panes} onLayout={(event) => { setPaneHeight(event.nativeEvent.layout.height / 2); }}>
-    <VersePane pane="arabic" verses={verses} focusKey={focusKey} urdu={urdu} padding={padding} index={index} />
-    <VersePane pane="translation" verses={verses} focusKey={focusKey} urdu={urdu} padding={padding} index={index} />
+    <VersePane pane="arabic" verses={verses} focusKey={focusKey} urdu={urdu} padding={padding} index={index} wordProgress={wordProgress} />
+    <VersePane pane="translation" verses={verses} focusKey={focusKey} urdu={urdu} padding={padding} index={index} wordProgress={null} />
   </View>;
 }

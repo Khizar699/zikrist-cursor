@@ -31,6 +31,9 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     writingDirection: 'rtl',
   },
+  arabicUnread: {
+    color: colors.muted,
+  },
   translation: {
     fontFamily: fonts.translation,
     fontSize: 32,

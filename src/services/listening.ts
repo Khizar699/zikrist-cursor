@@ -11,8 +11,8 @@ import { RecitationFollower } from '../core/follower';
 import { shouldReplaceHeldVerse } from '../core/display-hold';
 import { samePassage } from '../core/passage';
 import { isCaptureGap, isLongPause, isSpeech } from '../core/capture-policy';
-import { nextSequentialRef, approachingSurahEnd } from '../core/sequential';
-import type { DisplayVerse, RecognitionMessage } from '../core/types';
+import { nextSequentialRef, approachingSurahEnd, shouldRevealSequentialNext } from '../core/sequential';
+import type { DisplayVerse, RecognitionMessage, VerseRef, WordProgress } from '../core/types';
 import { content } from './content';
 import { loadModel } from './model';
 import liturgyPack from '../../assets/content/salah-liturgy.json';
@@ -36,10 +36,11 @@ export type ListeningState = {
   passage: DisplayVerse[];
   draftWords: string[];
   liturgy: LiturgyDisplay | null;
+  wordProgress: WordProgress | null;
   meter: number[];
 };
 const initial: ListeningState = {
-  status: 'loading', phase: 'searching', error: null, current: null, passage: [], draftWords: [], liturgy: null, meter: [],
+  status: 'loading', phase: 'searching', error: null, current: null, passage: [], draftWords: [], liturgy: null, wordProgress: null, meter: [],
 };
 const errorText = (error: unknown) => error instanceof Error ? error.message : String(error);
 
@@ -214,7 +215,7 @@ class Listening {
     }, { type: 'salah_liturgy', pack, phraseId: liturgy.phraseId });
     if (next.liturgy !== this.state.liturgy || next.draftWords !== this.state.draftWords) {
       this.displayGeneration += 1;
-      this.update({ liturgy: next.liturgy, draftWords: next.draftWords });
+      this.update({ liturgy: next.liturgy, draftWords: next.draftWords, wordProgress: null });
     }
     return filterQuranMessagesForLiturgy(messages);
   }
@@ -230,6 +231,10 @@ class Listening {
         continue;
       }
       const occurrence = this.timeline.accept(message, offset);
+      if (message.type === 'word_progress') {
+        this.onWordProgress(message.surah, message.ayah, message.word_index, message.total_words);
+        continue;
+      }
       if (occurrence) {
         const generation = ++this.displayGeneration;
         const reveal = (verse: DisplayVerse) => {
@@ -259,6 +264,30 @@ class Listening {
         }
       }
     }
+  }
+  private onWordProgress(surah: number, ayah: number, wordIndex: number, totalWords: number): void {
+    if (this.state.liturgy) return;
+    this.update({ wordProgress: { surah, ayah, wordIndex, totalWords } });
+    if (this.gate?.isCheckingJump || this.gate?.isAmbiguousOpening) return;
+    if (this.follower?.phase === 'reacquiring') return;
+    const displayed = this.state.current;
+    if (!displayed || displayed.surah !== surah || displayed.ayah !== ayah) return;
+    const hasVerse = (ref: VerseRef) => content.hasVerse(ref);
+    const prepared = nextSequentialRef(displayed, hasVerse);
+    if (!shouldRevealSequentialNext({ displayed, prepared, wordIndex, totalWords, hasVerse })) return;
+    if (!prepared) return;
+    const cached = content.peek(prepared);
+    if (cached) {
+      this.show(cached, { phase: 'following' });
+      return;
+    }
+    const from = { surah: displayed.surah, ayah: displayed.ayah };
+    void content.verse(prepared).then((verse) => {
+      if (this.state.status !== 'listening' || this.state.liturgy) return;
+      if (this.gate?.isCheckingJump || this.gate?.isAmbiguousOpening) return;
+      if (this.state.current?.surah !== from.surah || this.state.current.ayah !== from.ayah) return;
+      this.show(verse, { phase: 'following' });
+    }).catch((error) => { void this.fail(error); });
   }
   private show(verse: DisplayVerse, extra: Partial<ListeningState> = {}): void {
     const passage = content.cachedNeighborhood(verse);

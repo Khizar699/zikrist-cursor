@@ -22,13 +22,15 @@ export class AudioQueue<T> {
     maxSamples: number; maxBatchSamples?: number; process: (packet: AudioPacket) => Promise<T>;
     result: (result: T, packet: AudioPacket) => void; reset: () => void;
     gap: (reason: string) => void; error: (error: unknown) => void;
+    drop?: (droppedSamples: number) => void;
   }) {}
 
   push(packet: AudioPacket): void {
     if (this.closed) return;
     const incoming = packet.queuedAtMs == null ? { ...packet, queuedAtMs: Date.now() } : packet;
     if (incoming.samples.length > this.options.maxSamples) { this.discontinuity('oversized packet'); return; }
-    if (this.samples + incoming.samples.length > this.options.maxSamples) this.discontinuity('processing backlog');
+    if (this.samples + incoming.samples.length > this.options.maxSamples) this.dropOldest(incoming.samples.length);
+    if (this.samples + incoming.samples.length > this.options.maxSamples) return;
     this.packets.push(incoming);
     this.samples += incoming.samples.length;
     if (!this.running && !this.timer) {
@@ -46,6 +48,17 @@ export class AudioQueue<T> {
     this.samples = 0;
     this.needsReset = true;
     this.options.gap(reason);
+  }
+
+  /** Keep the in-flight hop and the lock. Newest voiced audio wins. */
+  private dropOldest(needed: number): void {
+    let dropped = 0;
+    while (this.packets.length && this.samples + needed > this.options.maxSamples) {
+      const packet = this.packets.shift()!;
+      this.samples -= packet.samples.length;
+      dropped += packet.samples.length;
+    }
+    if (dropped) this.options.drop?.(dropped);
   }
 
   async close(): Promise<void> {
