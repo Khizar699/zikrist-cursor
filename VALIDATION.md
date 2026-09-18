@@ -494,4 +494,18 @@ ContinuationGate + acquire + listening display. Prompt: `prompts/sim-test-2-sura
 
 Clip class `famous-short` plus Fatiha→body handoff (units). Live Simulator recitation was not re-measured. Not a physical-device claim. Reload Metro before live mic.
 
+## Phantom surah jump / reacquire freeze (Mac, 2026-09-18)
+
+Follower. Prompt: `prompts/follow-phantom-surah-jump.md`. Prayer surah switches scan only ayah 1 (or 2 if Basmala); **4:142** / **112:4** / **113:5** cannot be handoff targets. New-surah lock needs opening ≥0.70 or two contiguous ayah-1 words. Acquire decodes with `locate: false`; salah-prior pool first; JS `bestJoint03Match` is hop-throttled. Three consecutive misses may leave a wrong lock for a salah-prior ayah-1 without the 1.5 s grace. Muqattaat lookback stays the 2:2 mixed-window case only.
+
+| Check | Result |
+|---|---|
+| `npm test` | **290/290** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **12/14 FAIL** — `english-negative:verse_lock_20:1`, `stall-after-lock:no_matches`. `fatiha` 1:2@9s–1:7@34s; `ikhlas` 112:1@2s–4; `nas` 114:1@4s–6 (**no 4:142**); `asr` 103:1–3; `quraysh` 106:1–4; `jump` 108:1–3 then **112:1@16.5s–4**; `back-to-back` 103:1–3 then **106:1@22.25s–4** |
+| `imam-mid-surah-cold` | PASS 4:129@11s → 4:130@19.5s |
+| `imam-mid-surah-cold-qiyam` | FAIL first lock **2:1@5.5s** (want **36:16**) |
+
+Clip class `famous-short` plus `mid-surah`. Nas trail 4:142 cleared on the EveryAyah nas suite. stall-after-lock 112:2 clip never emits `verse_match` without Tilawa locate. Live Simulator recitation was not re-measured. Not a physical-device claim.
+
 

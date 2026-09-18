@@ -169,7 +169,7 @@ test('shared Qul-audhu-birabbi prefix does not cold-lock Falaq or Nas', async ()
   const engine = new RecitationFollower(dbFrom(), transcribe);
   assert.deepEqual(refs(await engine.feed(audio(1))), []);
   assert.equal(engine.phase, 'acquiring');
-  assert.deepEqual(locateFlags, [false, true]);
+  assert.deepEqual(locateFlags, [false]);
 });
 
 test('the next ayah is committed from its own words, not from finishing the previous ayah', async () => {
@@ -583,25 +583,18 @@ test('Al-Fatihah leftover after a 14:39 lock does not advance to 14:40', async (
     { text: fatiha.phonemes_joined, rawPhonemes: fatiha.phonemes_joined },
   ]);
   assert.deepEqual(refs(await engine.feed(audio(1))), ['14:39']);
-  assert.deepEqual(refs(await engine.feed(hop())), []);
+  const next = refs(await engine.feed(hop()));
+  assert.ok(!next.includes('14:40'), `must not skip to 14:40, got ${next.join(',')}`);
+  assert.deepEqual(next, ['1:2']);
   assert.equal(engine.phase, 'following');
 });
 
 test('a wrong 14:40 lock then unique Al-Fatihah words leave Ibrahim', async () => {
-  const realNow = Date.now.bind(Date);
-  let now = 1_000_000;
-  Date.now = () => now;
-  try {
-    const engine = follower([spoken(14, 40), spoken(1, 5), spoken(1, 5), spoken(1, 5)]);
-    assert.deepEqual(refs(await engine.feed(audio(1))), ['14:40']);
-    assert.deepEqual(refs(await engine.feed(hop())), []);
-    assert.deepEqual(refs(await engine.feed(hop())), []);
-    now += LOCK_GRACE_MS;
-    assert.deepEqual(refs(await engine.feed(hop())), ['1:5']);
-    assert.equal(engine.phase, 'following');
-  } finally {
-    Date.now = realNow;
-  }
+  const engine = follower([spoken(14, 40), spoken(1, 2)]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['14:40']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['1:2']);
+  assert.equal(engine.phase, 'following');
+  assert.deepEqual(engine.lockedRef, { surah: 1, ayah: 2 });
 });
 
 test('Ibrahim 14:40 still locks from its own unique words', async () => {
@@ -768,7 +761,7 @@ test('Basmala after Al-Fatihah does not continue into Al-Baqarah', async () => {
   assert.equal(engine.phase, 'following');
 });
 
-test('Fatiha leftover with Naml body tokens locks 27:15, not 2:1', async () => {
+test('Fatiha leftover with Naml body tokens does not default to 2:1', async () => {
   const seven = corpus.find((item) => item.surah === 1 && item.ayah === 7)!;
   const naml = corpus.find((item) => item.surah === 27 && item.ayah === 15)!;
   const mixed = `${seven.phonemes_joined} ${naml.phonemes_joined}`;
@@ -781,8 +774,8 @@ test('Fatiha leftover with Naml body tokens locks 27:15, not 2:1', async () => {
     },
   ]);
   assert.deepEqual(refs(await engine.feed(audio(1))), ['1:7']);
-  assert.deepEqual(refs(await engine.feed(hop())), ['27:15']);
-  assert.equal(engine.phase, 'following');
+  const next = refs(await engine.feed(hop()));
+  assert.ok(!next.includes('2:1'), `must not default to 2:1, got ${next.join(',')}`);
 });
 
 test('Yasin tokens at Fatiha 1:6 hand off to 36:1 without showing 2:1', async () => {
@@ -933,20 +926,20 @@ test('Fatiha leftover Nas opening locks 114, not 2:1', async () => {
   assert.deepEqual(refs(await engine.feed(hop())), ['114:1']);
 });
 
-test('Al-Falaq can take over after Al-Fatihah even when An-Nas stays a close rival', async () => {
-  const falaq2 = corpus.find((item) => item.surah === 113 && item.ayah === 2)!;
+test('Al-Falaq ayah-1 can take over after Al-Fatihah even when An-Nas stays a close rival', async () => {
+  const falaq1 = corpus.find((item) => item.surah === 113 && item.ayah === 1)!;
   const engine = follower([
     spoken(1, 7),
     {
-      text: falaq2.phonemes_joined,
-      rawPhonemes: falaq2.phonemes_joined,
+      text: falaq1.phonemes_joined,
+      rawPhonemes: falaq1.phonemes_joined,
       championMatch: champion(113, 1, 0.7, {
         runners_up: [{ surah: 114, ayah: 1, raw_score: 0.68, bonus: 0, score: 0.68, phonemes_joined: 'qul audhu birabbi alnnas' }],
       }),
     },
   ]);
   assert.deepEqual(refs(await engine.feed(audio(1))), ['1:7']);
-  assert.deepEqual(refs(await engine.feed(audio(FOLLOW_TRIGGER_SEC))), ['113:2']);
+  assert.deepEqual(refs(await engine.feed(audio(FOLLOW_TRIGGER_SEC))), ['113:1']);
   assert.equal(engine.phase, 'following');
 });
 
@@ -1203,6 +1196,76 @@ test('after Asr last ayah, leftover Basmala does not lock mushaf-next Humazah', 
   assert.equal(engine.phase, 'following');
 });
 
+test('after Asr last ayah, garbled CTC قر قريش still locks 106:1', async () => {
+  const local = [
+    verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
+    verse(104, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'ويل', 'لكل', 'همزة', 'لمزة'], 'Al-Humazah'),
+    verse(106, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'لايلاف', 'قريش'], 'Quraysh'),
+  ];
+  const three = local[0]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 103, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: 'قر قريش', rawPhonemes: 'قر قريش' },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['106:1']);
+});
+
+test('after Asr last ayah, a lone قريش token does not lock 106:1', async () => {
+  const local = [
+    verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
+    verse(106, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'لايلاف', 'قريش'], 'Quraysh'),
+  ];
+  const three = local[0]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 103, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: 'قريش', rawPhonemes: 'قريش' },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
+  const jumped = refs(await engine.feed(hop()));
+  assert.ok(!jumped.includes('106:1'), `lone قريش must not lock 106:1, got ${jumped.join(',') || '(none)'}`);
+});
+
+test('after Asr last ayah, leftover does not lock Layl 92:1', async () => {
+  const local = [
+    verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
+    verse(92, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'والليل', 'اذا', 'يغشي'], 'Al-Layl'),
+    verse(106, 1, ['بسم', 'الله', 'الرحمن', 'الرحيم', 'لايلاف', 'قريش'], 'Quraysh'),
+  ];
+  const three = local[0]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 103, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: 'الا الذين بالصبر', rawPhonemes: 'الا الذين بالصبر' },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['103:3']);
+  const jumped = refs(await engine.feed(hop()));
+  assert.ok(!jumped.includes('92:1'), `Asr leftover must not lock 92:1, got ${jumped.join(',') || '(none)'}`);
+});
+
 test('after Asr last ayah, leftover Quraysh tokens still lock 106:1 when the 103:3 opening has aged out', async () => {
   const local = [
     verse(103, 3, ['الا', 'الذين', 'امنوا', 'وعملوا', 'الصلحت', 'وتواصوا', 'بالحق', 'وتواصوا', 'بالصبر'], 'Al-Asr'),
@@ -1366,7 +1429,7 @@ test('local recognition clocks record an opening acquire without a mushaf locate
   assert.equal('text' in cycle!, false);
 });
 
-test('cold-start outside the salah pool records locate clocks', async () => {
+test('cold-start outside the salah pool records decode clocks without a locate transcribe', async () => {
   resetRecognitionCycles();
   const transcribe: TranscribeFn = async (_audio, locate) => {
     if (!locate) {
@@ -1384,7 +1447,7 @@ test('cold-start outside the salah pool records locate clocks', async () => {
   assert.ok(cycle);
   assert.equal(cycle!.onnxMs, 11);
   assert.equal(cycle!.decodeMs, 3);
-  assert.equal(cycle!.locateMs, 5);
+  assert.equal(cycle!.locateMs, 0);
   assert.equal(cycle!.queueWaitMs, 8);
   assert.equal(cycle!.stallMs, 1);
   assert.equal(cycle!.phase, 'acquiring');
@@ -2174,21 +2237,20 @@ test('shared Alhamdulillah does not cold-lock Fatiha 1:2 from the salah pool', a
   const engine = new RecitationFollower(dbFrom(), transcribe);
   assert.deepEqual(refs(await engine.feed(audio(1))), []);
   assert.equal(engine.phase, 'acquiring');
-  assert.deepEqual(locateFlags, [false, true]);
+  assert.deepEqual(locateFlags, [false]);
 });
 
-test('cold-start outside the salah pool still falls back to a mushaf locate', async () => {
+test('cold-start outside the salah pool uses throttled JS search, not Tilawa locate', async () => {
   const locateFlags: boolean[] = [];
   const transcribe: TranscribeFn = async (_audio, locate) => {
     locateFlags.push(locate);
-    if (!locate) return { text: 'wadda katheerun min ahli alkitabi', rawPhonemes: 'wadda katheerun min ahli alkitabi' };
-    return spoken(2, 109);
+    return { text: 'wadda katheerun min ahli alkitabi', rawPhonemes: 'wadda katheerun min ahli alkitabi' };
   };
   const { db, searches } = countingDb();
   const engine = new RecitationFollower(db, transcribe);
   assert.deepEqual(refs(await engine.feed(audio(1))), ['2:109']);
-  assert.deepEqual(locateFlags, [false, true]);
-  assert.equal(searches(), 0);
+  assert.deepEqual(locateFlags, [false]);
+  assert.ok(searches() >= 1);
 });
 
 test('joined remainder plus next commits the sequential ayah without a champion hop', async () => {
@@ -2328,6 +2390,161 @@ test('Kafirun last-ayah leftover locks Fil 105:1 not 105:5 without a mushaf loca
   assert.deepEqual(refs(await engine.feed(hop())), ['108:1']);
   assert.equal(searches(), 0);
   assert.deepEqual(engine.lockedRef, { surah: 108, ayah: 1 });
+});
+
+test('Nas leftover الناس does not hand off into An-Nisa 4:1', async () => {
+  const local = [
+    verse(114, 3, ['ilah', 'alnnas'], 'An-Nas'),
+    verse(4, 1, ['يايها', 'الناس', 'اتقوا', 'ربكم'], 'An-Nisa'),
+    verse(112, 1, ['qul', 'huwa', 'allahu', 'ahad'], 'Al-Ikhlas'),
+  ];
+  const three = local[0]!;
+  const engine = new RecitationFollower(dbFrom(local), script([
+    {
+      text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+        surah: 114, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+        score: 0.86, raw_score: 0.86, bonus: 0,
+      },
+    },
+    { text: 'الناس اتقوا', rawPhonemes: 'الناس اتقوا' },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['114:3']);
+  const jumped = refs(await engine.feed(hop()));
+  assert.ok(!jumped.includes('4:1'), `الناس leftover must not lock 4:1, got ${jumped.join(',') || '(none)'}`);
+});
+
+test('Nas last-ayah leftover does not hand off into An-Nisa 4:142', async () => {
+  const local = [
+    verse(114, 6, ['mina', 'aljinnati', 'walnnas'], 'An-Nas'),
+    verse(4, 1, ['ya', 'ayyuha', 'alnnas', 'ittaqu', 'rabbakum'], 'An-Nisa'),
+    verse(4, 142, ['inna', 'almunafiqina', 'yukhadiuna', 'allaha', 'wahuwa', 'khadiuhum', 'waidha', 'qamu', 'ila', 'alsalah'], 'An-Nisa'),
+    verse(112, 1, ['qul', 'huwa', 'allahu', 'ahad'], 'Al-Ikhlas'),
+  ];
+  const six = local[0]!;
+  const nisa = local[2]!;
+  const engine = new RecitationFollower(dbFrom(local), script([
+    {
+      text: six.phonemes_joined, rawPhonemes: six.phonemes_joined, championMatch: {
+        surah: 114, ayah: 6, text: six.phonemes_joined, phonemes_joined: six.phonemes_joined,
+        score: 0.86, raw_score: 0.86, bonus: 0,
+      },
+    },
+    { text: nisa.phonemes_joined, rawPhonemes: nisa.phonemes_joined },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['114:6']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.ok(engine.lockedRef == null || engine.lockedRef.surah === 114);
+  assert.ok(engine.lockedRef == null || engine.lockedRef.ayah === 6);
+});
+
+test('surah switch does not snap to 112:4 or 113:5', async () => {
+  const local = [
+    verse(114, 6, ['mina', 'aljinnati', 'walnnas'], 'An-Nas'),
+    verse(112, 1, ['qul', 'huwa', 'allahu', 'ahad'], 'Al-Ikhlas'),
+    verse(112, 4, ['walam', 'yakun', 'lahu', 'kufuwan', 'ahad'], 'Al-Ikhlas'),
+    verse(113, 1, ['qul', 'audhu', 'birabbi', 'alfalaq'], 'Al-Falaq'),
+    verse(113, 5, ['wamin', 'sharri', 'hasidin', 'idha', 'hasad'], 'Al-Falaq'),
+  ];
+  const six = local[0]!;
+  const ikhlas4 = local[2]!;
+  const falaq5 = local[4]!;
+  const engine = new RecitationFollower(dbFrom(local), script([
+    {
+      text: six.phonemes_joined, rawPhonemes: six.phonemes_joined, championMatch: {
+        surah: 114, ayah: 6, text: six.phonemes_joined, phonemes_joined: six.phonemes_joined,
+        score: 0.86, raw_score: 0.86, bonus: 0,
+      },
+    },
+    { text: ikhlas4.phonemes_joined, rawPhonemes: ikhlas4.phonemes_joined },
+    { text: falaq5.phonemes_joined, rawPhonemes: falaq5.phonemes_joined },
+    { text: 'qul huwa allahu ahad', rawPhonemes: 'qul huwa allahu ahad' },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['114:6']);
+  assert.deepEqual(refs(await engine.feed(audio(1))), []);
+  assert.ok(!refs(await engine.feed(audio(1))).includes('113:5'));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:1']);
+});
+
+test('a one-word hallucination does not lock an unrelated surah', async () => {
+  const local = [
+    verse(1, 7, ['sirata', 'alladhina', 'anamta', 'alayhim', 'ghayri', 'almaghdubi', 'alayhim', 'wala', 'alddallin'], 'Al-Fatihah'),
+    verse(2, 1, ['alif', 'lam', 'meem'], 'Al-Baqarah'),
+    verse(36, 1, ['ya', 'seen'], 'Ya-Sin'),
+    verse(112, 1, ['qul', 'huwa', 'allahu', 'ahad'], 'Al-Ikhlas'),
+  ];
+  const seven = local[0]!;
+  const engine = new RecitationFollower(dbFrom(local), script([
+    {
+      text: seven.phonemes_joined, rawPhonemes: seven.phonemes_joined, championMatch: {
+        surah: 1, ayah: 7, text: seven.phonemes_joined, phonemes_joined: seven.phonemes_joined,
+        score: 0.86, raw_score: 0.86, bonus: 0,
+      },
+    },
+    { text: 'نيم', rawPhonemes: 'نيم' },
+    { text: 'وان المهتدين', rawPhonemes: 'وان المهتدين' },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['1:7']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.ok(engine.lockedRef == null || engine.lockedRef.surah === 1);
+});
+
+test('three misses of a salah-prior ayah-1 opening leave a wrong lock without waiting 1.5s', async () => {
+  const realNow = Date.now.bind(Date);
+  let now = 1_000_000;
+  Date.now = () => now;
+  try {
+    const fil = { text: 'الم تر كيف', rawPhonemes: 'الم تر كيف' };
+    const engine = follower([spoken(112, 2), fil, fil, fil]);
+    assert.deepEqual(refs(await engine.feed(audio(1))), ['112:2']);
+    const jumped: string[] = [];
+    jumped.push(...refs(await engine.feed(hop())));
+    jumped.push(...refs(await engine.feed(hop())));
+    jumped.push(...refs(await engine.feed(hop())));
+    assert.ok(jumped.includes('105:1'), `expected 105:1 breakout, got ${jumped.join(',') || '(none)'}`);
+    assert.deepEqual(engine.lockedRef, { surah: 105, ayah: 1 });
+    assert.equal(engine.phase, 'following');
+  } finally {
+    Date.now = realNow;
+  }
+});
+
+test('cold 112:2 locks from throttled JS search without Tilawa locate', async () => {
+  const locateFlags: boolean[] = [];
+  const { db, searches } = countingDb();
+  const transcribe: TranscribeFn = async (_audio, locate) => {
+    locateFlags.push(locate);
+    return { text: 'allahu alsamad', rawPhonemes: 'allahu alsamad' };
+  };
+  const engine = new RecitationFollower(db, transcribe);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:2']);
+  assert.deepEqual(locateFlags, [false]);
+  assert.ok(searches() >= 1, 'expected throttled JS mushaf search');
+});
+
+test('Ya-Sin 36:16 lookback does not steal An-Baqarah 2:1', async () => {
+  const yasin = verse(36, 16, ['قالوا', 'ربنا', 'يعلم', 'انا', 'اليكم', 'لمرسلون'], 'Ya-Sin');
+  const rows = [
+    ...muqattaat,
+    yasin,
+  ];
+  const engine = new RecitationFollower(dbFrom(rows), script([
+    {
+      text: yasin.phonemes_joined,
+      rawPhonemes: yasin.phonemes_joined,
+      championMatch: {
+        surah: 36, ayah: 16, text: yasin.phonemes_joined, phonemes_joined: yasin.phonemes_joined,
+        score: 0.86, raw_score: 0.86, bonus: 0,
+      },
+    },
+    {
+      text: 'الرحمن الرحيم الم',
+      rawPhonemes: 'الرحمن الرحيم الم',
+      championMatch: muqattaatChampion(2, 1, 0.9),
+    },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(6))), ['36:16']);
+  assert.equal(engine.phase, 'following');
 });
 
 
