@@ -62,5 +62,5 @@ describe('findings + Tier A coverage helpers', () => {
 function textLine(): string {
   return readFileSync(path.join(root, 'prompts/real-imam/findings/ledger.jsonl'), 'utf8')
     .split(/\r?\n/)
-    .find((line) => line.includes('floor-jump-ikhlas'))!;
+    .find((line) => line.includes('floor-english-negative-20-1'))!;
 }
