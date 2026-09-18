@@ -1,6 +1,13 @@
 import type { VerseMatchMessage, WordProgressMessage } from '@tilawa/core';
 import { isFatihaBasmala, openingBasmalaWordCount } from './basmala';
+import { salahPrior } from './salah-prior';
 import { refKey, type RecognitionMessage, type VerseRef } from './types';
+
+function isSalahPoolSurah(surah: number): boolean {
+  return surah === salahPrior.fatiha
+    || salahPrior.last20.includes(surah)
+    || salahPrior.juz30.includes(surah);
+}
 
 /** Extra guard around an upstream commit. Shared Basmala openings, unexpected
  * jumps and silence-flush first locations need subsequent unique evidence. */
@@ -29,7 +36,20 @@ export class ContinuationGate {
           && this.current.surah !== message.surah
           && openingBasmalaWordCount(message) > 0
         );
+        const atSurahEnd = Boolean(
+          this.current && (!next || next.surah !== this.current.surah)
+        );
         if (expected && !holdNextSurahBasmala) {
+          this.current = message; this.pending = null; accepted.push(message);
+        } else if (
+          voiced
+          && this.current
+          && message.surah !== this.current.surah
+          && !holdNextSurahBasmala
+          && (atSurahEnd || isSalahPoolSurah(message.surah))
+        ) {
+          // Last-ayah or short-surah handoff must paint immediately.
+          // Do not park the carousel on the finished surah as a discarded jump.
           this.current = message; this.pending = null; accepted.push(message);
         } else if (!this.current && this.pending && isFatihaBasmala(this.pending.message) && message.surah === 1 && message.ayah === 2) {
           accepted.push(this.pending.message, message);
@@ -79,7 +99,8 @@ export class ContinuationGate {
       return unique.some((index) => index > skip);
     }
     if (!unique.includes(0)) return false;
-    const lastAyah = this.current !== null && this.nextVerse(this.current) === undefined;
+    const next = this.current ? this.nextVerse(this.current) : undefined;
+    const lastAyah = this.current !== null && (next === undefined || next.surah !== this.current.surah);
     const needed = lastAyah
       ? Math.min(2, message.total_words)
       : Math.min(

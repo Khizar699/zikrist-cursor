@@ -55,6 +55,9 @@ class Listening {
   private stopping: Promise<void> | null = null;
   private durationLimit: ReturnType<typeof setTimeout> | null = null;
   private displayGeneration = 0;
+  /** Latest verse_match not yet painted. Stale previous-surah word_progress
+   * must not sequential-reveal or keep carousel focus while this is in flight. */
+  private pendingDisplay: VerseRef | null = null;
   private silentSeconds = 0;
   private silenceReset = false;
   private lastAudioEnd: number | null = null;
@@ -207,6 +210,7 @@ class Listening {
     if (!liturgy) return messages;
     this.follower?.reset();
     this.gate?.reset();
+    this.pendingDisplay = null;
     const next = reduceListeningDisplay({
       liturgy: this.state.liturgy,
       current: this.state.current,
@@ -222,7 +226,14 @@ class Listening {
 
   private receive(messages: RecognitionMessage[], offset: number): void {
     if (this.state.status !== 'listening') return;
+    const ordered: RecognitionMessage[] = [];
     for (const message of messages) {
+      if (message.type === 'verse_match') ordered.push(message);
+    }
+    for (const message of messages) {
+      if (message.type !== 'verse_match') ordered.push(message);
+    }
+    for (const message of ordered) {
       if (message.type === 'heard_words') {
         if (this.state.current || this.state.liturgy) continue;
         const same = this.state.draftWords.length === message.words.length
@@ -236,6 +247,10 @@ class Listening {
         continue;
       }
       if (occurrence) {
+        this.pendingDisplay = { surah: occurrence.surah, ayah: occurrence.ayah };
+        if (this.state.current && this.state.current.surah !== occurrence.surah) {
+          this.update({ wordProgress: null });
+        }
         const generation = ++this.displayGeneration;
         const reveal = (verse: DisplayVerse) => {
           const displayedWasConfirmed = this.timeline.occurrences.some((item) => (
@@ -243,15 +258,23 @@ class Listening {
             && item.surah === this.state.current.surah
             && item.ayah === this.state.current.ayah
           ));
+          const surahChanged = Boolean(
+            this.state.current && this.state.current.surah !== verse.surah,
+          );
           if (
             this.state.liturgy
+            || surahChanged
             || shouldReplaceHeldVerse(this.state.current, verse, {
               hasVerse: (ref) => content.hasVerse(ref),
               displayedWasConfirmed,
             })
           ) {
-            this.show(verse, { phase: 'following' });
+            this.show(verse, {
+              phase: 'following',
+              ...(surahChanged ? { wordProgress: null } : {}),
+            });
           }
+          this.pendingDisplay = null;
           this.prepareAhead(verse);
         };
         const cached = content.peek(occurrence);
@@ -267,10 +290,14 @@ class Listening {
   }
   private onWordProgress(surah: number, ayah: number, wordIndex: number, totalWords: number): void {
     if (this.state.liturgy) return;
+    if (this.pendingDisplay && (this.pendingDisplay.surah !== surah || this.pendingDisplay.ayah !== ayah)) {
+      return;
+    }
+    const displayed = this.state.current;
+    if (displayed && displayed.surah !== surah) return;
     this.update({ wordProgress: { surah, ayah, wordIndex, totalWords } });
     if (this.gate?.isCheckingJump || this.gate?.isAmbiguousOpening) return;
     if (this.follower?.phase === 'reacquiring') return;
-    const displayed = this.state.current;
     if (!displayed || displayed.surah !== surah || displayed.ayah !== ayah) return;
     const hasVerse = (ref: VerseRef) => content.hasVerse(ref);
     const prepared = nextSequentialRef(displayed, hasVerse);
@@ -304,7 +331,15 @@ class Listening {
       passage: this.state.passage,
       draftWords: this.state.draftWords,
     }, { type: 'verse_match', verse, passage });
-    this.update({ current: next.current, passage: next.passage, draftWords: [], liturgy: null, ...extra });
+    const surahChanged = this.state.current != null && this.state.current.surah !== verse.surah;
+    this.update({
+      current: next.current,
+      passage: next.passage,
+      draftWords: [],
+      liturgy: null,
+      ...(surahChanged ? { wordProgress: null } : {}),
+      ...extra,
+    });
   }
   private prepareAhead(verse: DisplayVerse): void {
     const next = nextSequentialRef(verse, (ref) => content.hasVerse(ref));
@@ -333,6 +368,7 @@ class Listening {
   private async end(): Promise<void> {
     this.update({ status: 'stopping' });
     this.displayGeneration++;
+    this.pendingDisplay = null;
     if (this.meterTimer) clearTimeout(this.meterTimer);
     this.meterTimer = null;
     if (this.durationLimit) clearTimeout(this.durationLimit);

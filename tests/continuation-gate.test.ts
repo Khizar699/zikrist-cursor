@@ -58,8 +58,7 @@ test('silence and old word progress cannot confirm an unrelated verse', () => {
 test('a real jump can recover after new voiced evidence and matching progress', () => {
   const gate = make();
   gate.accept([match(2, 2)], 2000, true);
-  gate.accept([match(112, 2)], 3000, true);
-  assert.deepEqual(gate.accept([progress(112, 2)], 3600, true), [match(112, 2), progress(112, 2)]);
+  assert.deepEqual(gate.accept([match(112, 2)], 3000, true), [match(112, 2)]);
   assert.equal(gate.isCheckingJump, false);
 });
 
@@ -87,9 +86,21 @@ test('a jump from the last ayah can confirm with voiced unique words', () => {
     ref.surah === 114 && ref.ayah === 6 ? undefined : { surah: ref.surah, ayah: ref.ayah + 1 }
   ));
   gate.accept([match(114, 6)], 2000, true);
-  assert.deepEqual(gate.accept([match(1, 2)], 3000, true), []);
-  assert.equal(gate.isCheckingJump, true);
-  assert.deepEqual(gate.accept([progress(1, 2)], 3100, true), [match(1, 2), progress(1, 2)]);
+  assert.deepEqual(gate.accept([match(1, 2)], 3000, true), [match(1, 2)]);
+  assert.equal(gate.isCheckingJump, false);
+});
+
+test('last ayah of a short surah paints the next surah immediately', () => {
+  const gate = new ContinuationGate((ref) => (
+    ref.surah === 109 && ref.ayah === 6 ? { surah: 110, ayah: 1 } : { surah: ref.surah, ayah: ref.ayah + 1 }
+  ));
+  gate.accept([match(109, 6)], 2000, true);
+  assert.deepEqual(gate.accept([match(105, 1), progress(105, 1, [4, 5], 11)], 3000, true), [
+    match(105, 1),
+    progress(105, 1, [4, 5], 11),
+  ]);
+  assert.equal(gate.isCheckingJump, false);
+  assert.deepEqual(gate.accept([match(108, 1)], 4000, true), [match(108, 1)]);
 });
 
 test('two matched words cannot confirm a long unrelated jump', () => {
