@@ -12,7 +12,7 @@ Use when clips exist under `~/Desktop/zikrist-imam-clips/` or live mic.
 | 1 | Cold start time-to-first-correct-lock | | | |
 | 2 | Mid-surah cold start locks mid-ayah (not forced ayah 1 / wrong surah) | | | |
 | 3 | **After lock, next ayahs commit in order** while recitation continues (not stuck on first ayah / 1:2) | | | |
-| 4 | Arabic + English feel real-time with audio (display tracks commits, not predictions) | | | |
+| 4 | Arabic mushaf feels real-time with audio (display tracks commits, not predictions). Translation is deferred. | | | |
 | 5 | Mid-ayah pause → resume same ayah | | | |
 | 6 | Surah switch / Fatiha→body handoff reacquires cleanly | | | |
 | 7 | Non-famous / outside last-20 cold start eventually locks (may be slower) | | | |

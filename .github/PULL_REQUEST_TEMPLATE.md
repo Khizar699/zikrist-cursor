@@ -20,6 +20,7 @@
 - [ ] Mac **Agent verify loop** run (`prompts/real-imam/algo/PRODUCT-BAR.md`) — not founder iOS-only
 - [ ] Tip product-bar clip / ready imam suites measured when relevant
 - [ ] **Ratchet lock** same PR: new/tighter unit and/or ready expect (`prompts/real-imam/algo/RATCHET.md`)
+- [ ] Default `npm test` did **not** gain network / translation-SQLite / pack-download dependencies
 - [ ] Tip known-fails shrunk only if locked; expects not weakened without stricter replacement
 
 ## Test plan

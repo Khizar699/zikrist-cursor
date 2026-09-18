@@ -1,5 +1,7 @@
 # Salah liturgy on-screen Arabic + English
 
+> **Mushaf-first note:** Quran translation pane stays off. Liturgy may show pack Arabic on the listening screen; do not use this prompt to restore dual-pane Quran translation.
+
 ## Goal
 
 When listening emits a `salah_liturgy` lock, show **Arabic + English** on the existing single listening screen without breaking Quran ayah passage display.

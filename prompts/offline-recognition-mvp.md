@@ -1,5 +1,7 @@
 # Offline recognition MVP
 
+> **Historical prompt.** The current product slice is **mushaf follow**, not live translation. See `AGENTS.md` and `prompts/mushaf-first-mvp.md`. Do not implement language-pack onboarding, English/Urdu display, or history UI from this file until Tip says mushaf tracking is confident.
+
 ## Authorization and goal
 
 The user approved building the MVP and supplied an AGENTS.md reference. Create Zikrist's project instructions and implement a real offline mobile pipeline: microphone → Quran localization/tracking → local English/Urdu translation, with history and diagnostics. Existing approval covers this implementation.

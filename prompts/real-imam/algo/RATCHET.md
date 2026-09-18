@@ -24,7 +24,7 @@ If step 5 is skipped, the day did **not** ratchet — tomorrow will rediscover t
 
 | Win type | Minimum lock (same PR) | Stronger lock (when audio/labels exist) |
 |---|---|---|
-| Token / advance / false-champion class | Unit in `tests/follower.test.ts` (or gate/prior test) encoding the confusion **without** suite-ID hardcodes | — |
+| Token / advance / false-champion class | Unit in `tests/follower.test.ts` or `tests/mushaf-tracking.test.ts` (monotonic follow, ayah-1 handoff, madd/CTC cousins) **without** suite-ID hardcodes | — |
 | Synthetic EveryAyah path (jump, english-negative, Fatiha advance, …) | Suite already in `test:replay -- all` must go/stay green | Tighten `expect` if the suite was too weak (e.g. allow only ordered prefix + refuse wrong handoff) |
 | Founder mosque clip | Mac green on that wav + unit if expressible | Label-fill: `manifest.stub.json` → `ready` with `expected_sequence` from `LABELS.md` / `labels.json` (one suite per fill session) |
 | Negative (must not lock) | `no-verse-locks` / basmala-hold style gate or unit refuse | Dedicated negative suite when fixture exists |
@@ -73,7 +73,7 @@ A day that only retunes thresholds with no new lock is **not** a ratchet day —
 
 ## Anti-regression checklist (every recognition PR)
 
-- [ ] `npm test` + `npm run typecheck`
+- [ ] `npm test` + `npm run typecheck` — default suite stayed in-memory (no new network / translation SQLite / pack-download tests)
 - [ ] `npm run test:replay -- all` (record N/14; do not claim 14/14 if red)
 - [ ] Tip product-bar clip measured
 - [ ] Ready imam suites that exist still PASS

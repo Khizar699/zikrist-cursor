@@ -5,6 +5,7 @@ import {
   DEBUG_HUD_OVERLAYS_ARABIC, DEBUG_HUD_STAGE_INSET, FOCUSED_SCROLL_POSITION, PASSAGE_LOOKAHEAD, SHOW_TRANSLATION_PANE,
   passageIndex, passageLookaheadComplete, passagePanePadding, passageWindow, samePassage,
 } from '../src/core/passage';
+import { MUSHAF_ONLY_MVP } from '../src/core/mvp';
 import type { DisplayVerse, VerseRef } from '../src/core/types';
 
 const verse = (surah: number, ayah: number): DisplayVerse => ({
@@ -75,13 +76,12 @@ test('a short-surah window lists later ayahs once they are cached', () => {
   assert.equal(passageLookaheadComplete(complete, focus, hasVerse), true);
 });
 
-test('arabic stage hides the translation pane and still loads verse translation text', () => {
+test('arabic stage is mushaf-only: translation pane off, HUD does not cover verses', () => {
+  assert.equal(MUSHAF_ONLY_MVP, true);
   assert.equal(SHOW_TRANSLATION_PANE, false);
   assert.equal(DEBUG_HUD_OVERLAYS_ARABIC, false);
   assert.ok(DEBUG_HUD_STAGE_INSET >= 8 && DEBUG_HUD_STAGE_INSET <= 24);
   assert.ok(FOCUSED_SCROLL_POSITION > 0.3 && FOCUSED_SCROLL_POSITION < 0.55);
-  const row = verse(112, 3);
-  assert.ok(row.translation.trim());
   const stageHeight = 560;
   const padding = passagePanePadding(stageHeight);
   const fatiha7Lines = 5;

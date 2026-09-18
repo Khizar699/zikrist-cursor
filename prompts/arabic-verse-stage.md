@@ -1,4 +1,6 @@
-# Arabic verse stage (hide on-screen translation)
+# Arabic verse stage (mushaf-first display)
+
+> **Current MVP.** Translation stays unpainted. Listening must not require a translation pack (`MUSHAF_ONLY_MVP`). Re-show translation later by flipping the pane flag **and** restoring pack activate — not before mushaf follow is confident.
 
 ## Goal
 
@@ -6,7 +8,7 @@ Listening chrome only. Keep loading the approved translation in the content laye
 
 ## Scope
 
-1. `SyncedVersePanes` — Arabic-only stage (`SHOW_TRANSLATION_PANE = false`). `DisplayVerse.translation` still loads via `content.activate` / `verse()`.
+1. `SyncedVersePanes` — Arabic-only stage (`SHOW_TRANSLATION_PANE = false`). Mushaf Arabic loads without a translation pack (`content.prepareMushaf`).
 2. Stage inset under the overlay HUD so Quran text is not under the bug log.
 3. Focused ayah uses the HUD-to-mic height (not a half-screen translation pane). Heard-word highlight stays on display words.
 4. Liturgy / heard-words use the same Arabic stage (no English gloss painted).
@@ -18,4 +20,4 @@ Listening chrome only. Keep loading the approved translation in the content laye
 
 ## Limits
 
-Display/layout only. Translation packs still install and map. Re-show later by flipping the pane flag, not by skipping content load.
+Display/layout only for the original hide-pane pass. Translation packs must **not** be a listen gate. Re-show later by flipping the pane flag **after** mushaf follow is confident, not by skipping Arabic load.

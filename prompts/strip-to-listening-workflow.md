@@ -1,5 +1,7 @@
 # Strip Zikrist to the live listening workflow
 
+> **Historical.** Current MVP is Arabic mushaf follow without a translation pack (`prompts/mushaf-first-mvp.md`). Do not restore translation activation as a listen gate from this file.
+
 ## Goal
 
 Keep only the measurable recognition path: microphone capture, verse location, Arabic + translation display, and stop. Remove features, files, diagnostics, and packages that are not required for that path or for the algorithms that support it.

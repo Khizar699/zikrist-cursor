@@ -1,5 +1,7 @@
 # Faster live translation display
 
+> **Deferred as a translation prompt.** Keep the recognition speed work; do not treat painted translation as the session goal. Current MVP: lock + follow + Arabic mushaf (`prompts/mushaf-first-mvp.md`).
+
 ## Goal
 
 Live listening should show the confirmed verse translation as recitation is identified, with first location aimed at about 1–2 seconds of audible Quran. Do not display unconfirmed candidates as translation or history.

@@ -8,7 +8,7 @@ Open this folder when Tip names an algo / follower / locate session.
 | [RATCHET.md](./RATCHET.md) | Continuous improvement: fix → measure → permanent test lock; corpus grows |
 | [COVERAGE.md](./COVERAGE.md) | Failure taxonomy + Tier A/B/C mushaf coverage scoreboard (honest M/N) |
 | [TRAINING-DATA.md](./TRAINING-DATA.md) | Opt-in capture / provenance schema for a future own locate model |
-| [00-QUEUE.md](./00-QUEUE.md) | Launch order (P0 = floor restore and/or follow/handoff) |
+| [00-QUEUE.md](./00-QUEUE.md) | Launch order (P0 = mushaf follow). Phase 2 translation parked. |
 | [_SHARED.md](./_SHARED.md) | Session constraints |
 | `01`…`04` prompts | One concern each — launch only the Tip-named file |
 

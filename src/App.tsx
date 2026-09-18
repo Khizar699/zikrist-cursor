@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
+import { MUSHAF_ONLY_MVP } from './core/mvp';
 import { content } from './services/content';
 import { storage } from './services/storage';
 import { listening, type ListeningState } from './services/listening';
@@ -72,13 +73,14 @@ function Zikrist() {
       try {
         await storage.init();
         const saved = await storage.settings();
-        const language = saved.language ?? 'en';
+        const language = MUSHAF_ONLY_MVP ? null : (saved.language ?? 'en');
         const next: Settings = { language };
         if (typeof saved.debugHud === 'boolean') next.debugHud = saved.debugHud;
-        if (!saved.language) await storage.saveSettings(next);
+        if (!MUSHAF_ONLY_MVP && !saved.language) await storage.saveSettings(next);
         setSettings(next);
         await listening.prepare();
-        await content.activate(language);
+        if (MUSHAF_ONLY_MVP) await content.prepareMushaf();
+        else if (language) await content.activate(language);
         setReady(true);
       } catch (caught) {
         setError(String(caught));
@@ -89,7 +91,11 @@ function Zikrist() {
 
   const displayError = error ?? fontError?.message ?? listenError;
   const fontsReady = fontsLoaded || !!fontError;
-  const canListen = ready && fontsReady && !!settings?.language && content.language === settings.language;
+  const canListen = ready && fontsReady && (
+    MUSHAF_ONLY_MVP
+      ? content.mushafReady
+      : !!settings?.language && content.language === settings.language
+  );
 
   function toggle(): void {
     if (!settings || pending) return;

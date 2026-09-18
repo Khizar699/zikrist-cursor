@@ -11,7 +11,9 @@ import { formatAyahRef, latestDebugHud, resetDebugHud } from '../src/core/debug-
 import { lastRecognitionCycle, resetRecognitionCycles } from '../src/core/recognition-clocks';
 import type { RecognitionMessage, VerseRef } from '../src/core/types';
 
-/** In-memory mushaf rows only. No translation packs and no SQLite. */
+/** In-memory mushaf rows only. No translation packs, no SQLite, no network.
+ * Locks: monotonic follow, ayah-1 surah handoff, madd/CTC cousins that must
+ * not Global Search. */
 function verse(surah: number, ayah: number, words: string[], name = 'Test'): QuranVerse {
   const phonemes_joined = words.join(' ');
   return {

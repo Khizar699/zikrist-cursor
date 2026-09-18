@@ -7,7 +7,8 @@ export const PASSAGE_BACK = 1;
 /** Same-surah ayahs after the focused row. Short surahs (Fatiha, Ikhlas) fit
  * the rest of the surah on screen; long surahs stay in the cache. */
 export const PASSAGE_LOOKAHEAD = 7;
-/** Translation still loads on DisplayVerse. The listening screen paints Arabic only. */
+/** Quran translation pane stays off for the mushaf-first MVP. Flip only after
+ * lock + follow is confident (`src/core/mvp.ts`). */
 export const SHOW_TRANSLATION_PANE = false;
 /** HUD card sits in the listening column above the Arabic stage, not over the verses. */
 export const DEBUG_HUD_OVERLAYS_ARABIC = false;

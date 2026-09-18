@@ -13,6 +13,7 @@ import { samePassage } from '../core/passage';
 import { isCaptureGap, isLongPause, isSpeech } from '../core/capture-policy';
 import { nextSequentialRef, approachingSurahEnd, shouldRevealSequentialNext } from '../core/sequential';
 import type { DisplayVerse, RecognitionMessage, VerseRef, WordProgress } from '../core/types';
+import { MUSHAF_ONLY_MVP } from '../core/mvp';
 import { content } from './content';
 import { loadModel } from './model';
 import liturgyPack from '../../assets/content/salah-liturgy.json';
@@ -91,7 +92,11 @@ class Listening {
   }
   async start(): Promise<void> {
     if (this.state.status !== 'ready' && this.state.status !== 'error') return;
-    if (!content.language) throw new Error('Install your translation language first.');
+    if (MUSHAF_ONLY_MVP) {
+      if (!content.mushafReady) throw new Error('Mushaf is not ready.');
+    } else if (!content.language) {
+      throw new Error('Install your translation language first.');
+    }
     this.update({ status: 'starting', error: null });
     try {
       if (!this.session) await this.prepare();
@@ -189,7 +194,7 @@ class Listening {
       }));
       if (Platform.OS === 'android') {
         this.subscriptions.push(RecordingNotificationManager.addEventListener('recordingNotificationPause', () => { void this.stop(); }));
-        await RecordingNotificationManager.show({ title: 'Zikrist is listening', contentText: 'Offline translation · pause to end' });
+        await RecordingNotificationManager.show({ title: 'Zikrist is listening', contentText: 'Offline mushaf · pause to end' });
       }
       const result = await this.recorder.start();
       if (result.status === 'error') throw new Error(result.message);

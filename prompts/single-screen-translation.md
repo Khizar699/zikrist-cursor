@@ -1,5 +1,7 @@
 # Single-screen live translation
 
+> **Deferred.** On-screen Quran translation is out of the current MVP. Keep `SHOW_TRANSLATION_PANE = false` and `MUSHAF_ONLY_MVP`. Resume this prompt only after mushaf lock + follow is confident (`prompts/mushaf-first-mvp.md`).
+
 ## Goal
 
 Make the MVP useful as a translation surface: one screen, no settings/history/language chrome. Show confirmed Arabic and English in a calm, synced layout. Hold a verse until the next ayah is confirmed. Listening is a realtime waveform that morphs into a stop circle.

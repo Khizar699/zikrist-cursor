@@ -1,6 +1,20 @@
 # MVP validation
 
-Status: implementation and integration validation in progress. No physical phone or mosque test has been completed.
+Status: mushaf-first slice. Implementation and integration validation in progress. No physical phone or mosque test has been completed.
+
+**Current MVP (Phase 1):** listen → lock `[surah:ayah]` → display canonical **Arabic** → follow monotonically inside `[current − 1, current + 2]`. **Phase 2 translation** is a static `[surah:ayah]` lookup after Arabic alignment is flawless — not the live product bar. `MUSHAF_ONLY_MVP` means listening does not download a pack.
+
+## Phase 1 test strategy
+
+Default `npm test` must stay **offline and in-memory** (follower, gate, capture queue, Arabic mushaf display helpers). **Do not add** network, SQLite translation schema, or multi-language pack download/activate dependencies to that suite.
+
+Prioritize new units in this order:
+
+1. Monotonic verse-following under synthetic and live Arabic token streams.
+2. Surah-boundary handoff that enters **ayah 1** (ayah **2** only when ayah 1 is the shared Basmala) — refuse mid-surah phantoms.
+3. CTC letter repetitions, madd elongations, and phonetic-cousin matches that must keep the sticky lock (not Global Search).
+
+Match-to-display **p95 < 50 ms** after confirmation is an evaluation target, not a claimed acoustic latency. Mac `test:replay` remains the acoustic floor; it is not `npm test`.
 
 ## Completed checks
 
@@ -10,7 +24,7 @@ Status: implementation and integration validation in progress. No physical phone
 - SHA-256 verification passed for the model and its companion assets.
 - All 6,236 canonical Arabic display verses match the downloaded Tanzil text exactly.
 - All 6,236 recognition token round trips passed.
-- Both development copies of the English and Urdu databases passed hash, verse-count, unique-reference, text and footnote checks. These files are not bundled in the app.
+- Both development copies of the English and Urdu databases passed hash, verse-count, unique-reference, text and footnote checks. These files are **not** bundled, **not** a listen gate, and **not** part of default `npm test`. They are parked Phase 2 lookup assets.
 - `npm audit` reported zero vulnerabilities after scoped overrides.
 
 ## Actual acoustic replay
@@ -42,9 +56,9 @@ A separate 7.16-second synthesized English conversation test produced no confirm
 
 Test at least a mid-range Android, a lower-memory supported iPhone, and a recent device, using release builds:
 
-- Fresh setup, English pack download, interrupted/failed download, offline relaunch.
+- Fresh setup, bundled Arabic mushaf, no translation pack required, offline relaunch.
 - Permission denial/revocation, phone-call interruption, microphone route changes, notification pause, explicit Stop while inference runs.
-- Live recitation from unseen speakers: arbitrary starts, joined ayahs, repeated refrains, repeated al-Fatihah, jumps and long pauses.
+- Live recitation from unseen speakers: monotonic ayah advance, madd/pause that must not drop the lock, surah handoff into ayah 1, arbitrary starts, joined ayahs, repeated refrains, repeated al-Fatihah, jumps and long pauses.
 - Silence, conversation, prayer phrases, playback echo, room reverberation and multiple voices. Record false commits and missed matches.
 - Confirm zero audio files are created.
 - Manual lock/unlock for a full prayer-length session on each platform. Confirm continuous capture, privacy indicators and interruption handling.
@@ -71,7 +85,7 @@ Shipped phrases and deferred rows are unchanged from the corpus pack. Quran `npm
 
 ## Salah liturgy on-screen display (`03-display`)
 
-When listening emits `kind: 'salah_liturgy'`, `src/core/salah-liturgy-display.ts` looks up the pack row by `phraseId` and the single listening screen shows `arabic_uthmani` plus the pack `english` gloss (`english_kind: liturgy_gloss`). A “Prayer / liturgy” label plus a short category (Takbeer / Opening thana / Ruku, …) keeps it off the Quran ayah dual-pane. The next accepted `verse_match` restores passage follow; a neighborhood refresh of a held ayah does not. Unknown ids show nothing. Scores are not rendered. Copy does not claim full madhhab coverage or imam-ready. Units: `tests/salah-liturgy-display.test.ts` (injected locks for takbeer, thana, ruku_tasbih). No iOS Simulator capture in this Linux workspace.
+When listening emits `kind: 'salah_liturgy'`, `src/core/salah-liturgy-display.ts` looks up the pack row by `phraseId` and the single listening screen shows `arabic_uthmani` (pack English gloss is not painted in the mushaf-first MVP). A “Prayer / liturgy” label plus a short category (Takbeer / Opening thana / Ruku, …) keeps it off the Quran ayah list. The next accepted `verse_match` restores mushaf passage follow; a neighborhood refresh of a held ayah does not. Unknown ids show nothing. Scores are not rendered. Copy does not claim full madhhab coverage or imam-ready. Units: `tests/salah-liturgy-display.test.ts` (injected locks for takbeer, thana, ruku_tasbih). No iOS Simulator capture in this Linux workspace.
 
 ## Headless replay harness (2026-09-15)
 
