@@ -97,6 +97,39 @@ test('a next opening that is only a stem of the current body does not hear next'
   assert.equal(tape.holdsLock, true);
 });
 
+test('CTC madd runs on the current ayah are not unexplained leftover', () => {
+  const tape = scoreExpectedTape(
+    ['الله', 'الصماااد'],
+    [],
+    ['لم', 'يلد'],
+    ['الله', 'الصمد'],
+  );
+  assert.equal(tape.holdsLock, true);
+  assert.deepEqual(tape.unexplainedDistinctive, []);
+});
+
+test('repeated CTC letters collapse before leftover is judged unexplained', () => {
+  const tape = scoreExpectedTape(
+    ['الصمد', 'يييلد'],
+    [],
+    ['لم', 'يلد', 'ولم', 'يولد'],
+    ['الله', 'الصمد'],
+  );
+  assert.equal(tape.holdsLock, true);
+  assert.ok(!tape.unexplainedDistinctive.includes('يييلد'));
+});
+
+test('a prefix/suffix cousin of the current ayah still holds the lock', () => {
+  const tape = scoreExpectedTape(
+    ['الصمدا'],
+    [],
+    ['لم', 'يلد'],
+    ['الله', 'الصمد'],
+  );
+  assert.equal(tape.holdsLock, true);
+  assert.deepEqual(tape.unexplainedDistinctive, []);
+});
+
 test('expected phonemes score remainder plus next, not a distant blob host', () => {
   const joined = 'last nextone nexttwo';
   const tape = expectedPhonemeScore(joined, ['last'], ['nextone', 'nexttwo']);

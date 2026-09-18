@@ -21,3 +21,5 @@ After `prompts/live-short-surah-tail.md` lands, fix the **non-follow** chrome fr
 ## Success
 
 Island remnants gone; focused and next translations sit above the listen control; Quran text is not under a gear; dim neighbors remain shaped Arabic. Simulator re-check of the same Fatiha/Ikhlas/Nas flow. Not a physical-device claim.
+
+Related: `prompts/arabic-verse-stage.md` already hides the painted translation pane and stages Arabic under the HUD. This prompt still owns island clipping, gear overlap, and dim-neighbor shaping.

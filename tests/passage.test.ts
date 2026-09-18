@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
-  FOCUSED_SCROLL_POSITION, PASSAGE_LOOKAHEAD, passageIndex, passageLookaheadComplete,
-  passagePanePadding, passageWindow, samePassage,
+  DEBUG_HUD_OVERLAYS_ARABIC, DEBUG_HUD_STAGE_INSET, FOCUSED_SCROLL_POSITION, PASSAGE_LOOKAHEAD, SHOW_TRANSLATION_PANE,
+  passageIndex, passageLookaheadComplete, passagePanePadding, passageWindow, samePassage,
 } from '../src/core/passage';
 import type { DisplayVerse, VerseRef } from '../src/core/types';
 
@@ -75,13 +75,18 @@ test('a short-surah window lists later ayahs once they are cached', () => {
   assert.equal(passageLookaheadComplete(complete, focus, hasVerse), true);
 });
 
-test('pane padding leaves room for a long focused Fatiha 1:7 translation', () => {
-  const paneHeight = 350;
-  const padding = passagePanePadding(paneHeight);
+test('arabic stage hides the translation pane and still loads verse translation text', () => {
+  assert.equal(SHOW_TRANSLATION_PANE, false);
+  assert.equal(DEBUG_HUD_OVERLAYS_ARABIC, false);
+  assert.ok(DEBUG_HUD_STAGE_INSET >= 8 && DEBUG_HUD_STAGE_INSET <= 24);
+  assert.ok(FOCUSED_SCROLL_POSITION > 0.3 && FOCUSED_SCROLL_POSITION < 0.55);
+  const row = verse(112, 3);
+  assert.ok(row.translation.trim());
+  const stageHeight = 560;
+  const padding = passagePanePadding(stageHeight);
   const fatiha7Lines = 5;
-  const lineHeight = 46;
-  assert.ok(padding * 2 + fatiha7Lines * lineHeight < paneHeight);
-  assert.ok(FOCUSED_SCROLL_POSITION < 0.35);
+  const arabicLineHeight = 66;
+  assert.ok(padding * 2 + fatiha7Lines * arabicLineHeight < stageHeight);
   const verses = JSON.parse(readFileSync('assets/content/quran-display.json', 'utf8')).verses as Record<string, string>;
   const fatiha7 = (verses['1:7'] ?? '').normalize('NFKD').replace(/\p{M}/gu, '');
   assert.match(fatiha7, /مغضوب/);

@@ -10,6 +10,7 @@ import { listening, type ListeningState } from './services/listening';
 import type { Settings } from './core/types';
 import { colors, styles as s } from './ui/theme';
 import { inter, tajawal } from './ui/fonts';
+import { DEBUG_HUD_STAGE_INSET } from './core/passage';
 import { listeningSurface } from './core/salah-liturgy-display';
 import { HeardWordPanes, LiturgyPanes, SyncedVersePanes } from './ui/SyncedVersePanes';
 import { ListeningControl } from './ui/ListeningControl';
@@ -24,19 +25,32 @@ function useListening<T>(select: (state: ListeningState) => T): T {
   return useSyncExternalStore(listening.subscribe, () => select(listening.snapshot()));
 }
 
-function LivePassage({ urdu, ready, displayError }: { urdu: boolean; ready: boolean; displayError: string | null }) {
+function LivePassage({
+  urdu, ready, displayError, topInset,
+}: {
+  urdu: boolean;
+  ready: boolean;
+  displayError: string | null;
+  topInset: number;
+}) {
   const current = useListening((state) => state.current);
   const passage = useListening((state) => state.passage);
   const draftWords = useListening((state) => state.draftWords);
   const liturgy = useListening((state) => state.liturgy);
   const wordProgress = useListening((state) => state.wordProgress);
   const surface = listeningSurface({ liturgy, current, passage, draftWords });
-  if (surface.mode === 'liturgy') return <LiturgyPanes liturgy={surface.liturgy} />;
-  if (surface.mode === 'heard_words') return <HeardWordPanes words={surface.words} />;
+  if (surface.mode === 'liturgy') return <LiturgyPanes liturgy={surface.liturgy} topInset={topInset} />;
+  if (surface.mode === 'heard_words') return <HeardWordPanes words={surface.words} topInset={topInset} />;
   if (surface.mode === 'passage') {
-    return <SyncedVersePanes verses={surface.passage} focus={surface.current} urdu={urdu} wordProgress={wordProgress} />;
+    return <SyncedVersePanes
+      verses={surface.passage}
+      focus={surface.current}
+      urdu={urdu}
+      wordProgress={wordProgress}
+      topInset={topInset}
+    />;
   }
-  return <View style={[s.panes, { justifyContent: 'center', alignItems: 'center' }]}>
+  return <View style={[s.panes, { paddingTop: topInset, justifyContent: 'center', alignItems: 'center' }]}>
     {!ready && !displayError ? <ActivityIndicator color={colors.muted} /> : null}
   </View>;
 }
@@ -95,7 +109,13 @@ function Zikrist() {
     <SafeAreaView style={s.screen} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
       {!fontsReady || !settings ? <View style={[s.screen, { justifyContent: 'center', alignItems: 'center' }]}><ActivityIndicator color={colors.arabic} /></View> : <>
-        <LivePassage urdu={settings.language === 'ur'} ready={ready} displayError={displayError} />
+        {debugHud ? <DebugHUD /> : null}
+        <LivePassage
+          urdu={settings.language === 'ur'}
+          ready={ready}
+          displayError={displayError}
+          topInset={DEBUG_HUD_STAGE_INSET}
+        />
         <View style={s.footer}>
           {!!displayError && <Text style={s.error}>{displayError}</Text>}
           <ListeningControl
@@ -110,7 +130,6 @@ function Zikrist() {
         </View>
       </>}
     </SafeAreaView>
-    {debugHud ? <DebugHUD /> : null}
     <SettingsSheet
       visible={settingsOpen}
       debugHud={debugHud}

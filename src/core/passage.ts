@@ -7,15 +7,20 @@ export const PASSAGE_BACK = 1;
 /** Same-surah ayahs after the focused row. Short surahs (Fatiha, Ikhlas) fit
  * the rest of the surah on screen; long surahs stay in the cache. */
 export const PASSAGE_LOOKAHEAD = 7;
-/** Keep the focused ayah near the top of each pane so a long row (1:7) can
- * use the rest of the half-screen. 0.5 plus 38% padding clipped Fatiha 1:7. */
-export const FOCUSED_SCROLL_POSITION = 0.18;
+/** Translation still loads on DisplayVerse. The listening screen paints Arabic only. */
+export const SHOW_TRANSLATION_PANE = false;
+/** HUD card sits in the listening column above the Arabic stage, not over the verses. */
+export const DEBUG_HUD_OVERLAYS_ARABIC = false;
+/** Small gap under the in-flow Debug HUD (or under the island when the HUD is off). */
+export const DEBUG_HUD_STAGE_INSET = 12;
+/** Focused ayah sits in the HUD-to-mic band. Full-height Arabic no longer needs
+ * the old 0.18 half-pane pin; 0.5 plus huge padding used to clip 1:7. */
+export const FOCUSED_SCROLL_POSITION = 0.42;
 
-/** Vertical list padding. Large centered padding left only ~24% of the pane
- * for the focused ayah and clipped 1:7 Arabic+English. */
+/** Vertical list padding inside the Arabic stage (HUD to mic). */
 export function passagePanePadding(paneHeight: number): number {
   if (paneHeight <= 0) return 12;
-  return Math.max(8, Math.min(36, Math.round(paneHeight * 0.08)));
+  return Math.max(12, Math.min(48, Math.round(paneHeight * 0.1)));
 }
 
 /** On-screen rows: one previous ayah, the focused ayah, then upcoming ayahs of

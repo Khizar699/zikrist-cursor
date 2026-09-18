@@ -117,7 +117,7 @@ test('a liturgy lock takes over a held ayah, then a verse_match restores passage
   assert.equal(state.liturgy, null);
 });
 
-test('the same ayah confirmed after liturgy still restores the Quran dual pane', () => {
+test('the same ayah confirmed after liturgy still restores the Quran passage surface', () => {
   const fatiha = ayah(1, 2);
   let state = reduceListeningDisplay(emptyListeningDisplay(), { type: 'verse_match', verse: fatiha });
   state = reduceListeningDisplay(state, { type: 'salah_liturgy', pack, phraseId: 'thana' });

@@ -29,6 +29,15 @@ function compact(text: string): string {
   return text.replace(/\s+/g, '');
 }
 
+/** CTC madd / elongation: ييي، ااا → one letter so leftover is not "unexplained". */
+export function collapseMaddRuns(text: string): string {
+  return text.replace(/([\u0621-\u064A])\1{2,}/gu, '$1');
+}
+
+function normalizeToken(token: string): string {
+  return collapseMaddRuns(compact(token));
+}
+
 function wordsMatch(left: string, right: string, minRatio = 0.8): boolean {
   if (left === right) return true;
   if (left.length <= 2 || right.length <= 2) return false;
@@ -85,7 +94,19 @@ function isFormulaOpening(word: string): boolean {
 }
 
 function tokenExplainedBy(token: string, words: string[]): boolean {
-  return words.some((word) => wordsMatch(token, word) || relatedStem(token, word) || explainedCousin(token, word));
+  const heard = normalizeToken(token);
+  if (!heard) return false;
+  return words.some((word) => {
+    const expected = normalizeToken(word);
+    if (!expected) return false;
+    if (wordsMatch(heard, expected) || relatedStem(heard, expected) || explainedCousin(heard, expected)) {
+      return true;
+    }
+    const a = heard.replace(/^ال/, '').replace(/^[وف]/, '');
+    const b = expected.replace(/^ال/, '').replace(/^[وف]/, '');
+    if (a.length < 3 || b.length < 3) return false;
+    return a.startsWith(b) || b.startsWith(a) || a.endsWith(b) || b.endsWith(a);
+  });
 }
 
 export function currentRemainder(body: string[], wordIndex: number): string[] {
@@ -145,7 +166,7 @@ export function expectedPhonemeScore(decoded: string, remainder: string[], next:
 
 function distinctiveUnexplained(tokens: string[], currentBody: string[], next: string[]): string[] {
   return tokens.filter((token) => {
-    const text = compact(token);
+    const text = normalizeToken(token);
     if (text.length < 4 || isFormulaOpening(text)) return false;
     if (tokenExplainedBy(text, currentBody)) return false;
     if (tokenExplainedBy(text, next)) return false;
@@ -169,11 +190,12 @@ export function scoreExpectedTape(
   next: string[],
   currentBody: string[] = remainder,
 ): TapeScore {
-  const remainderAligned = alignRemainder(recognized, remainder);
+  const heard = recognized.map((token) => collapseMaddRuns(token));
+  const remainderAligned = alignRemainder(heard, remainder);
   let leftover: string[];
-  if (remainder.length === 0) leftover = recognized;
-  else if (remainderAligned.length) leftover = recognized.slice(remainderAligned[remainderAligned.length - 1]!.spoken + 1);
-  else leftover = recognized.filter((token) => !tokenExplainedBy(token, remainder));
+  if (remainder.length === 0) leftover = heard;
+  else if (remainderAligned.length) leftover = heard.slice(remainderAligned[remainderAligned.length - 1]!.spoken + 1);
+  else leftover = heard.filter((token) => !tokenExplainedBy(token, remainder));
 
   const nextAligned = alignNextFromOpening(leftover, next);
   const leftoverAfterNext = nextAligned.start >= 0
@@ -197,6 +219,6 @@ export function scoreExpectedTape(
     holdsLock: unexplainedDistinctive.length === 0,
     remainderCoverage: remainderTotal === 0 ? 0 : remainderHits / remainderTotal,
     nextCoverage: next.length ? nextHits / next.length : 0,
-    phonemeScore: expectedPhonemeScore(recognized.join(' '), remainder, next),
+    phonemeScore: expectedPhonemeScore(heard.join(' '), remainder, next),
   };
 }
