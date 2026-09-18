@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -13,6 +13,8 @@ import { inter, tajawal } from './ui/fonts';
 import { listeningSurface } from './core/salah-liturgy-display';
 import { HeardWordPanes, LiturgyPanes, SyncedVersePanes } from './ui/SyncedVersePanes';
 import { ListeningControl } from './ui/ListeningControl';
+import { DebugHUD } from './ui/DebugHUD';
+import { SettingsSheet } from './ui/SettingsSheet';
 
 export default function App() {
   return <GestureHandlerRootView style={s.root}><SafeAreaProvider><Zikrist /></SafeAreaProvider></GestureHandlerRootView>;
@@ -42,12 +44,14 @@ function LivePassage({ urdu, ready, displayError }: { urdu: boolean; ready: bool
 function Zikrist() {
   const [fontsLoaded, fontError] = useFonts({ Inter: inter, Tajawal: tajawal });
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const status = useListening((state) => state.status);
   const listenError = useListening((state) => state.error);
   const live = status === 'listening';
   const pending = status === 'loading' || status === 'starting' || status === 'stopping';
+  const debugHud = settings?.debugHud ?? __DEV__;
 
   useEffect(() => {
     void (async () => {
@@ -56,6 +60,7 @@ function Zikrist() {
         const saved = await storage.settings();
         const language = saved.language ?? 'en';
         const next: Settings = { language };
+        if (typeof saved.debugHud === 'boolean') next.debugHud = saved.debugHud;
         if (!saved.language) await storage.saveSettings(next);
         setSettings(next);
         await listening.prepare();
@@ -79,19 +84,38 @@ function Zikrist() {
     void listening.start().catch((caught) => setError(String(caught)));
   }
 
-  return <SafeAreaView style={s.screen} edges={['top', 'bottom']}>
-    <StatusBar style="dark" />
-    {!fontsReady || !settings ? <View style={[s.screen, { justifyContent: 'center', alignItems: 'center' }]}><ActivityIndicator color={colors.arabic} /></View> : <>
-      <LivePassage urdu={settings.language === 'ur'} ready={ready} displayError={displayError} />
-      <View style={s.footer}>
-        {!!displayError && <Text style={s.error}>{displayError}</Text>}
-        <ListeningControl
-          listening={live}
-          pending={pending}
-          disabled={!canListen && !live}
-          onToggle={toggle}
-        />
-      </View>
-    </>}
-  </SafeAreaView>;
+  function saveDebugHud(enabled: boolean): void {
+    if (!settings) return;
+    const next: Settings = { ...settings, debugHud: enabled };
+    setSettings(next);
+    void storage.saveSettings(next);
+  }
+
+  return <View style={s.screen}>
+    <SafeAreaView style={s.screen} edges={['top', 'bottom']}>
+      <StatusBar style="dark" />
+      {!fontsReady || !settings ? <View style={[s.screen, { justifyContent: 'center', alignItems: 'center' }]}><ActivityIndicator color={colors.arabic} /></View> : <>
+        <LivePassage urdu={settings.language === 'ur'} ready={ready} displayError={displayError} />
+        <View style={s.footer}>
+          {!!displayError && <Text style={s.error}>{displayError}</Text>}
+          <ListeningControl
+            listening={live}
+            pending={pending}
+            disabled={!canListen && !live}
+            onToggle={toggle}
+          />
+          <Pressable onPress={() => setSettingsOpen(true)} accessibilityRole="button" accessibilityLabel="Open settings" hitSlop={8}>
+            <Text style={s.settingsLink}>Settings</Text>
+          </Pressable>
+        </View>
+      </>}
+    </SafeAreaView>
+    {debugHud ? <DebugHUD /> : null}
+    <SettingsSheet
+      visible={settingsOpen}
+      debugHud={debugHud}
+      onClose={() => setSettingsOpen(false)}
+      onToggleDebugHud={saveDebugHud}
+    />
+  </View>;
 }

@@ -59,5 +59,13 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
   },
   error: { color: colors.danger, fontSize: 13, lineHeight: 18, textAlign: 'center', paddingHorizontal: 28, paddingBottom: 10 },
-  footer: { alignItems: 'center', justifyContent: 'center', paddingTop: 8, paddingBottom: 10, minHeight: 96 },
+  footer: { alignItems: 'center', justifyContent: 'center', paddingTop: 8, paddingBottom: 10, minHeight: 118 },
+  settingsLink: {
+    fontFamily: fonts.translation,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.muted,
+    paddingTop: 8,
+    paddingBottom: 2,
+  },
 });

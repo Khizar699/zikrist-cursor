@@ -36,12 +36,12 @@ Skip overnight queues unless picking next work. Dictation above is what to **wri
 
 ## Tip state (update every PR)
 
-- **This PR:** Local Mac Agent — **`prompts/live-short-surah-tail.md`**. Same-surah leftover after a short ayah (112:2→3 `يلد`/`لم`, then 112:4); compact-surah cache so remaining ayahs list on first lock; focused 1:7 pane padding. Formula leftover `قل الله` after Kawthar must not lock An-Nisa **4:113**. Finding `live-ikhlas-stall-112-3` **closed** (unit + Mac ikhlas). Live Simulator recitation was not re-measured. Not a phone claim.
-- **Prior tip:** live sim recording analysis (iPhone 17 Simulator ReplayKit, 115 s). P1 chrome `prompts/live-passage-chrome.md` still open.
-- **Gate (floor):** `npm test` **253/253**; typecheck pass. `npm run test:replay -- all` = **13/14 FAIL**. Remaining: `english-negative:verse_lock_20:1`. `fatiha` 1:2@9s–1:7@35s; `nas` 114:1–6 (soft **2:1** after expect); `ikhlas` 112:1@2s–4@7s including **112:3@6s**; `jump` 108:1–3 then **112:1@16.75–4**. Do not claim 14/14.
-- **Product bar:** clip class `famous-short`. Mac ordered advance: Ikhlas **112:1–4**; Fatiha **1:2–7**; Nas **114:1–6**. Ready imam: Subayyal **4:129@11s→4:130@31s**; Qiyam **36:16–18**. 1:7 clip locked by pane-padding unit (full wrath/astray Arabic+English). Live mic / Simulator re-recite not run this session.
-- **Ratchet:** units in `tests/follower.test.ts` (112:2 leftover → 3 then 4; `يلد` without `يولد`; shared `الله` does not skip 112:3; Kawthar `قل هو الله` → 112:1 not 4:113), `tests/expected-tape.test.ts`, `tests/passage.test.ts`, `tests/sequential-display.test.ts`. Do not weaken those expects.
-- **Restore:** `npm ci` → `npm run setup` (or `setup -- --fixtures`) → `npm run ios`. Reload Metro after follow/display changes.
+- **This PR:** Local Mac Agent — **`prompts/debug-hud.md`**. Simulator Debug HUD under the Dynamic Island (`top: 60, left: 16, right: 80`): raw Tilawa ASR, inference ms, match ms, lock vs candidate, similarity score, search space. Settings footer toggle (not a top-right gear); `__DEV__` default on. Separate throttled debug store so the verse carousel does not re-render every hop. Follower lock rules not retuned. Prior working-tree follow work (`prompts/live-short-surah-tail.md`) is unchanged. Not a phone claim.
+- **Prior tip:** live-short-surah-tail — 112:2 leftover → 3 then 4; compact-surah cache; 1:7 pane padding. P1 chrome `prompts/live-passage-chrome.md` still open.
+- **Gate (floor):** `npm test` **257/257**; typecheck pass. `npm run test:replay -- all` not re-run for the HUD; last recorded = **13/14 FAIL** (`english-negative:verse_lock_20:1`). Do not claim 14/14.
+- **Product bar:** clip class `famous-short` from prior tip (Ikhlas **112:1–4**; Fatiha **1:2–7**; Nas **114:1–6**). HUD session did not retune follow. Live mic / Simulator HUD visual check not run in this agent turn.
+- **Ratchet:** units in `tests/debug-hud.test.ts` (format + throttle) and `tests/follower.test.ts` (112:1 lock HUD snapshot: raw ASR, inference/match ms, candidate **[112:2]**, `Locked: Ayahs 1–2`). Do not weaken prior live-short-surah-tail expects.
+- **Restore:** `npm ci` → `npm run setup` (or `setup -- --fixtures`) → `npm run ios`. Reload Metro after UI/follow changes.
 - **Known fails:** Floor **english-negative** (`floor-english-negative-20-1`). Handoff: hafiz-usama →**27:15** (`product-hafiz-usama-27-15`, stall after **1:7**, **2:1** cleared). Soft deferred: `soft-nas-to-2-1`, `soft-quraysh-to-2-1`. Still blocked: `imam-mid-ayah-pause`; Qunut@s9P 4:56. Deferred P2: masjid **25:69≠2:1**; ahzab **33:62≠33:60**; baqarah→imran **≠57:28**. Live Ikhlas 112:2 stall **cleared** (locked). Jump and live shared-tail stall remain **cleared**. Phase C streaming swap **not taken**.
 - **Open tracks:** **P0** floor restore (`floor-english-negative-20-1`) **or** `product-hafiz-usama-27-15`. P1 `prompts/live-passage-chrome.md`. Then `npm run findings:report`. Liturgy TTS `tts-fill/03-ruku.md`.
 
@@ -108,7 +108,7 @@ Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that woul
 
 **Current open tracks**
 
-- **P0:** `prompts/live-short-surah-tail.md` (live Ikhlas **112:3–4** + readable Fatiha **1:7**) — finding `live-ikhlas-stall-112-3`. Then floor restore english-negative (`floor-english-negative-20-1`) **or** `prompts/real-imam/algo/04-hafiz-usama-1-2-vs-27-15.md`. Each fix must lock a permanent test (`RATCHET.md`). Live follow Phase A+B+C landed. Default stays Tilawa (`npm run test:bakeoff`).
+- **P0:** floor restore english-negative (`floor-english-negative-20-1`) **or** `prompts/real-imam/algo/04-hafiz-usama-1-2-vs-27-15.md`. Simulator Debug HUD: `prompts/debug-hud.md`. Each recognition fix must lock a permanent test (`RATCHET.md`). Live follow Phase A+B+C landed. Default stays Tilawa (`npm run test:bakeoff`).
 - P1 live chrome: `prompts/live-passage-chrome.md`.
 - Liturgy TTS after thana Mac-green — `prompts/salah-liturgy/tts-fill/03-ruku.md`
 

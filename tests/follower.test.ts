@@ -13,6 +13,7 @@ import {
 } from '../src/core/follower';
 import type { RecognitionMessage } from '../src/core/types';
 import { lastRecognitionCycle, resetRecognitionCycles } from '../src/core/recognition-clocks';
+import { formatAyahRef, latestDebugHud, resetDebugHud } from '../src/core/debug-hud';
 
 function verse(surah: number, ayah: number, words: string[], name = 'Test'): QuranVerse {
   const phonemes_joined = words.join(' ');
@@ -1332,6 +1333,36 @@ test('local recognition clocks record a locate cycle without verse identifiers',
   assert.equal(cycle!.phase, 'acquiring');
   assert.ok(cycle!.windowSec >= 0.9);
   assert.equal('text' in cycle!, false);
+});
+
+test('debug HUD records raw ASR, inference plus match latency, lock vs next candidate, and neighborhood search space', async () => {
+  resetDebugHud();
+  const engine = follower([
+    {
+      ...spoken(112, 1),
+      timings: { onnxMs: 40, decodeMs: 8, locateMs: 12 },
+    },
+    {
+      text: 'qul huwa allahu ahad',
+      rawPhonemes: 'qul huwa allahu ahad',
+      timings: { onnxMs: 33, decodeMs: 5, locateMs: 0 },
+    },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:1']);
+  let snap = latestDebugHud();
+  assert.equal(formatAyahRef(snap.lock), '[112:1]');
+  assert.match(snap.partialAsr, /qul/);
+  assert.equal(snap.inferenceMs, 48);
+  assert.ok(snap.matchMs >= 12);
+  assert.equal(snap.searchSpace, 'Global Search');
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  snap = latestDebugHud();
+  assert.equal(formatAyahRef(snap.lock), '[112:1]');
+  assert.equal(formatAyahRef(snap.candidate), '[112:2]');
+  assert.match(snap.partialAsr, /qul/);
+  assert.equal(snap.inferenceMs, 38);
+  assert.equal(snap.searchSpace, 'Locked: Ayahs 1–2');
+  resetDebugHud();
 });
 
 const qulLookalikes = [

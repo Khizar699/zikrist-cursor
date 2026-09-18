@@ -2,6 +2,7 @@ import type { QuranChampionMatch, QuranDB, QuranVerse, TilawaSession, Transcribe
 import { fragmentScore, ratio as levRatio } from '../../node_modules/@tilawa/core/dist/levenshtein.js';
 import { isFatihaBasmala, isFatihaBasmalaTail, OPENING_BASMALA_WORDS, openingBasmalaWordCount, splitOpeningBasmala } from './basmala';
 import { recordRecognitionCycle } from './recognition-clocks';
+import { formatSearchSpace, publishDebugHud, resetDebugHud, type DebugHudSnapshot } from './debug-hud';
 import { handoffCandidateSurahs, isFamousHandoffSurah, rerankChampion, surahBonus, acousticChampion, TIE_BREAK_MARGIN } from './salah-prior';
 import { currentRemainder, openingCousin, scoreExpectedTape } from './expected-tape';
 import { TRACKING_COMPLETION_COVERAGE } from './sequential';
@@ -598,6 +599,14 @@ export class RecitationFollower {
   /** Exact muqattaʿāt tokens heard during this acquire (الم / letter names).
    * A later 2:2-dominated CTC decode must not erase them. */
   private heardMuqattaatTokens: string[] = [];
+  private debugAsr = '';
+  private debugInferenceMs = 0;
+  private debugMatchMs = 0;
+  private debugLocateMs = 0;
+  private debugMatchStarted: number | null = null;
+  private debugCandidate: VerseRef | null = null;
+  private debugScore: number | null = null;
+  private debugSearchSpace = 'Global Search';
   private readonly transcribe: TranscribeFn;
 
   constructor(private readonly db: QuranDB, transcribe: TranscribeFn | TilawaSession) {
@@ -616,6 +625,15 @@ export class RecitationFollower {
     this.trimmedForShortLast = false;
     this.heardMuqattaatTokens = [];
     this.lastHeardTokens = [];
+    this.debugAsr = '';
+    this.debugInferenceMs = 0;
+    this.debugMatchMs = 0;
+    this.debugLocateMs = 0;
+    this.debugMatchStarted = null;
+    this.debugCandidate = null;
+    this.debugScore = null;
+    this.debugSearchSpace = 'Global Search';
+    resetDebugHud();
   }
 
   get lockedRef(): VerseRef | null {
@@ -649,8 +667,65 @@ export class RecitationFollower {
     this.fresh += samples.length;
     const maxSec = this.followMaxSec();
     if (this.window.length > samplesFor(maxSec)) this.window = keepLast(this.window, maxSec);
-    if (this.phase === 'following') return this.follow();
-    return this.acquire();
+    const messages = this.phase === 'following' ? await this.follow() : await this.acquire();
+    this.emitDebugHud();
+    return messages;
+  }
+
+  private noteInference(result: TranscribeResult): void {
+    this.debugAsr = result.text.trim();
+    this.debugInferenceMs = (result.timings?.onnxMs ?? 0) + (result.timings?.decodeMs ?? 0);
+    this.debugLocateMs = result.timings?.locateMs ?? 0;
+    this.debugMatchStarted = Date.now();
+  }
+
+  private noteCandidate(ref: VerseRef | null, score: number | null): void {
+    this.debugCandidate = ref;
+    this.debugScore = score;
+  }
+
+  private lockedSearchSpace(lock: QuranVerse): string {
+    const previous = this.previousVerse(lock);
+    const next = this.db.getNextVerse(lock.surah, lock.ayah);
+    return formatSearchSpace({
+      phase: 'following',
+      lock: { surah: lock.surah, ayah: lock.ayah },
+      previousAyah: previous?.surah === lock.surah ? previous.ayah : null,
+      nextAyah: next?.surah === lock.surah ? next.ayah : null,
+      globalLocate: false,
+      nextSurahPool: false,
+    });
+  }
+
+  private closeMatchTimer(): void {
+    if (this.debugMatchStarted == null) return;
+    this.debugMatchMs = Date.now() - this.debugMatchStarted + this.debugLocateMs;
+    this.debugMatchStarted = null;
+  }
+
+  private emitDebugHud(): void {
+    this.closeMatchTimer();
+    const lock = this.lock ? { surah: this.lock.surah, ayah: this.lock.ayah } : null;
+    let candidate = this.debugCandidate;
+    if (lock && candidate && candidate.surah === lock.surah && candidate.ayah === lock.ayah) {
+      const next = this.db.getNextVerse(lock.surah, lock.ayah);
+      candidate = next ? { surah: next.surah, ayah: next.ayah } : null;
+    }
+    const searchSpace = this.phase === 'following' && this.lock && this.debugSearchSpace !== 'Global Search'
+      && this.debugSearchSpace !== 'Next-surah pool'
+      ? this.lockedSearchSpace(this.lock)
+      : this.debugSearchSpace;
+    const snapshot: DebugHudSnapshot = {
+      partialAsr: this.debugAsr,
+      inferenceMs: this.debugInferenceMs,
+      matchMs: this.debugMatchMs,
+      lock,
+      candidate,
+      matchScore: this.debugScore,
+      searchSpace,
+      phase: this.phase,
+    };
+    publishDebugHud(snapshot);
   }
 
   private noteCycle(result: TranscribeResult, locate: boolean): void {
@@ -682,6 +757,8 @@ export class RecitationFollower {
     const result = await this.transcribe(this.window, true);
     this.noteCycle(result, true);
     this.noteHeardTokens(result.text);
+    this.noteInference(result);
+    this.debugSearchSpace = 'Global Search';
     const recovered = await this.recoverOpeningMuqattaat(result);
     if (recovered) return recovered;
     return this.lockFromTranscript(result, false);
@@ -700,6 +777,7 @@ export class RecitationFollower {
     const olderSec = (this.window.length / SAMPLE_RATE) - LOOKBACK_DROP_SEC;
     if (olderSec < ACQUIRE_MIN_SEC) return undefined;
     const lookback = await this.transcribe(keepFirst(this.window, olderSec), true);
+    this.noteInference(lookback);
     const recovered = this.lockFromTranscript(lookback, false);
     const match = recovered.find((message) => message.type === 'verse_match');
     if (!match || match.type !== 'verse_match' || match.ayah !== 1) return undefined;
@@ -736,6 +814,8 @@ export class RecitationFollower {
       return isolated ?? [];
     }
     const ranked = rerankChampion(raw, this.priorSurah);
+    this.noteCandidate({ surah: ranked.surah, ayah: ranked.ayah }, ranked.score);
+    if (allowSearch) this.debugSearchSpace = 'Global Search';
     const acoustic = acousticChampion(raw);
     const attempts = [ranked];
     if (ranked.surah !== acoustic.surah || ranked.ayah !== acoustic.ayah) attempts.push(acoustic);
@@ -923,6 +1003,7 @@ export class RecitationFollower {
     const text = result.text.trim();
     const recognized = text.split(/\s+/).filter(Boolean);
     this.noteHeardTokens(text);
+    this.noteInference(result);
     const previous = this.previousVerse(current);
     const currentBody = verseAlignWords(current).words;
     const nextBody = next && next.surah === current.surah ? verseAlignWords(next).words : [];
@@ -983,6 +1064,11 @@ export class RecitationFollower {
       previousScore,
       heardNext ? nextScore : 0,
     );
+    this.debugSearchSpace = this.lockedSearchSpace(current);
+    this.noteCandidate(
+      next && next.surah === current.surah ? { surah: next.surah, ayah: next.ayah } : null,
+      heardNext ? nextScore : currentScore,
+    );
     if (advanced) this.wordIndex = wordIndex;
     if (advanced && !sharedPrefixOnly) this.mismatches = 0;
     const complete = completeThisHop;
@@ -1001,6 +1087,7 @@ export class RecitationFollower {
 
     const tapeAdvance = tape.nextHeard && tape.unexplainedDistinctive.length === 0;
     if (next && next.surah === current.surah && (tapeAdvance || this.shouldAdvance(recognized, next, current))) {
+      this.noteCandidate({ surah: next.surah, ayah: next.ayah }, Math.max(nextScore, currentScore));
       return [...messages, ...this.commit(next, Math.max(nextScore, currentScore), this.alignForCommit(recognized, next))];
     }
 
@@ -1032,6 +1119,7 @@ export class RecitationFollower {
 
     const needSearch = (tape.unexplainedDistinctive.length > 0 && this.mismatches > 0) || atSurahBoundary;
     const located = needSearch ? this.matchFromTranscript(result, true) : null;
+    if (needSearch) this.debugSearchSpace = 'Global Search';
     const locatedVerse = located ? this.locateAyah(located, text, recognized) : undefined;
     const locatedScore = locatedVerse ? this.locationScore(text, locatedVerse) : 0;
     const stillInSurah = Boolean(next && next.surah === current.surah);
@@ -1055,12 +1143,16 @@ export class RecitationFollower {
     );
 
     if (jump && located && locatedVerse) {
+      this.debugSearchSpace = 'Global Search';
+      this.noteCandidate({ surah: locatedVerse.surah, ayah: locatedVerse.ayah }, locatedScore);
       return [...messages, ...this.commit(locatedVerse, located.score, contiguousAlignToVerse(recognized, locatedVerse))];
     }
 
     if (complete && !next) {
       const pooled = this.lockFromNextSurahPool(text, recognized, current.surah);
       if (pooled) {
+        this.debugSearchSpace = 'Next-surah pool';
+        this.noteCandidate({ surah: pooled.surah, ayah: pooled.ayah }, this.locationScore(text, pooled));
         return [...messages, ...this.commit(pooled, this.locationScore(text, pooled), contiguousAlignToVerse(recognized, pooled))];
       }
       this.startReacquire();
@@ -1308,6 +1400,8 @@ export class RecitationFollower {
     this.wordIndex = -1;
     this.mismatches = 0;
     this.heardMuqattaatTokens = [];
+    this.debugSearchSpace = 'Global Search';
+    this.debugCandidate = null;
     if (clearWindow) {
       this.window = new Float32Array(0);
       this.fresh = 0;
