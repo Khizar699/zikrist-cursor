@@ -2,16 +2,24 @@ import type { FollowerPhase, VerseRef } from './types';
 
 export const DEBUG_HUD_THROTTLE_MS = 120;
 export const DEBUG_HUD_ASR_MAX = 48;
+/** Consecutive weak hops the follower allows before dropping lock. */
+export const DEBUG_HUD_MISS_THRESHOLD = 3;
+
+export type DebugHudMode = 'TRACKING' | 'ACQUIRING' | 'GLOBAL';
 
 export type DebugHudSnapshot = {
   partialAsr: string;
   inferenceMs: number;
   matchMs: number;
+  bufferMs: number;
   lock: VerseRef | null;
   candidate: VerseRef | null;
   matchScore: number | null;
   searchSpace: string;
   phase: FollowerPhase;
+  mode: DebugHudMode;
+  misses: number;
+  missThreshold: number;
 };
 
 export function emptyDebugHud(): DebugHudSnapshot {
@@ -19,11 +27,15 @@ export function emptyDebugHud(): DebugHudSnapshot {
     partialAsr: '',
     inferenceMs: 0,
     matchMs: 0,
+    bufferMs: 0,
     lock: null,
     candidate: null,
     matchScore: null,
     searchSpace: 'Global Search',
     phase: 'acquiring',
+    mode: 'ACQUIRING',
+    misses: 0,
+    missThreshold: DEBUG_HUD_MISS_THRESHOLD,
   };
 }
 
@@ -58,13 +70,25 @@ export function truncateAsr(text: string, max = DEBUG_HUD_ASR_MAX): string {
   return `${compact.slice(0, Math.max(1, max - 1))}…`;
 }
 
+export function formatDebugHudMode(input: {
+  phase: FollowerPhase;
+  searchSpace: string;
+  lock: VerseRef | null;
+}): DebugHudMode {
+  if (input.phase === 'acquiring') return 'ACQUIRING';
+  if (input.phase === 'following' && input.lock && input.searchSpace !== 'Global Search') return 'TRACKING';
+  return 'GLOBAL';
+}
+
 export function formatDebugHudLines(snapshot: DebugHudSnapshot): string[] {
+  const mode = snapshot.mode || formatDebugHudMode(snapshot);
+  const threshold = snapshot.missThreshold || DEBUG_HUD_MISS_THRESHOLD;
   return [
-    `ASR  ${truncateAsr(snapshot.partialAsr) || '—'}`,
-    `Inf  ${Math.round(snapshot.inferenceMs)}ms  Match ${Math.round(snapshot.matchMs)}ms`,
-    `Lock ${formatAyahRef(snapshot.lock)}  Cand ${formatAyahRef(snapshot.candidate)}`,
-    `Score ${formatMatchScore(snapshot.matchScore)}`,
+    `Inf ${Math.round(snapshot.inferenceMs)}ms  Match ${Math.round(snapshot.matchMs)}ms  Buf ${Math.round(snapshot.bufferMs)}ms`,
+    `Lock ${formatAyahRef(snapshot.lock)}  Cand ${formatAyahRef(snapshot.candidate)}  Mode [${mode}]`,
+    `Score ${formatMatchScore(snapshot.matchScore)}  Misses [${snapshot.misses}/${threshold}]`,
     `Space ${snapshot.searchSpace}`,
+    `ASR: ${truncateAsr(snapshot.partialAsr) || '—'}`,
   ];
 }
 
