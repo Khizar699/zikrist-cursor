@@ -4,7 +4,7 @@ Label-fill **01** (`6df8ef3` / #18) + **02** (`c228533` / #19) are on main. Pack
 
 Bot launches **one Cursor session at a time**, in order — **no mega-prompt**.
 
-**Next = current Tip** floor restore **english-negative** (`floor-english-negative-20-1`) **or** Hafiz Usama **27:15**. Live short-surah tail (`prompts/live-short-surah-tail.md`, finding `live-ikhlas-stall-112-3`) is **closed**. P1 chrome `prompts/live-passage-chrome.md`. Jump (`floor-jump-ikhlas`) and live shared-tail (`live-follow-shared-tail`) remain **closed**. Default stays Tilawa; a streaming swap needs a commercial Quran-token head that wins `npm run test:bakeoff`.
+**Next = current Tip** surah-handoff (`prompts/follow-surah-handoff.md`) landed; resume **P0** floor restore **english-negative** (`floor-english-negative-20-1`) **or** Hafiz Usama **27:15**. No-global-freeze, sticky-lock latency, and live short-surah tail remain **closed**. P1 chrome `prompts/live-passage-chrome.md`. Jump (`floor-jump-ikhlas`) and live shared-tail (`live-follow-shared-tail`) remain **closed**. Default stays Tilawa; a streaming swap needs a commercial Quran-token head that wins `npm run test:bakeoff`.
 
 **Do not** expand the default replay floor or treat Tier A coverage M/N as merge-green while floor is red.
 
@@ -38,6 +38,9 @@ Shared notes: `_SHARED.md`. Product bar: `PRODUCT-BAR.md`. Ground truth: `prompt
 | # | Prompt | Status |
 |---|---|---|
 | live-short-surah-tail | Ikhlas 112:2 freeze + clipped Fatiha 1:7 (iPhone 17 sim 2026-09-18) | **closed** — finding `live-ikhlas-stall-112-3`. Mac 2026-09-18: ikhlas **112:1–4** including 112:3@6s; compact-surah cache; 1:7 padding unit. Live Simulator recitation not re-measured |
+| follow-sticky-lock-latency | Match lag / Global Search spikes / sticky lock | **closed** — inverted n-gram locate shortlist; mid-surah `[n−1,n+2]`; min transcript; sequential 0.65 |
+| follow-no-global-freeze | 2500ms locate freeze / false Global Search / Fatiha→Ikhlas handoff | **closed** — no `bestJoint03Match` while following; pool handoff; madd collapse; grace 3 hops **and** 1.5s. Mac 2026-09-18: units 269/269; floor 13/14; ikhlas/fatiha/nas + jump 112:1@16.5s; ready imam PASS |
+| follow-surah-handoff | 1986ms Match spike at 109:6 + carousel frozen on 109:6 while engine locked 105:5 / 108:3 | **closed this session** — no sync global on follow hop; ayah-1 pool at ≥0.65 (105:1 not 105:5); gate/display-hold paint new surah immediately. Mac 2026-09-18: units 272/272; floor 13/14; ikhlas/fatiha/nas + jump 112:1@16.5s; ready imam PASS. Live Simulator recitation not re-measured |
 | live-passage-chrome | Island remnants / waveform overlap / gear | **P1** after the tail prompt — `prompts/live-passage-chrome.md` |
 | live-follow | Phase A+B smoothness / expected tape + Phase C bakeoff | **closed this session** — splice 0.25 s, backlog keeps lock, sequential focus, word highlight; follow hops `locate=false` and score remainder+next. Phase C: Tilawa control clocks + skip rate on the same clips; Muno459 NPL-1.1 blocked; default not swapped (`npm run test:bakeoff`) |
 | floor | english-negative | **co-P0** — finding `floor-english-negative-20-1`. Jump (`floor-jump-ikhlas`) **closed**. Live shared-tail stall (`live-follow-shared-tail`) **closed** Mac 2026-09-18: nas 114:1–6, fatiha 1:2–7, ikhlas 112:1–4 |

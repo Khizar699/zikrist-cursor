@@ -9,6 +9,8 @@ import {
   ACQUIRE_MAX_SEC,
   ACQUIRE_AFTER_BASMALA_SEC,
   KEEP_AFTER_COMMIT_SEC,
+  LOCK_GRACE_FAILS,
+  LOCK_GRACE_MS,
   type TranscribeFn,
 } from '../src/core/follower';
 import type { RecognitionMessage } from '../src/core/types';
@@ -41,10 +43,13 @@ const corpus = [
   verse(27, 1, ['ta', 'seen'], 'An-Naml'),
   verse(27, 15, ['walaqad', 'atayna', 'dawuda', 'wasulaymana', 'ilman', 'waqala', 'alhamdu', 'lillahi', 'alladhi', 'faddalana'], 'An-Naml'),
   verse(36, 1, ['ya', 'seen'], 'Ya-Sin'),
+  verse(105, 1, ['الم', 'تر', 'كيف', 'فعل', 'ربك', 'باصحب', 'الفيل'], 'Al-Fil'),
+  verse(105, 5, ['فجعلهم', 'كعصف', 'ماكول'], 'Al-Fil'),
   verse(108, 1, ['inna', 'aatayna', 'kalkawthar'], 'Al-Kawthar'),
   verse(108, 2, ['fasalli', 'lirabbika', 'wanhar'], 'Al-Kawthar'),
   verse(108, 3, ['inna', 'shaniaka', 'huwa', 'alabtar'], 'Al-Kawthar'),
   verse(109, 1, ['qul', 'ya', 'ayyuha', 'alkafirun'], 'Al-Kafirun'),
+  verse(109, 6, ['لكم', 'دينكم', 'ولي', 'دين'], 'Al-Kafirun'),
   verse(112, 1, ['qul', 'huwa', 'allahu', 'ahad'], 'Al-Ikhlas'),
   verse(112, 2, ['allahu', 'alsamad'], 'Al-Ikhlas'),
   verse(112, 3, ['lam', 'yalid', 'walam', 'yulad'], 'Al-Ikhlas'),
@@ -569,11 +574,20 @@ test('Al-Fatihah leftover after a 14:39 lock does not advance to 14:40', async (
 });
 
 test('a wrong 14:40 lock then unique Al-Fatihah words leave Ibrahim', async () => {
-  const engine = follower([spoken(14, 40), spoken(1, 5), spoken(1, 5)]);
-  assert.deepEqual(refs(await engine.feed(audio(1))), ['14:40']);
-  assert.deepEqual(refs(await engine.feed(hop())), []);
-  assert.deepEqual(refs(await engine.feed(hop())), ['1:5']);
-  assert.equal(engine.phase, 'following');
+  const realNow = Date.now.bind(Date);
+  let now = 1_000_000;
+  Date.now = () => now;
+  try {
+    const engine = follower([spoken(14, 40), spoken(1, 5), spoken(1, 5), spoken(1, 5)]);
+    assert.deepEqual(refs(await engine.feed(audio(1))), ['14:40']);
+    assert.deepEqual(refs(await engine.feed(hop())), []);
+    assert.deepEqual(refs(await engine.feed(hop())), []);
+    now += LOCK_GRACE_MS;
+    assert.deepEqual(refs(await engine.feed(hop())), ['1:5']);
+    assert.equal(engine.phase, 'following');
+  } finally {
+    Date.now = realNow;
+  }
 });
 
 test('Ibrahim 14:40 still locks from its own unique words', async () => {
@@ -924,9 +938,11 @@ test('Al-Falaq can take over after Al-Fatihah even when An-Nas stays a close riv
 
 test('after the neighborhood fails, a new ayah can still take over from its opening', async () => {
   const fatiha = corpus.find((item) => item.surah === 1 && item.ayah === 2)!;
+  const noise = { text: 'zzzz yyyy xxxx wwww', rawPhonemes: 'zzzz yyyy xxxx wwww' };
   const engine = follower([
     spoken(112, 1),
-    { text: 'zzzz yyyy xxxx wwww', rawPhonemes: 'zzzz yyyy xxxx wwww' },
+    noise,
+    noise,
     {
       text: fatiha.phonemes_joined,
       rawPhonemes: fatiha.phonemes_joined,
@@ -934,6 +950,7 @@ test('after the neighborhood fails, a new ayah can still take over from its open
     },
   ]);
   assert.deepEqual(refs(await engine.feed(audio(1))), ['112:1']);
+  assert.deepEqual(refs(await engine.feed(audio(FOLLOW_TRIGGER_SEC))), []);
   assert.deepEqual(refs(await engine.feed(audio(FOLLOW_TRIGGER_SEC))), []);
   assert.deepEqual(refs(await engine.feed(audio(FOLLOW_TRIGGER_SEC))), ['1:2']);
 });
@@ -1354,15 +1371,85 @@ test('debug HUD records raw ASR, inference plus match latency, lock vs next cand
   assert.match(snap.partialAsr, /qul/);
   assert.equal(snap.inferenceMs, 48);
   assert.ok(snap.matchMs >= 12);
-  assert.equal(snap.searchSpace, 'Global Search');
+  assert.ok(snap.bufferMs >= 900);
+  assert.equal(snap.mode, 'TRACKING');
+  assert.equal(snap.misses, 0);
+  assert.equal(snap.missThreshold, LOCK_GRACE_FAILS);
+  assert.equal(snap.searchSpace, 'Locked: Ayahs 1–3');
   assert.deepEqual(refs(await engine.feed(hop())), []);
   snap = latestDebugHud();
   assert.equal(formatAyahRef(snap.lock), '[112:1]');
   assert.equal(formatAyahRef(snap.candidate), '[112:2]');
   assert.match(snap.partialAsr, /qul/);
   assert.equal(snap.inferenceMs, 38);
-  assert.equal(snap.searchSpace, 'Locked: Ayahs 1–2');
+  assert.ok(snap.bufferMs >= 400);
+  assert.equal(snap.mode, 'TRACKING');
+  assert.equal(snap.misses, 0);
+  assert.equal(snap.searchSpace, 'Locked: Ayahs 1–3');
   resetDebugHud();
+});
+
+test('while locked mid-surah, weak hops do not call Global Search bestJoint03Match', async () => {
+  const { db, searches } = countingDb();
+  const noise = { text: 'zzzz yyyy xxxx wwww', rawPhonemes: 'zzzz yyyy xxxx wwww' };
+  const engine = new RecitationFollower(db, script([
+    spoken(112, 1),
+    noise,
+    noise,
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:1']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.equal(searches(), 0);
+  assert.equal(engine.phase, 'following');
+  assert.equal(latestDebugHud().searchSpace, 'Locked: Ayahs 1–3');
+  assert.equal(latestDebugHud().mode, 'TRACKING');
+  assert.equal(latestDebugHud().misses, 2);
+  assert.equal(latestDebugHud().missThreshold, LOCK_GRACE_FAILS);
+});
+
+test('short leftover الله while locked does not jump to an unrelated surah', async () => {
+  const local = [
+    ...corpus.filter((item) => item.surah === 112),
+    verse(40, 20, ['والله', 'يقضي', 'بالحق'], 'Ghafir'),
+    verse(74, 1, ['يا', 'ايها', 'المدثر'], 'Al-Muddaththir'),
+  ];
+  const ghafir = local.find((item) => item.surah === 40 && item.ayah === 20)!;
+  const muddaththir = local.find((item) => item.surah === 74 && item.ayah === 1)!;
+  const falseGhafir: QuranChampionMatch = {
+    surah: 40, ayah: 20, text: ghafir.phonemes_joined, phonemes_joined: ghafir.phonemes_joined,
+    score: 0.95, raw_score: 0.95, bonus: 0,
+  };
+  const falseMuddaththir: QuranChampionMatch = {
+    surah: 74, ayah: 1, text: muddaththir.phonemes_joined, phonemes_joined: muddaththir.phonemes_joined,
+    score: 0.95, raw_score: 0.95, bonus: 0,
+  };
+  const { db, searches } = countingDb(local);
+  const engine = new RecitationFollower(db, script([
+    spoken(112, 2),
+    { text: 'الله', rawPhonemes: 'الله', championMatch: falseGhafir },
+    { text: 'الله', rawPhonemes: 'الله', championMatch: falseMuddaththir },
+    { text: 'الله', rawPhonemes: 'الله', championMatch: falseGhafir },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:2']);
+  const jumped: string[] = [];
+  for (let i = 0; i < 3; i++) jumped.push(...refs(await engine.feed(hop())));
+  assert.deepEqual(jumped, []);
+  assert.equal(searches(), 0);
+  assert.ok(engine.phase === 'following' || engine.phase === 'reacquiring');
+  assert.ok(engine.lockedRef == null || engine.lockedRef.surah === 112);
+});
+
+test('sequential next advances when its candidate score clears 0.65', async () => {
+  const engine = follower([
+    spoken(112, 1),
+    {
+      text: 'allahu alsamad',
+      rawPhonemes: 'allahu alsamad',
+    },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:1']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['112:2']);
 });
 
 const qulLookalikes = [
@@ -2034,4 +2121,135 @@ test('joined remainder plus next commits the sequential ayah without a champion 
   assert.deepEqual(refs(await engine.feed(audio(1))), ['1:6']);
   assert.deepEqual(refs(await engine.feed(hop())), ['1:7']);
 });
+
+test('last-ayah leftover does not call Global Search bestJoint03Match', async () => {
+  const { db, searches } = countingDb();
+  const engine = new RecitationFollower(db, script([
+    spoken(1, 7),
+    { text: 'zzzz yyyy xxxx wwww', rawPhonemes: 'zzzz yyyy xxxx wwww' },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['1:7']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.equal(searches(), 0);
+  assert.equal(engine.phase, 'following');
+  assert.equal(engine.lockedRef?.surah, 1);
+  assert.equal(engine.lockedRef?.ayah, 7);
+});
+
+test('Fatiha leftover قل هو الله احد locks 112:1 without a mushaf locate', async () => {
+  const local = [
+    verse(1, 7, ['صرط', 'الذين', 'انعمت', 'عليهم', 'غير', 'المغضوب', 'عليهم', 'ولا', 'الضالين'], 'Al-Fatihah'),
+    verse(112, 1, ['قل', 'هو', 'الله', 'احد'], 'Al-Ikhlas'),
+    verse(2, 1, ['الم'], 'Al-Baqarah'),
+  ];
+  const seven = local[0]!;
+  const { db, searches } = countingDb(local);
+  const engine = new RecitationFollower(db, script([
+    {
+      text: seven.phonemes_joined, rawPhonemes: seven.phonemes_joined, championMatch: {
+        surah: 1, ayah: 7, text: seven.phonemes_joined, phonemes_joined: seven.phonemes_joined,
+        score: 0.86, raw_score: 0.86, bonus: 0,
+      },
+    },
+    { text: 'قل هو الله احد', rawPhonemes: 'قل هو الله احد' },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['1:7']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['112:1']);
+  assert.equal(searches(), 0);
+  assert.equal(engine.phase, 'following');
+  assert.equal(engine.lockedRef?.surah, 112);
+});
+
+test('madd elongation on the locked ayah does not drop to Global Search', async () => {
+  const local = [
+    verse(112, 2, ['الله', 'الصمد'], 'Al-Ikhlas'),
+    verse(112, 3, ['لم', 'يلد', 'ولم', 'يولد'], 'Al-Ikhlas'),
+  ];
+  const two = local[0]!;
+  const { db, searches } = countingDb(local);
+  const engine = new RecitationFollower(db, script([
+    {
+      text: two.phonemes_joined, rawPhonemes: two.phonemes_joined, championMatch: {
+        surah: 112, ayah: 2, text: two.phonemes_joined, phonemes_joined: two.phonemes_joined,
+        score: 0.86, raw_score: 0.86, bonus: 0,
+      },
+    },
+    { text: 'الله الصماااد', rawPhonemes: 'الله الصماااد' },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:2']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.equal(searches(), 0);
+  assert.equal(engine.phase, 'following');
+  assert.deepEqual(engine.lockedRef, { surah: 112, ayah: 2 });
+  assert.equal(latestDebugHud().misses, 0);
+});
+
+test('a single garbled hop keeps the locked ayah without reacquire', async () => {
+  const engine = follower([
+    spoken(112, 2),
+    { text: 'zzzz garbled chunk', rawPhonemes: 'zzzz garbled chunk' },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:2']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+  assert.equal(engine.phase, 'following');
+  assert.deepEqual(engine.lockedRef, { surah: 112, ayah: 2 });
+  assert.equal(latestDebugHud().searchSpace, 'Locked: Ayahs 1–4');
+});
+
+test('three weak hops under 1.5s keep the lock; 3 hops and 1.5s then reacquire', async () => {
+  const realNow = Date.now.bind(Date);
+  let now = 1_000_000;
+  Date.now = () => now;
+  try {
+    const noise = { text: 'zzzz yyyy xxxx wwww', rawPhonemes: 'zzzz yyyy xxxx wwww' };
+    const { db, searches } = countingDb();
+    const engine = new RecitationFollower(db, script([spoken(112, 2), noise, noise, noise, noise]));
+    assert.deepEqual(refs(await engine.feed(audio(1))), ['112:2']);
+    assert.deepEqual(refs(await engine.feed(hop())), []);
+    assert.equal(engine.phase, 'following');
+    assert.deepEqual(refs(await engine.feed(hop())), []);
+    assert.equal(engine.phase, 'following');
+    now += 400;
+    assert.deepEqual(refs(await engine.feed(hop())), []);
+    assert.equal(engine.phase, 'following');
+    assert.deepEqual(engine.lockedRef, { surah: 112, ayah: 2 });
+    now += LOCK_GRACE_MS;
+    assert.deepEqual(refs(await engine.feed(hop())), []);
+    assert.equal(engine.phase, 'reacquiring');
+    assert.equal(searches(), 0);
+  } finally {
+    Date.now = realNow;
+  }
+});
+
+test('Kafirun last-ayah leftover locks Fil 105:1 not 105:5 without a mushaf locate', async () => {
+  const local = [
+    verse(109, 6, ['لكم', 'دينكم', 'ولي', 'دين'], 'Al-Kafirun'),
+    verse(105, 1, ['الم', 'تر', 'كيف', 'فعل', 'ربك', 'باصحب', 'الفيل'], 'Al-Fil'),
+    verse(105, 5, ['فجعلهم', 'كعصف', 'ماكول'], 'Al-Fil'),
+    verse(108, 1, ['انا', 'اعطيناك', 'الكوثر'], 'Al-Kawthar'),
+    verse(108, 3, ['ان', 'شانئك', 'هو', 'الابتر'], 'Al-Kawthar'),
+  ];
+  const six = local[0]!;
+  const { db, searches } = countingDb(local);
+  const engine = new RecitationFollower(db, script([
+    {
+      text: six.phonemes_joined, rawPhonemes: six.phonemes_joined, championMatch: {
+        surah: 109, ayah: 6, text: six.phonemes_joined, phonemes_joined: six.phonemes_joined,
+        score: 0.86, raw_score: 0.86, bonus: 0,
+      },
+    },
+    { text: 'الم تر كيف', rawPhonemes: 'الم تر كيف' },
+    { text: 'انا اعطيناك', rawPhonemes: 'انا اعطيناك' },
+  ]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['109:6']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['105:1']);
+  assert.equal(searches(), 0);
+  assert.equal(engine.phase, 'following');
+  assert.deepEqual(engine.lockedRef, { surah: 105, ayah: 1 });
+  assert.deepEqual(refs(await engine.feed(hop())), ['108:1']);
+  assert.equal(searches(), 0);
+  assert.deepEqual(engine.lockedRef, { surah: 108, ayah: 1 });
+});
+
 
