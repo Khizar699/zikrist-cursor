@@ -424,7 +424,17 @@ export class ContinuationGate {
         const atSurahEnd = Boolean(
           this.current && (!next || next.surah !== this.current.surah)
         );
+        const salahPoolAyah1 = Boolean(
+          this.current
+          && message.surah !== this.current.surah
+          && message.ayah === 1
+          && isSalahPoolSurah(message.surah)
+        );
         if (expected && !holdNextSurahBasmala) {
+          this.current = message; this.pending = null; accepted.push(message);
+        } else if (salahPoolAyah1) {
+          // Ayah-1 of a salah-prior surah must paint immediately (1:7 → 114:1).
+          // Do not stash in pending waiting for word_progress / voiced packets.
           this.current = message; this.pending = null; accepted.push(message);
         } else if (
           voiced
@@ -1711,10 +1721,29 @@ export class RecitationFollower {
     if (this.window.length < samplesFor(ACQUIRE_MIN_SEC) || this.fresh < samplesFor(ACQUIRE_MIN_SEC)) return [];
     this.fresh = 0;
     this.noteProcessedBuffer(this.window);
-    const result = await this.transcribe(this.window, true);
-    this.noteCycle(result, true);
-    this.noteHeardTokens(result.text);
-    this.noteInference(result);
+    const local = await this.transcribe(this.window, false);
+    this.noteCycle(local, false);
+    this.noteHeardTokens(local.text);
+    this.noteInference(local);
+    const text = local.text.trim();
+    const recognized = text.split(/\s+/).filter(Boolean).map((token) => collapseMaddRuns(token));
+    if (recognized.length) {
+      const opening = this.lockShortSurahOpening(recognized, text, 1);
+      if (opening && opening.ayah === 1) {
+        const score = this.shortOpeningTokenMatch(recognized, opening);
+        this.debugSearchSpace = 'Next-surah pool';
+        this.noteCandidate({ surah: opening.surah, ayah: opening.ayah }, score);
+        return this.commit(opening, Math.max(SEQUENTIAL_ADVANCE_SCORE, score), this.alignForCommit(recognized, opening));
+      }
+    }
+    const result = local.championMatch || local.locateAttempted
+      ? local
+      : await this.transcribe(this.window, true);
+    if (result !== local) {
+      this.noteCycle(result, true);
+      this.noteHeardTokens(result.text);
+      this.noteInference(result);
+    }
     this.debugSearchSpace = 'Global Search';
     const recovered = await this.recoverOpeningMuqattaat(result);
     if (recovered) return recovered;
@@ -3012,7 +3041,13 @@ export class RecitationFollower {
       if (left.bonus !== right.bonus) return right.bonus - left.bonus;
       return right.score - left.score;
     });
-    return pool[0]?.verse;
+    const best = pool[0];
+    const rival = pool[1];
+    if (!best) return undefined;
+    // Shared قل اعوذ برب must not crown Falaq over Nas (or the reverse) until
+    // الفلق / الناس is heard.
+    if (rival && Math.abs(best.score - rival.score) < SURAH_MARGIN) return undefined;
+    return best.verse;
   }
 
   private lockFromNextSurahPool(
@@ -4399,6 +4434,26 @@ export class Content {
   }
   hasVerse(ref: VerseRef): boolean { return Boolean(arabicText[refKey(ref)]); }
   peek(ref: VerseRef): DisplayVerse | undefined { return this.cache.get(refKey(ref)); }
+  /** Arabic + names from the installed mushaf, no SQLite wait. Translation
+   * stays empty until `verse()` fills the pack row. */
+  previewArabic(ref: VerseRef): DisplayVerse | undefined {
+    const cached = this.peek(ref);
+    if (cached) return cached;
+    const key = refKey(ref);
+    const meta = this.metadata.get(key);
+    const arabic = arabicText[key];
+    if (!meta || !arabic) return undefined;
+    const { header, ayah } = splitOpeningBasmala(arabic, ref);
+    return {
+      ...ref,
+      translation: '',
+      footnotes: '',
+      arabic: ayah,
+      basmala: header,
+      name: meta.surah_name_en,
+      nameArabic: meta.surah_name,
+    };
+  }
   cachedNeighborhood(focus: DisplayVerse): DisplayVerse[] {
     return passageWindow(focus, (ref) => this.peek(ref), (ref) => this.hasVerse(ref));
   }
@@ -4730,9 +4785,12 @@ class Listening {
         continue;
       }
       if (occurrence) {
-        this.pendingDisplay = { surah: occurrence.surah, ayah: occurrence.ayah };
-        if (this.state.current && this.state.current.surah !== occurrence.surah) {
-          this.update({ wordProgress: null });
+        const surahChanged = Boolean(this.state.current && this.state.current.surah !== occurrence.surah);
+        if (surahChanged) {
+          this.pendingDisplay = null;
+          this.update({ passage: [], wordProgress: null });
+        } else {
+          this.pendingDisplay = { surah: occurrence.surah, ayah: occurrence.ayah };
         }
         const generation = ++this.displayGeneration;
         const reveal = (verse: DisplayVerse) => {
@@ -4741,12 +4799,14 @@ class Listening {
             && item.surah === this.state.current.surah
             && item.ayah === this.state.current.ayah
           ));
-          const surahChanged = Boolean(
+          const switched = Boolean(
             this.state.current && this.state.current.surah !== verse.surah,
           );
+          const sameRef = this.state.current?.surah === verse.surah && this.state.current?.ayah === verse.ayah;
           if (
             this.state.liturgy
-            || surahChanged
+            || switched
+            || sameRef
             || shouldReplaceHeldVerse(this.state.current, verse, {
               hasVerse: (ref) => content.hasVerse(ref),
               displayedWasConfirmed,
@@ -4754,15 +4814,15 @@ class Listening {
           ) {
             this.show(verse, {
               phase: 'following',
-              ...(surahChanged ? { wordProgress: null } : {}),
+              ...(switched || surahChanged ? { wordProgress: null } : {}),
             });
           }
           this.pendingDisplay = null;
           this.prepareAhead(verse);
         };
-        const cached = content.peek(occurrence);
+        const cached = content.peek(occurrence) ?? (surahChanged ? content.previewArabic(occurrence) : undefined);
         if (cached) reveal(cached);
-        else {
+        if (!content.peek(occurrence)) {
           void content.verse(occurrence).then((verse) => {
             if (this.state.status !== 'listening' || generation !== this.displayGeneration) return;
             reveal(verse);
