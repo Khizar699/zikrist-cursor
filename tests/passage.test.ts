@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
-  PASSAGE_LOOKAHEAD, passageIndex, passageWindow, samePassage,
+  FOCUSED_SCROLL_POSITION, PASSAGE_LOOKAHEAD, passageIndex, passageLookaheadComplete,
+  passagePanePadding, passageWindow, samePassage,
 } from '../src/core/passage';
 import type { DisplayVerse, VerseRef } from '../src/core/types';
 
@@ -57,4 +59,31 @@ test('the focused ayah remains if neighbors are not cached yet', () => {
   const window = passageWindow(focus, () => undefined, () => true);
   assert.deepEqual(window.map((item) => `${item.surah}:${item.ayah}`), ['112:2']);
   assert.equal(passageIndex(window, focus), 0);
+  assert.equal(passageLookaheadComplete(window, focus, () => true), false);
+});
+
+test('a short-surah window lists later ayahs once they are cached', () => {
+  const focus = verse(112, 2);
+  const mushaf = (ref: VerseRef) => ref.surah === 112 && ref.ayah >= 1 && ref.ayah <= 4;
+  const partial = cached([verse(112, 1), verse(112, 2)]);
+  const incomplete = passageWindow(focus, partial.peek, mushaf);
+  assert.deepEqual(incomplete.map((item) => `${item.surah}:${item.ayah}`), ['112:1', '112:2']);
+  assert.equal(passageLookaheadComplete(incomplete, focus, mushaf), false);
+  const { peek, hasVerse } = cached([verse(112, 1), verse(112, 2), verse(112, 3), verse(112, 4)]);
+  const complete = passageWindow(focus, peek, hasVerse);
+  assert.deepEqual(complete.map((item) => `${item.surah}:${item.ayah}`), ['112:1', '112:2', '112:3', '112:4']);
+  assert.equal(passageLookaheadComplete(complete, focus, hasVerse), true);
+});
+
+test('pane padding leaves room for a long focused Fatiha 1:7 translation', () => {
+  const paneHeight = 350;
+  const padding = passagePanePadding(paneHeight);
+  const fatiha7Lines = 5;
+  const lineHeight = 46;
+  assert.ok(padding * 2 + fatiha7Lines * lineHeight < paneHeight);
+  assert.ok(FOCUSED_SCROLL_POSITION < 0.35);
+  const verses = JSON.parse(readFileSync('assets/content/quran-display.json', 'utf8')).verses as Record<string, string>;
+  const fatiha7 = (verses['1:7'] ?? '').normalize('NFKD').replace(/\p{M}/gu, '');
+  assert.match(fatiha7, /مغضوب/);
+  assert.match(fatiha7, /ضالين/);
 });

@@ -54,14 +54,26 @@ function softTokenMatch(left: string, right: string): boolean {
 }
 
 /** Short CTC cousins such as الله / اله. Not a stem/substring hit of الصرط / صرط
- * or العلمين containing لام. */
-export function openingCousin(left: string, right: string): boolean {
+ * or العلمين containing لام. Used to decide whether leftover is already explained. */
+function explainedCousin(left: string, right: string): boolean {
   if (left === right || wordsMatch(left, right)) return true;
   const a = compact(left);
   const b = compact(right);
   if (a.length < 3 || b.length < 3 || a.length > 5 || b.length > 5) return false;
   if (Math.abs(a.length - b.length) > 1) return false;
   return levRatio(a, b) >= 0.7;
+}
+
+/** Next-ayah opening cousins, including 2-letter CTC لم / لام. Do not use this
+ * to mark leftover as explained by the current ayah. */
+export function openingCousin(left: string, right: string): boolean {
+  if (explainedCousin(left, right)) return true;
+  const a = compact(left);
+  const b = compact(right);
+  if (a.length < 2 || b.length < 2 || a.length > 5 || b.length > 5) return false;
+  if (Math.abs(a.length - b.length) > 1) return false;
+  if (Math.min(a.length, b.length) < 3) return levRatio(a, b) >= 0.66;
+  return false;
 }
 
 function isFormulaOpening(word: string): boolean {
@@ -73,7 +85,7 @@ function isFormulaOpening(word: string): boolean {
 }
 
 function tokenExplainedBy(token: string, words: string[]): boolean {
-  return words.some((word) => wordsMatch(token, word) || relatedStem(token, word) || openingCousin(token, word));
+  return words.some((word) => wordsMatch(token, word) || relatedStem(token, word) || explainedCousin(token, word));
 }
 
 export function currentRemainder(body: string[], wordIndex: number): string[] {

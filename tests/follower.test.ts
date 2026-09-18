@@ -462,6 +462,54 @@ test('live Arabic Ikhlas still advances 112:1 to 112:2 when احد remains in th
   assert.deepEqual(refs(await engine.feed(hop())), ['112:2']);
 });
 
+test('after Ikhlas 2, distinctive 112:3 leftover then 112:4 leftover commit in order', async () => {
+  const two = corpus.find((item) => item.surah === 112 && item.ayah === 2)!;
+  const three = corpus.find((item) => item.surah === 112 && item.ayah === 3)!;
+  const four = corpus.find((item) => item.surah === 112 && item.ayah === 4)!;
+  const mixedThree = `${two.phonemes_joined} ${three.phonemes_joined}`;
+  const mixedFour = `${three.phonemes_joined} ${four.phonemes_joined}`;
+  const engine = follower([
+    spoken(112, 2),
+    { text: mixedThree, rawPhonemes: mixedThree },
+    { text: mixedFour, rawPhonemes: mixedFour },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:2']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['112:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['112:4']);
+});
+
+test('after Ikhlas 2, unique 112:3 body يلد still advances without يولد', async () => {
+  const arabic = [
+    verse(112, 1, ['قل', 'هو', 'الله', 'احد'], 'Al-Ikhlas'),
+    verse(112, 2, ['الله', 'الصمد'], 'Al-Ikhlas'),
+    verse(112, 3, ['لم', 'يلد', 'ولم', 'يولد'], 'Al-Ikhlas'),
+    verse(112, 4, ['ولم', 'يكن', 'له', 'كفوا', 'احد'], 'Al-Ikhlas'),
+  ];
+  const two = arabic[1]!;
+  const leftover = ['الصمد', 'يلد'].join(' ');
+  const engine = new RecitationFollower(
+    dbFrom(arabic),
+    script([
+      { text: two.phonemes_joined, rawPhonemes: two.phonemes_joined, championMatch: {
+        surah: 112, ayah: 2, text: two.phonemes_joined, phonemes_joined: two.phonemes_joined,
+        score: 0.86, raw_score: 0.86, bonus: 0,
+      } },
+      { text: leftover, rawPhonemes: leftover },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:2']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['112:3']);
+});
+
+test('shared الله after Ikhlas 2 does not skip 112:3', async () => {
+  const engine = follower([
+    spoken(112, 2),
+    { text: 'allahu', rawPhonemes: 'allahu' },
+  ]);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['112:2']);
+  assert.deepEqual(refs(await engine.feed(hop())), []);
+});
+
 test('An-Nas ayah 3 is not replaced by a long unrelated ayah', async () => {
   const nas2 = corpus.find((item) => item.surah === 114 && item.ayah === 2)!;
   const nas3 = corpus.find((item) => item.surah === 114 && item.ayah === 3)!;
@@ -1004,6 +1052,31 @@ test('a locate window does not call bestJoint03Match again when a champion is al
   const engine = new RecitationFollower(db, script([spoken(112, 1)]));
   assert.deepEqual(refs(await engine.feed(audio(1))), ['112:1']);
   assert.equal(searches(), 0);
+});
+
+test('after Kawthar, leftover قل هو الله locks 112:1 instead of a long ayah that repeats الله', async () => {
+  const local = [
+    verse(4, 113, ['ولولا', 'فضل', 'الله', 'عليك', 'ورحمته', 'وانزل', 'الله', 'عليك'], 'An-Nisa'),
+    verse(4, 114, ['لا', 'خير', 'في', 'كثير', 'من', 'نجواهم', 'مرضات', 'الله'], 'An-Nisa'),
+    verse(108, 3, ['ان', 'شانئك', 'هو', 'الابتر'], 'Al-Kawthar'),
+    verse(112, 1, ['قل', 'هو', 'الله', 'احد'], 'Al-Ikhlas'),
+    verse(112, 2, ['الله', 'الصمد'], 'Al-Ikhlas'),
+  ];
+  const three = local[2]!;
+  const engine = new RecitationFollower(
+    dbFrom(local),
+    script([
+      {
+        text: three.phonemes_joined, rawPhonemes: three.phonemes_joined, championMatch: {
+          surah: 108, ayah: 3, text: three.phonemes_joined, phonemes_joined: three.phonemes_joined,
+          score: 0.86, raw_score: 0.86, bonus: 0,
+        },
+      },
+      { text: 'قل هو الله', rawPhonemes: 'قل هو الله' },
+    ]),
+  );
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['108:3']);
+  assert.deepEqual(refs(await engine.feed(hop())), ['112:1']);
 });
 
 test('after Kawthar, a later short surah is taken from the next-surah pool without a global search', async () => {

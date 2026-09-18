@@ -20,3 +20,5 @@ Use when clips exist under `~/Desktop/zikrist-imam-clips/` or live mic.
 | 9 | After liturgy (when salah lands): tilawah still OK | | | |
 
 Do **not** claim imam-ready until named suites are `status: ready` with Mac notes **and** follow/handoff product-bar concerns for those clips are honest-green. Short 2–3 ayah ready sequences ≠ full prayer follow.
+
+**2026-09-18 iPhone 17 Simulator (ReplayKit):** Nas 114:1–6 pass-ish; Ikhlas fail (stuck **112:2**, no focused **112:3–4**); Fatiha fail (clipped/parked **1:7**). Checklist #3 and #4 fail on that recording. Implement `prompts/live-short-surah-tail.md` landed on Mac (units + EveryAyah ordered advance); live recitation not re-recorded. Next: P1 `prompts/live-passage-chrome.md` or co-P0 floor / Hafiz Usama.

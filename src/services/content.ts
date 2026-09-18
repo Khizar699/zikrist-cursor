@@ -5,7 +5,7 @@ import catalog from '../../assets/content/languages.json';
 import canonical from '../../assets/content/quran-display.json';
 import { packsToEvict } from '../core/pack-policy';
 import { splitOpeningBasmala } from '../core/basmala';
-import { neighborhoodSurahs } from '../core/sequential';
+import { isCompactSurah, neighborhoodSurahs } from '../core/sequential';
 import { handoffCandidateSurahs } from '../core/salah-prior';
 import { passageWindow } from '../core/passage';
 import { refKey, type DisplayVerse, type Language, type Translation, type VerseRef } from '../core/types';
@@ -102,12 +102,20 @@ export class Content {
   }
   async verse(ref: VerseRef): Promise<DisplayVerse> {
     const cached = this.peek(ref);
-    if (cached) return cached;
-    if (!this.db) throw new Error('Choose a translation language first.');
-    const row = await this.db.getFirstAsync<Translation>('SELECT translation, footnotes FROM translations WHERE sura = ? AND aya = ?', ref.surah, ref.ayah);
-    const verse = this.buildVerse(ref, row);
-    this.cache.set(refKey(ref), verse);
-    return verse;
+    if (!cached) {
+      if (!this.db) throw new Error('Choose a translation language first.');
+      const row = await this.db.getFirstAsync<Translation>('SELECT translation, footnotes FROM translations WHERE sura = ? AND aya = ?', ref.surah, ref.ayah);
+      const verse = this.buildVerse(ref, row);
+      this.cache.set(refKey(ref), verse);
+    }
+    await this.ensureCompactSurah(ref);
+    return this.peek(ref) ?? cached!;
+  }
+
+  /** Short surahs must not paint 112:1–2 only while 112:3–4 are still in SQLite. */
+  private async ensureCompactSurah(ref: VerseRef): Promise<void> {
+    if (!isCompactSurah(ref.surah, (item) => this.hasVerse(item))) return;
+    await this.preloadNeighborhood(ref);
   }
   /** Load the recited surah in full. Mushaf-next is not dumped here. */
   async preloadNeighborhood(ref: VerseRef): Promise<void> {

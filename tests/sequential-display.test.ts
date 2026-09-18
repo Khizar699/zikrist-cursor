@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   TRACKING_COMPLETION_COVERAGE, VISUAL_ADVANCE_COVERAGE,
-  approachingSurahEnd, ayahsRemainingInSurah,
+  approachingSurahEnd, ayahsRemainingInSurah, isCompactSurah,
   isSequentialSuccessor, neighborhoodSurahs, nextSequentialRef, previousSequentialRef, shouldRevealSequentialNext,
 } from '../src/core/sequential';
 import type { VerseRef } from '../src/core/types';
@@ -61,4 +61,16 @@ test('finishing the last ayah does not reveal the next surah', () => {
     totalWords: 5,
     hasVerse,
   }), false);
+});
+
+test('Ikhlas and Fatiha are compact; Al-Baqarah is not', () => {
+  const mushaf = (ref: VerseRef) => {
+    if (ref.surah === 1) return ref.ayah >= 1 && ref.ayah <= 7;
+    if (ref.surah === 2) return ref.ayah >= 1 && ref.ayah <= 286;
+    if (ref.surah === 112) return ref.ayah >= 1 && ref.ayah <= 4;
+    return keys.has(`${ref.surah}:${ref.ayah}`);
+  };
+  assert.equal(isCompactSurah(112, mushaf), true);
+  assert.equal(isCompactSurah(1, mushaf), true);
+  assert.equal(isCompactSurah(2, mushaf), false);
 });

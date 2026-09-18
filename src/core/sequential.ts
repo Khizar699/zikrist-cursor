@@ -60,6 +60,17 @@ export function approachingSurahEnd(
   return ayahsRemainingInSurah(ref, hasVerse, within) < within;
 }
 
+/** Fatiha / last-10 style surahs whose remaining ayahs should be in cache
+ * before the first passage paint. Al-Baqarah is not compact. */
+export function isCompactSurah(
+  surah: number,
+  hasVerse: (ref: VerseRef) => boolean,
+  maxAyahs = 10,
+): boolean {
+  if (surah < 1 || surah > 114 || !hasVerse({ surah, ayah: 1 })) return false;
+  return ayahsRemainingInSurah({ surah, ayah: 1 }, hasVerse, maxAyahs) < maxAyahs;
+}
+
 export function isSequentialSuccessor(from: VerseRef, to: VerseRef, hasVerse: (ref: VerseRef) => boolean): boolean {
   const next = nextSequentialRef(from, hasVerse);
   return next !== null && next.surah === to.surah && next.ayah === to.ayah;

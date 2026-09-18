@@ -4,7 +4,7 @@ Label-fill **01** (`6df8ef3` / #18) + **02** (`c228533` / #19) are on main. Pack
 
 Bot launches **one Cursor session at a time**, in order — **no mega-prompt**.
 
-**Next = current Tip** floor restore **english-negative** (`floor-english-negative-20-1`) **or** Hafiz Usama **27:15**. Live follow Phase A+B+C landed (`prompts/live-follow-phases.md`, `prompts/model-bakeoff.md`). Jump (`floor-jump-ikhlas`) and live shared-tail (`live-follow-shared-tail`) are **closed**. Default stays Tilawa; a streaming swap needs a commercial Quran-token head that wins `npm run test:bakeoff`.
+**Next = current Tip** floor restore **english-negative** (`floor-english-negative-20-1`) **or** Hafiz Usama **27:15**. Live short-surah tail (`prompts/live-short-surah-tail.md`, finding `live-ikhlas-stall-112-3`) is **closed**. P1 chrome `prompts/live-passage-chrome.md`. Jump (`floor-jump-ikhlas`) and live shared-tail (`live-follow-shared-tail`) remain **closed**. Default stays Tilawa; a streaming swap needs a commercial Quran-token head that wins `npm run test:bakeoff`.
 
 **Do not** expand the default replay floor or treat Tier A coverage M/N as merge-green while floor is red.
 
@@ -23,7 +23,7 @@ Continuity: `prompts/_SHARED-HANDOFF.md` + root `HANDOFF.md` tip in the same PR.
 |---|---|---|
 | **P0** | floor restore (`english-negative`) | Tip finding `floor-english-negative-20-1` — same-PR lock before expanding floor |
 | **P0** | `04-hafiz-usama-1-2-vs-27-15.md` | **Follow/handoff:** Fatiha→An-Naml **27:15** (finding `product-hafiz-usama-27-15`) |
-| P1 | (future prompt if needed) | Advance under overlap — park on 1:2/1:5 while next ayah spoken |
+| P1 | `prompts/live-passage-chrome.md` | Island remnants, waveform covering translation, gear overlap, garbled dim Arabic |
 | P2 | `01-masjid-e-nabi-25-69-false-2-1.md` | False first-lock: **25:69** ≠ **2:1** |
 | P2 | `02-ahzab-to-saba-cold-33-60-vs-33-62.md` | False first-lock / cold: **33:62** ≠ **33:60** |
 | P2 | `03-baqarah-to-imran-false-57-28.md` | False first-lock: refuse **57:28** |
@@ -37,6 +37,8 @@ Shared notes: `_SHARED.md`. Product bar: `PRODUCT-BAR.md`. Ground truth: `prompt
 
 | # | Prompt | Status |
 |---|---|---|
+| live-short-surah-tail | Ikhlas 112:2 freeze + clipped Fatiha 1:7 (iPhone 17 sim 2026-09-18) | **closed** — finding `live-ikhlas-stall-112-3`. Mac 2026-09-18: ikhlas **112:1–4** including 112:3@6s; compact-surah cache; 1:7 padding unit. Live Simulator recitation not re-measured |
+| live-passage-chrome | Island remnants / waveform overlap / gear | **P1** after the tail prompt — `prompts/live-passage-chrome.md` |
 | live-follow | Phase A+B smoothness / expected tape + Phase C bakeoff | **closed this session** — splice 0.25 s, backlog keeps lock, sequential focus, word highlight; follow hops `locate=false` and score remainder+next. Phase C: Tilawa control clocks + skip rate on the same clips; Muno459 NPL-1.1 blocked; default not swapped (`npm run test:bakeoff`) |
 | floor | english-negative | **co-P0** — finding `floor-english-negative-20-1`. Jump (`floor-jump-ikhlas`) **closed**. Live shared-tail stall (`live-follow-shared-tail`) **closed** Mac 2026-09-18: nas 114:1–6, fatiha 1:2–7, ikhlas 112:1–4 |
 | 04 | hafiz-usama →27:15 (follow/handoff) | **co-P0** — finding `product-hafiz-usama-27-15`. Mac 2026-09-18: **2:1** false lock cleared; stall after **1:7** (no **27:15**; Naml CTC is `الم`) |

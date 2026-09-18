@@ -59,6 +59,7 @@ test('a formula next opening still needs a unique later token', () => {
 
 test('a short CTC cousin of the next opening still hears next', () => {
   assert.equal(openingCousin('الله', 'اله'), true);
+  assert.equal(openingCousin('لم', 'لام'), true);
   const tape = scoreExpectedTape(
     ['tail', 'الله', 'tail'],
     [],
@@ -66,6 +67,23 @@ test('a short CTC cousin of the next opening still hears next', () => {
     ['head', 'tail'],
   );
   assert.equal(tape.nextHeard, true);
+});
+
+test('Ikhlas 112:3 leftover is heard after 112:2 is complete', () => {
+  const arabic = scoreExpectedTape(
+    ['الصمد', 'لم', 'يلد'],
+    [],
+    ['لم', 'يلد', 'ولم', 'يولد'],
+    ['الله', 'الصمد'],
+  );
+  assert.equal(arabic.nextHeard, true);
+  const romanized = scoreExpectedTape(
+    ['alsamad', 'lam', 'yalid'],
+    [],
+    ['lam', 'yalid', 'walam', 'yulad'],
+    ['allahu', 'alsamad'],
+  );
+  assert.equal(romanized.nextHeard, true);
 });
 
 test('a next opening that is only a stem of the current body does not hear next', () => {

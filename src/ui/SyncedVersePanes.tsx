@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { FlatList, Text, View } from 'react-native';
-import { CONTEXT_OPACITY, passageIndex } from '../core/passage';
+import { CONTEXT_OPACITY, FOCUSED_SCROLL_POSITION, passageIndex, passagePanePadding } from '../core/passage';
 import type { LiturgyDisplay } from '../core/salah-liturgy-display';
 import { highlightHeardWordCount, splitDisplayWords } from '../core/word-highlight';
 import { refKey, type DisplayVerse, type WordProgress } from '../core/types';
@@ -10,7 +10,7 @@ type Pane = 'arabic' | 'translation';
 
 function scrollToAyah(list: FlatList<DisplayVerse> | null, index: number, animated: boolean): void {
   if (!list || index < 0) return;
-  list.scrollToIndex({ index, animated, viewPosition: 0.5 });
+  list.scrollToIndex({ index, animated, viewPosition: FOCUSED_SCROLL_POSITION });
 }
 
 function ArabicVerseText({ arabic, heard }: { arabic: string; heard: number }) {
@@ -126,7 +126,7 @@ export function SyncedVersePanes({
   const focusKey = refKey(focus);
   const index = passageIndex(verses, focus);
   const [paneHeight, setPaneHeight] = useState(0);
-  const padding = Math.max(24, paneHeight * 0.38);
+  const padding = passagePanePadding(paneHeight);
 
   return <View style={s.panes} onLayout={(event) => { setPaneHeight(event.nativeEvent.layout.height / 2); }}>
     <VersePane pane="arabic" verses={verses} focusKey={focusKey} urdu={urdu} padding={padding} index={index} wordProgress={wordProgress} />

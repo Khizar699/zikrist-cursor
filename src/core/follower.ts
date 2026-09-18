@@ -3,7 +3,7 @@ import { fragmentScore, ratio as levRatio } from '../../node_modules/@tilawa/cor
 import { isFatihaBasmala, isFatihaBasmalaTail, OPENING_BASMALA_WORDS, openingBasmalaWordCount, splitOpeningBasmala } from './basmala';
 import { recordRecognitionCycle } from './recognition-clocks';
 import { handoffCandidateSurahs, isFamousHandoffSurah, rerankChampion, surahBonus, acousticChampion, TIE_BREAK_MARGIN } from './salah-prior';
-import { currentRemainder, scoreExpectedTape } from './expected-tape';
+import { currentRemainder, openingCousin, scoreExpectedTape } from './expected-tape';
 import { TRACKING_COMPLETION_COVERAGE } from './sequential';
 import type { FollowerPhase, RecognitionMessage, VerseRef } from './types';
 
@@ -125,6 +125,7 @@ function softTokenMatch(left: string, right: string): boolean {
   const strip = (word: string) => compact(word).replace(/^ال/, '').replace(/^[وف]/, '');
   const a = strip(left);
   const b = strip(right);
+  if (a.length >= 2 && a === b) return true;
   if (a.length < 3 || b.length < 3) return false;
   if (a.includes(b) || b.includes(a)) return true;
   return levRatio(a, b) >= 0.72;
@@ -420,7 +421,11 @@ function sequentialLeftover(recognized: string[], currentBody: string[]): string
 }
 
 function sequentialOpeningMatch(left: string, right: string): boolean {
-  return left === right || wordsMatch(left, right);
+  if (left === right || wordsMatch(left, right) || openingCousin(left, right)) return true;
+  const strip = (word: string) => compact(word).replace(/^[وف]/, '');
+  const a = strip(left);
+  const b = strip(right);
+  return a.length >= 2 && a === b;
 }
 
 /** Same-surah next: the opening may sit after a previous-ayah tail, and live
@@ -994,8 +999,9 @@ export class RecitationFollower {
       });
     }
 
-    if (next && next.surah === current.surah && this.shouldAdvance(recognized, next, current)) {
-      return [...messages, ...this.commit(next, Math.max(nextScore, currentScore), contiguousAlignToVerse(recognized, next))];
+    const tapeAdvance = tape.nextHeard && tape.unexplainedDistinctive.length === 0;
+    if (next && next.surah === current.surah && (tapeAdvance || this.shouldAdvance(recognized, next, current))) {
+      return [...messages, ...this.commit(next, Math.max(nextScore, currentScore), this.alignForCommit(recognized, next))];
     }
 
     // Shared قل leftover after 112:1 is a new recitation (Nas / Kafirun), not
@@ -1128,7 +1134,13 @@ export class RecitationFollower {
     const distinctive = words
       .slice(from)
       .filter((token) => token.length >= 3 && unused(token) && !isAmbiguousAdvanceOpening(token));
-    const hits = distinctive.filter((token) => query.some((word) => softTokenMatch(word, token)));
+    const hits = distinctive.filter((token) => query.some((word) => {
+      // 3-letter leftover (يلد) stays stem/exact so alalamin cannot become lam.
+      if (token.length < 4) {
+        return word === token || wordsMatch(word, token) || relatedStem(word, token);
+      }
+      return softTokenMatch(word, token);
+    }));
     // Accumulated last-ayah audio may decode the short ayah as a whole even if
     // the leftover opening was missed.
     if (this.shortLastAyahFollow(current) && this.locationScore(spoken, next) >= LOCK_CLEAR_SCORE) {
@@ -1140,9 +1152,8 @@ export class RecitationFollower {
       return this.locationScore(spoken, next) >= LOCK_CLEAR_SCORE && hits.length >= 1
         && hits.some((token) => !isAmbiguousAdvanceOpening(token) && token.length >= 5);
     }
-    // Live An-Nas 114:3 opening اله is handled by heardSequentialNext (الله≈اله).
-    // Distinctive leftover still needs 4+ letters so alalamin cannot become lam.
-    return hits.some((token) => token.length >= 4);
+    // Live 112:3 يلد is three letters; length-4 was blocking Arabic leftover.
+    return hits.some((token) => token.length >= 3);
   }
 
   /** Unique leftover of another short surah, or a later ayah in this surah
@@ -1170,6 +1181,14 @@ export class RecitationFollower {
       if (!pooled || this.onlySharedOpening(query, pooled) || !this.hasOpeningEvidence(query, queryText, pooled)) {
         continue;
       }
+      const distinctiveQuery = query.filter((token) => compact(token).length >= 4 && !isFormulaBodyToken(token));
+      // Formula leftover قل/الله after Kawthar must not name a long famous-body
+      // ayah that repeats الله (4:113). Try the next query (full window with هو).
+      if (
+        !distinctiveQuery.length
+        && pooled.ayah > 1
+        && verseAlignWords(pooled).words.length > SHORT_LAST_AYAH_WORDS
+      ) continue;
       // Fatiha 1:4 leftover must not become 2:1; last-ayah leftover الم still may.
       if (midSurah && this.handoffMuqattaatToken(pooled)) continue;
       if (midSurah && leftover.length && query !== leftover) {
@@ -1545,8 +1564,11 @@ export class RecitationFollower {
     if (verse.ayah > 1 && words.length <= 3) return false;
     const unique = words.slice(Math.max(bodySkip, 1));
     if (!unique.length) return false;
-    const hits = unique.filter((token) => recognized.some((word) => wordsMatch(word, token)));
-    const need = Math.min(2, unique.length);
+    const hits = [...new Set(unique.filter((token) => (
+      !isFormulaBodyToken(token)
+      && recognized.some((word) => wordsMatch(word, token))
+    )))];
+    const need = Math.min(2, unique.filter((token) => !isFormulaBodyToken(token)).length || unique.length);
     if (hits.length < need) return false;
     return this.locationScore(text, verse) >= LOCK_CLEAR_SCORE;
   }

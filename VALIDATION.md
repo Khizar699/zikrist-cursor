@@ -415,6 +415,34 @@ Cold ready ~1374 ms. Display clock is 0 in this harness (`ContinuationGate` is s
 | `npm run test:replay -- all` | **13/14 FAIL** — `english-negative:verse_lock_20:1` |
 | `npm run test:bakeoff` | Tilawa control as table; Hafiz Usama known stall; default not swapped |
 
+## Live sim recitation (iPhone 17, 2026-09-18)
+
+Founder ReplayKit of the native Simulator app (~115 s, real recitation). **Not** Mac `test:replay` and **not** a physical-device claim. Mac EveryAyah `ikhlas` 112:1–4 / `fatiha` 1:2–7 / `nas` 114:1–6 stay as last Phase C table.
+
+Observed on screen:
+
+- Acquire heard-words OK (`الحمد لله`, `قل أعوذ`).
+- Nas **114:1–6** followed, including 114:6.
+- Ikhlas **twice** locked 112:1–2 and never focused **112:3–4** (first listen also omitted 112:3–4 lookahead). Finding `live-ikhlas-stall-112-3`.
+- Fatiha reached **1:7** then stayed there ~28 s; Arabic clipped after `عليهم غن`; English clipped after `incurred`.
+- Chrome: prior-ayah fragments under the island; waveform covering next translation; gear overlapping Basmala.
+
+Next implement landed as `prompts/live-short-surah-tail.md` (Mac units + EveryAyah; live recitation not re-measured). P1 chrome: `prompts/live-passage-chrome.md`. Do not commit the recording.
+
+## Live short-surah tail (Mac, 2026-09-18)
+
+Follower + passage for the live Simulator stall: after a short ayah, leftover 3-letter body (`يلد`) and CTC `لم`/`لام` commit mushaf-next; compact surahs preload the rest of that surah on first `verse()` so lookahead is not a 1–2 ayah window; focused pane padding is ~8% height (not 38%) so 1:7 wrath/astray stays on screen. Formula leftover `قل الله` after Kawthar must not lock a long famous-body ayah that repeats `الله` (4:113); jump still takes Ikhlas from the full window including `هو`.
+
+| Check | Result |
+|---|---|
+| `npm test` | **253/253** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **13/14 FAIL** — `english-negative:verse_lock_20:1`. `fatiha` 1:2@9s–1:7@35s; `ikhlas` 112:1@2s, **112:3@6s**, 112:4@7s; `nas` 114:1–6 (soft 2:1 after expect); `jump` 108:1–3 then **112:1@16.75–4** |
+| `imam-mid-surah-cold` | PASS 4:129@11s → 4:130@31s |
+| `imam-mid-surah-cold-qiyam` | PASS 36:16–18 |
+
+Clip class `famous-short`. Finding `live-ikhlas-stall-112-3` closed with units. Live Simulator recitation was not re-measured. Not a physical-device claim. Reload Metro before live mic.
+
 ## Cursor inheritance (docs, same process PR)
 
 Any new Cursor opener gets always-on rules:
