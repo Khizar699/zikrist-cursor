@@ -787,10 +787,29 @@ export class RecitationFollower {
     if (this.window.length < samplesFor(ACQUIRE_MIN_SEC) || this.fresh < samplesFor(ACQUIRE_MIN_SEC)) return [];
     this.fresh = 0;
     this.noteProcessedBuffer(this.window);
-    const result = await this.transcribe(this.window, true);
-    this.noteCycle(result, true);
-    this.noteHeardTokens(result.text);
-    this.noteInference(result);
+    const local = await this.transcribe(this.window, false);
+    this.noteCycle(local, false);
+    this.noteHeardTokens(local.text);
+    this.noteInference(local);
+    const text = local.text.trim();
+    const recognized = text.split(/\s+/).filter(Boolean).map((token) => collapseMaddRuns(token));
+    if (recognized.length) {
+      const opening = this.lockShortSurahOpening(recognized, text, 1);
+      if (opening && opening.ayah === 1) {
+        const score = this.shortOpeningTokenMatch(recognized, opening);
+        this.debugSearchSpace = 'Next-surah pool';
+        this.noteCandidate({ surah: opening.surah, ayah: opening.ayah }, score);
+        return this.commit(opening, Math.max(SEQUENTIAL_ADVANCE_SCORE, score), this.alignForCommit(recognized, opening));
+      }
+    }
+    const result = local.championMatch || local.locateAttempted
+      ? local
+      : await this.transcribe(this.window, true);
+    if (result !== local) {
+      this.noteCycle(result, true);
+      this.noteHeardTokens(result.text);
+      this.noteInference(result);
+    }
     this.debugSearchSpace = 'Global Search';
     const recovered = await this.recoverOpeningMuqattaat(result);
     if (recovered) return recovered;
@@ -2088,7 +2107,13 @@ export class RecitationFollower {
       if (left.bonus !== right.bonus) return right.bonus - left.bonus;
       return right.score - left.score;
     });
-    return pool[0]?.verse;
+    const best = pool[0];
+    const rival = pool[1];
+    if (!best) return undefined;
+    // Shared قل اعوذ برب must not crown Falaq over Nas (or the reverse) until
+    // الفلق / الناس is heard.
+    if (rival && Math.abs(best.score - rival.score) < SURAH_MARGIN) return undefined;
+    return best.verse;
   }
 
   private lockFromNextSurahPool(

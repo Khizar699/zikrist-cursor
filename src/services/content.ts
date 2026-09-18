@@ -97,6 +97,26 @@ export class Content {
   }
   hasVerse(ref: VerseRef): boolean { return Boolean(arabicText[refKey(ref)]); }
   peek(ref: VerseRef): DisplayVerse | undefined { return this.cache.get(refKey(ref)); }
+  /** Arabic + names from the installed mushaf, no SQLite wait. Translation
+   * stays empty until `verse()` fills the pack row. */
+  previewArabic(ref: VerseRef): DisplayVerse | undefined {
+    const cached = this.peek(ref);
+    if (cached) return cached;
+    const key = refKey(ref);
+    const meta = this.metadata.get(key);
+    const arabic = arabicText[key];
+    if (!meta || !arabic) return undefined;
+    const { header, ayah } = splitOpeningBasmala(arabic, ref);
+    return {
+      ...ref,
+      translation: '',
+      footnotes: '',
+      arabic: ayah,
+      basmala: header,
+      name: meta.surah_name_en,
+      nameArabic: meta.surah_name,
+    };
+  }
   cachedNeighborhood(focus: DisplayVerse): DisplayVerse[] {
     return passageWindow(focus, (ref) => this.peek(ref), (ref) => this.hasVerse(ref));
   }

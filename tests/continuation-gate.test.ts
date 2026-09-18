@@ -121,15 +121,24 @@ test('a long jump cannot confirm from mid-verse word hits without the opening', 
   assert.ok(gate.isCheckingJump);
 });
 
-test('mushaf-next surah still waits for words after the shared Basmala', () => {
+test('mushaf-next salah-prior ayah 1 paints immediately without word_progress', () => {
   const gate = new ContinuationGate((ref) => (
     ref.surah === 112 && ref.ayah === 4 ? { surah: 113, ayah: 1 } : { surah: ref.surah, ayah: ref.ayah + 1 }
   ));
   gate.accept([match(112, 4)], 2000, true);
-  assert.deepEqual(gate.accept([match(113, 1)], 3000, true), []);
+  assert.deepEqual(gate.accept([match(113, 1)], 3000, true), [match(113, 1)]);
+  assert.equal(gate.isCheckingJump, false);
+});
+
+test('mushaf-next Baqarah after Fatiha still waits for words after the shared Basmala', () => {
+  const gate = new ContinuationGate((ref) => (
+    ref.surah === 1 && ref.ayah === 7 ? { surah: 2, ayah: 1 } : { surah: ref.surah, ayah: ref.ayah + 1 }
+  ));
+  gate.accept([match(1, 7)], 2000, true);
+  assert.deepEqual(gate.accept([match(2, 1)], 3000, true), []);
   assert.ok(gate.isCheckingJump);
-  const unique = progress(113, 1, [4, 5], 8);
-  assert.deepEqual(gate.accept([unique], 3600, true), [match(113, 1), unique]);
+  const unique = progress(2, 1, [4], 5);
+  assert.deepEqual(gate.accept([unique], 3600, true), [match(2, 1), unique]);
 });
 
 test('heard words still surface while a first ayah-1 match is held', () => {
@@ -173,4 +182,19 @@ test('pending ayah-1 then same-surah ayah-2 displays both in order', () => {
   const gate = make();
   assert.deepEqual(gate.accept([match(2, 1)], 1000, true), []);
   assert.deepEqual(gate.accept([match(2, 2)], 2500, true), [match(2, 1), match(2, 2)]);
+});
+
+test('Fatiha last ayah paints An-Nas ayah-1 immediately even without word_progress', () => {
+  const gate = new ContinuationGate((ref) => (
+    ref.surah === 1 && ref.ayah === 7 ? { surah: 2, ayah: 1 } : { surah: ref.surah, ayah: ref.ayah + 1 }
+  ));
+  gate.accept([match(1, 7)], 2000, true);
+  assert.deepEqual(gate.accept([match(114, 1)], 3000, false), [match(114, 1)]);
+  assert.equal(gate.isCheckingJump, false);
+});
+
+test('Ikhlas cold-start ayah-1 still waits for a unique word after Basmala', () => {
+  const gate = make();
+  assert.deepEqual(gate.accept([match(112, 1)], 1000, true), []);
+  assert.ok(gate.isCheckingJump);
 });

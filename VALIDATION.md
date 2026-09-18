@@ -480,4 +480,18 @@ Follower + display-hold + ContinuationGate. Prompt: `prompts/follow-surah-handof
 
 Clip class `famous-short`. Finding `live-surah-handoff-freeze` closed with units. Live Simulator recitation was not re-measured. Not a physical-device claim.
 
+## Simulator test 2: Fatiha → An-Nas + cold-start pool (Mac, 2026-09-18)
+
+ContinuationGate + acquire + listening display. Prompt: `prompts/sim-test-2-surah-switch.md`. Simulator recitation stayed on **1:7** for ~30 s while An-Nas was spoken because **114:1** sat in `pending` waiting for `word_progress`. Salah-prior ayah-1 now paints immediately (even unvoiced); mushaf-next **2:1** Basmala still waits. Cold acquire transcribes without locate and commits unique salah-pool ayah-1 at ≥0.65; shared `قل اعوذ برب` does not lock Falaq or Nas. `Listening.receive()` clears the Fatiha passage on a surah switch and paints ayah 1 from cache or Arabic preview.
+
+| Check | Result |
+|---|---|
+| `npm test` | **280/280** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **13/14 FAIL** — `english-negative:verse_lock_20:1`. `fatiha` 1:2@9s–1:7@34s; `ikhlas` 112:1@1s–4 including 112:3@6s; `nas` 114:1@4s–6 (soft 4:142 after expect); `falaq` 113:1@3s–5; `jump` 108:1–3 then **112:1@16.5s–4** |
+| `imam-mid-surah-cold` | PASS 4:129@11s → 4:130@19.5s |
+| `imam-mid-surah-cold-qiyam` | PASS 36:16–18 |
+
+Clip class `famous-short` plus Fatiha→body handoff (units). Live Simulator recitation was not re-measured. Not a physical-device claim. Reload Metro before live mic.
+
 

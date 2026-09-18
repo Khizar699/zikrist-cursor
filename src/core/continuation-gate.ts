@@ -39,7 +39,17 @@ export class ContinuationGate {
         const atSurahEnd = Boolean(
           this.current && (!next || next.surah !== this.current.surah)
         );
+        const salahPoolAyah1 = Boolean(
+          this.current
+          && message.surah !== this.current.surah
+          && message.ayah === 1
+          && isSalahPoolSurah(message.surah)
+        );
         if (expected && !holdNextSurahBasmala) {
+          this.current = message; this.pending = null; accepted.push(message);
+        } else if (salahPoolAyah1) {
+          // Ayah-1 of a salah-prior surah must paint immediately (1:7 → 114:1).
+          // Do not stash in pending waiting for word_progress / voiced packets.
           this.current = message; this.pending = null; accepted.push(message);
         } else if (
           voiced

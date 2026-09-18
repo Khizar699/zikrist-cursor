@@ -150,12 +150,26 @@ test('a unique stretch locks the ayah being recited, including a later ayah in a
   assert.equal(engine.phase, 'following');
 });
 
-test('Falaq and An-Nas staying tied does not lock a surah', async () => {
-  const engine = follower([spoken(114, 1, 0.7, {
+test('Nas opening tokens lock 114:1 without waiting for a tied mushaf champion', async () => {
+  const { db, searches } = countingDb();
+  const engine = new RecitationFollower(db, script([spoken(114, 1, 0.7, {
     runners_up: [{ surah: 113, ayah: 1, raw_score: 0.68, bonus: 0, score: 0.68, phonemes_joined: 'qul audhu birabbi alfalaq' }],
-  })]);
+  })]));
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['114:1']);
+  assert.equal(engine.phase, 'following');
+  assert.equal(searches(), 0);
+});
+
+test('shared Qul-audhu-birabbi prefix does not cold-lock Falaq or Nas', async () => {
+  const locateFlags: boolean[] = [];
+  const transcribe: TranscribeFn = async (_audio, locate) => {
+    locateFlags.push(locate);
+    return { text: 'qul audhu birabbi', rawPhonemes: 'qul audhu birabbi' };
+  };
+  const engine = new RecitationFollower(dbFrom(), transcribe);
   assert.deepEqual(refs(await engine.feed(audio(1))), []);
   assert.equal(engine.phase, 'acquiring');
+  assert.deepEqual(locateFlags, [false, true]);
 });
 
 test('the next ayah is committed from its own words, not from finishing the previous ayah', async () => {
@@ -1333,7 +1347,7 @@ test('a last-10 prior cannot commit when a clearly better acoustic match exists'
   assert.deepEqual(refs(await engine.feed(audio(1))), ['2:109']);
 });
 
-test('local recognition clocks record a locate cycle without verse identifiers', async () => {
+test('local recognition clocks record an opening acquire without a mushaf locate', async () => {
   resetRecognitionCycles();
   const engine = follower([{
     ...spoken(112, 1),
@@ -1344,12 +1358,36 @@ test('local recognition clocks record a locate cycle without verse identifiers',
   assert.ok(cycle);
   assert.equal(cycle!.onnxMs, 11);
   assert.equal(cycle!.decodeMs, 3);
-  assert.equal(cycle!.locateMs, 5);
+  assert.equal(cycle!.locateMs, 0);
   assert.equal(cycle!.queueWaitMs, 8);
   assert.equal(cycle!.stallMs, 1);
   assert.equal(cycle!.phase, 'acquiring');
   assert.ok(cycle!.windowSec >= 0.9);
   assert.equal('text' in cycle!, false);
+});
+
+test('cold-start outside the salah pool records locate clocks', async () => {
+  resetRecognitionCycles();
+  const transcribe: TranscribeFn = async (_audio, locate) => {
+    if (!locate) {
+      return {
+        text: 'wadda katheerun min ahli alkitabi',
+        rawPhonemes: 'wadda katheerun min ahli alkitabi',
+        timings: { onnxMs: 11, decodeMs: 3, locateMs: 0 },
+      };
+    }
+    return { ...spoken(2, 109), timings: { onnxMs: 11, decodeMs: 3, locateMs: 5 } };
+  };
+  const engine = new RecitationFollower(dbFrom(), transcribe);
+  await engine.feed(audio(1), { queueWaitMs: 8, stallMs: 1 });
+  const cycle = lastRecognitionCycle();
+  assert.ok(cycle);
+  assert.equal(cycle!.onnxMs, 11);
+  assert.equal(cycle!.decodeMs, 3);
+  assert.equal(cycle!.locateMs, 5);
+  assert.equal(cycle!.queueWaitMs, 8);
+  assert.equal(cycle!.stallMs, 1);
+  assert.equal(cycle!.phase, 'acquiring');
 });
 
 test('debug HUD records raw ASR, inference plus match latency, lock vs next candidate, and neighborhood search space', async () => {
@@ -2108,8 +2146,48 @@ test('follow hops transcribe without locating the mushaf', async () => {
   assert.deepEqual(refs(await engine.feed(audio(1))), ['112:1']);
   assert.deepEqual(refs(await engine.feed(hop())), []);
   assert.deepEqual(refs(await engine.feed(hop())), ['112:2']);
-  assert.ok(locateFlags[0], 'acquire should still locate');
+  assert.equal(locateFlags[0], false, 'salah-pool opening acquire must not global-locate');
   assert.deepEqual(locateFlags.slice(1), [false, false]);
+  assert.equal(searches(), 0);
+});
+
+test('cold-start Falaq opening locks 113:1 without a mushaf locate', async () => {
+  const locateFlags: boolean[] = [];
+  const { db, searches } = countingDb();
+  const transcribe: TranscribeFn = async (_audio, locate) => {
+    locateFlags.push(locate);
+    return { text: 'qul audhu birabbi alfalaq', rawPhonemes: 'qul audhu birabbi alfalaq' };
+  };
+  const engine = new RecitationFollower(db, transcribe);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['113:1']);
+  assert.deepEqual(locateFlags, [false]);
+  assert.equal(searches(), 0);
+  assert.equal(engine.phase, 'following');
+});
+
+test('shared Alhamdulillah does not cold-lock Fatiha 1:2 from the salah pool', async () => {
+  const locateFlags: boolean[] = [];
+  const transcribe: TranscribeFn = async (_audio, locate) => {
+    locateFlags.push(locate);
+    return { text: 'alhamdu lillahi', rawPhonemes: 'alhamdu lillahi' };
+  };
+  const engine = new RecitationFollower(dbFrom(), transcribe);
+  assert.deepEqual(refs(await engine.feed(audio(1))), []);
+  assert.equal(engine.phase, 'acquiring');
+  assert.deepEqual(locateFlags, [false, true]);
+});
+
+test('cold-start outside the salah pool still falls back to a mushaf locate', async () => {
+  const locateFlags: boolean[] = [];
+  const transcribe: TranscribeFn = async (_audio, locate) => {
+    locateFlags.push(locate);
+    if (!locate) return { text: 'wadda katheerun min ahli alkitabi', rawPhonemes: 'wadda katheerun min ahli alkitabi' };
+    return spoken(2, 109);
+  };
+  const { db, searches } = countingDb();
+  const engine = new RecitationFollower(db, transcribe);
+  assert.deepEqual(refs(await engine.feed(audio(1))), ['2:109']);
+  assert.deepEqual(locateFlags, [false, true]);
   assert.equal(searches(), 0);
 });
 

@@ -247,9 +247,12 @@ class Listening {
         continue;
       }
       if (occurrence) {
-        this.pendingDisplay = { surah: occurrence.surah, ayah: occurrence.ayah };
-        if (this.state.current && this.state.current.surah !== occurrence.surah) {
-          this.update({ wordProgress: null });
+        const surahChanged = Boolean(this.state.current && this.state.current.surah !== occurrence.surah);
+        if (surahChanged) {
+          this.pendingDisplay = null;
+          this.update({ passage: [], wordProgress: null });
+        } else {
+          this.pendingDisplay = { surah: occurrence.surah, ayah: occurrence.ayah };
         }
         const generation = ++this.displayGeneration;
         const reveal = (verse: DisplayVerse) => {
@@ -258,12 +261,14 @@ class Listening {
             && item.surah === this.state.current.surah
             && item.ayah === this.state.current.ayah
           ));
-          const surahChanged = Boolean(
+          const switched = Boolean(
             this.state.current && this.state.current.surah !== verse.surah,
           );
+          const sameRef = this.state.current?.surah === verse.surah && this.state.current?.ayah === verse.ayah;
           if (
             this.state.liturgy
-            || surahChanged
+            || switched
+            || sameRef
             || shouldReplaceHeldVerse(this.state.current, verse, {
               hasVerse: (ref) => content.hasVerse(ref),
               displayedWasConfirmed,
@@ -271,15 +276,15 @@ class Listening {
           ) {
             this.show(verse, {
               phase: 'following',
-              ...(surahChanged ? { wordProgress: null } : {}),
+              ...(switched || surahChanged ? { wordProgress: null } : {}),
             });
           }
           this.pendingDisplay = null;
           this.prepareAhead(verse);
         };
-        const cached = content.peek(occurrence);
+        const cached = content.peek(occurrence) ?? (surahChanged ? content.previewArabic(occurrence) : undefined);
         if (cached) reveal(cached);
-        else {
+        if (!content.peek(occurrence)) {
           void content.verse(occurrence).then((verse) => {
             if (this.state.status !== 'listening' || generation !== this.displayGeneration) return;
             reveal(verse);
