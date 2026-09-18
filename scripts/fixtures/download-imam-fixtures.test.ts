@@ -13,7 +13,7 @@ import {
   resolveImamPayloadRoot,
   resolveImamReleaseTag,
   stageImamMidSurahColdQiyamClip,
-} from '../scripts/download-imam-fixtures';
+} from '../download-imam-fixtures';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

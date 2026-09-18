@@ -95,10 +95,8 @@ test('last ayah of a short surah paints the next surah immediately', () => {
     ref.surah === 109 && ref.ayah === 6 ? { surah: 110, ayah: 1 } : { surah: ref.surah, ayah: ref.ayah + 1 }
   ));
   gate.accept([match(109, 6)], 2000, true);
-  assert.deepEqual(gate.accept([match(105, 1), progress(105, 1, [4, 5], 11)], 3000, true), [
-    match(105, 1),
-    progress(105, 1, [4, 5], 11),
-  ]);
+  // Salah-prior ayah 1 (Fil / Kawthar) must paint from verse_match alone.
+  assert.deepEqual(gate.accept([match(105, 1)], 3000, true), [match(105, 1)]);
   assert.equal(gate.isCheckingJump, false);
   assert.deepEqual(gate.accept([match(108, 1)], 4000, true), [match(108, 1)]);
 });

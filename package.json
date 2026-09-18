@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "tsx --test tests/*.test.ts",
+    "test:fixtures": "tsx --test scripts/fixtures/download-imam-fixtures.test.ts",
     "setup": "node scripts/setup.mjs",
     "assets:download": "node scripts/download-assets.mjs",
     "assets:verify": "node scripts/verify-assets.mjs",
