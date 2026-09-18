@@ -4,7 +4,7 @@ Label-fill **01** (`6df8ef3` / #18) + **02** (`c228533` / #19) are on main. Pack
 
 Bot launches **one Cursor session at a time**, in order — **no mega-prompt**.
 
-**Next = co-P0** either restore floor (**jump** + **english-negative**, same-PR locks) **or** `04-hafiz-usama-1-2-vs-27-15.md` (**follow / handoff**). Tip names exactly one; findings ledger ids: `floor-jump-ikhlas`, `floor-english-negative-20-1`, `product-hafiz-usama-27-15`.
+**Next = current Tip** floor restore **english-negative** (`floor-english-negative-20-1`) **or** Hafiz Usama **27:15**. Live follow Phase A+B landed (`prompts/live-follow-phases.md`). Jump (`floor-jump-ikhlas`) and live shared-tail (`live-follow-shared-tail`) are **closed**. Do not swap Tilawa until `prompts/model-bakeoff.md`.
 
 **Do not** expand the default replay floor or treat Tier A coverage M/N as merge-green while floor is red.
 
@@ -21,7 +21,7 @@ Continuity: `prompts/_SHARED-HANDOFF.md` + root `HANDOFF.md` tip in the same PR.
 
 | Pri | Prompt | Concern |
 |---|---|---|
-| **P0** | floor restore (`jump`, `english-negative`) | Tip findings `floor-jump-ikhlas` + `floor-english-negative-20-1` — same-PR locks before expanding floor |
+| **P0** | floor restore (`english-negative`) | Tip finding `floor-english-negative-20-1` — same-PR lock before expanding floor |
 | **P0** | `04-hafiz-usama-1-2-vs-27-15.md` | **Follow/handoff:** Fatiha→An-Naml **27:15** (finding `product-hafiz-usama-27-15`) |
 | P1 | (future prompt if needed) | Advance under overlap — park on 1:2/1:5 while next ayah spoken |
 | P2 | `01-masjid-e-nabi-25-69-false-2-1.md` | False first-lock: **25:69** ≠ **2:1** |
@@ -37,7 +37,8 @@ Shared notes: `_SHARED.md`. Product bar: `PRODUCT-BAR.md`. Ground truth: `prompt
 
 | # | Prompt | Status |
 |---|---|---|
-| floor | jump + english-negative | **co-P0** — findings `floor-jump-ikhlas`, `floor-english-negative-20-1` |
+| live-follow | Phase A+B smoothness / expected tape | **closed this session** — splice 0.25 s, backlog keeps lock, sequential focus, word highlight; follow hops `locate=false` and score remainder+next. Phase C bakeoff only if a phone still misses the tracking clock (`prompts/model-bakeoff.md`) |
+| floor | english-negative | **co-P0** — finding `floor-english-negative-20-1`. Jump (`floor-jump-ikhlas`) **closed**. Live shared-tail stall (`live-follow-shared-tail`) **closed** Mac 2026-09-18: nas 114:1–6, fatiha 1:2–7, ikhlas 112:1–4 |
 | 04 | hafiz-usama →27:15 (follow/handoff) | **co-P0** — finding `product-hafiz-usama-27-15`. Mac 2026-09-18: **2:1** false lock cleared; stall after **1:7** (no **27:15**; Naml CTC is `الم`) |
 | 01 | masjid-e-nabi 25:69≠2:1 | deferred P2 — after follow P0 |
 | 02 | ahzab cold 33:62≠33:60 | deferred P2 |

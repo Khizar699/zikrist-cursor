@@ -36,14 +36,15 @@ Skip overnight queues unless picking next work. Dictation above is what to **wri
 
 ## Tip state (update every PR)
 
-- **This PR:** Local Mac Agent — **live words then passage** (`prompts/live-word-then-passage.md`): shared openings still show heard Arabic only (no translation / no ayah claim); after a unique lock the on-screen passage is previous + current + up to **7** same-surah ayahs (Fatiha 1:2 can list 1:3–1:7; long surahs stay capped). Neighbor opacity 0.34. Recognition locates/follow unchanged.
-- **Prior tip:** Fatiha handoff pool (`04` / `product-hafiz-usama-27-15`): famous list includes **Naml 27**; mushaf-next is a scored candidate, not auto-display; neighborhood cache is the recited surah only; preload openings `aya<=2` of the pool near surah end. After a lock, refuse **2:1** from CTC `الم الي`, remembered `الم` stitched onto `الل`, and reacquire isolated `الم` (Naml garbage). Same-surah leftover still wins over the pool (Quraysh **106:4**). **Not product-green:** Usama still stalls after **1:7** (no **27:15**); Tilawa of the Naml body is `الم` / `الم الي`.
-- **Gate (floor) — inherited, not re-run this display session:** last Mac `npm run test:replay -- all` = **12/14 FAIL**. Failures: `jump` (no Ikhlas); `english-negative` (20:1). This PR does not retune follower lock. Units **211/211**; typecheck pass.
-- **Product bar (inherited):** Hafiz Usama `imam-multi-qari__hafiz-usama__001-027-015__raw.wav` — first lock **1:2@2.75**; ordered **1:2→1:3→1:4→1:5→1:6→1:7@19.25**; stall after **1:7**; **no 2:1**. Clip class `fatiha-to-body`. Ready `imam-mid-surah-cold` PASS (4:129–131); `imam-mid-surah-cold-qiyam` PASS (36:16–20).
-- **Ratchet:** shared `الحمد لله` now asserts heard words (no 14:39); after 1:2 lock the passage lists the rest of Fatiha when cached; long-surah lookahead stays capped. Do not shrink `product-hafiz-usama-27-15` until **27:15** Mac-locks.
-- **Restore:** `npm ci` → `npm run setup` (or `setup -- --fixtures`) → `npm run ios`. Coverage: `npm run test:coverage -- --list` / `--dry-run` / full Mac replay. After plugin/app.json native changes: `npx expo prebuild --platform ios --clean` then `npm run ios`.
-- **Known fails:** floor **jump** (`floor-jump-ikhlas`) + **english-negative** (`floor-english-negative-20-1`). Handoff: hafiz-usama →**27:15** (`product-hafiz-usama-27-15`, stall after **1:7**, **2:1** cleared). Soft deferred: `soft-nas-to-2-1`, `soft-quraysh-to-2-1` (quiet this measure, no tighter expect). Still blocked: `imam-mid-ayah-pause`; Qunut@s9P 4:56. Deferred P2: masjid **25:69≠2:1**; ahzab **33:62≠33:60**; baqarah→imran **≠57:28**.
-- **Open tracks:** **P0** still `product-hafiz-usama-27-15` (need unique Naml tokens, not CTC `الم`) **or** floor restore (`floor-jump-ikhlas` / `floor-english-negative-20-1`). Then `npm run findings:report`. Liturgy TTS `tts-fill/03-ruku.md`. Design later: karaoke word highlight inside a locked ayah.
+- **This PR:** Local Mac Agent — **live follow Phase B** (`prompts/live-follow-phases.md`). After lock, follow transcribes only (`locate=false`) and scores the CTC token stream against current remainder + mushaf-next. Shared-tail / short-next / joined-ayah classes are unit-locked; a stem of the current body is not enough to hear next. Same-surah advance still uses leftover evidence, not a blob-vs-mushaf locate. Default model is still Tilawa. Phase C bakeoff is `prompts/model-bakeoff.md` only if a phone still misses the tracking clock.
+- **Prior tip:** live follow Phase A — splice 0.25 s, backlog keeps lock, sequential focus, word highlight, timeline skip.
+- **Gate (floor) — this Mac session:** `npm test` **238/238**; typecheck pass. `npm run test:replay -- all` = **13/14 FAIL**. Remaining: `english-negative:verse_lock_20:1`. `fatiha` 1:2–7; `nas` 114:1–6; `ikhlas` 112:1–4; `jump` 108:1–3 then 112:1@16.75–112:4. Do not claim 14/14.
+- **Product bar:** Famous-short ordered advance: Fatiha 1:2@9s then 1:3–7; Nas 114:1–6; Ikhlas 112:1–4; jump 108:1–3 then 112:1@16.75–4. Ready `imam-mid-surah-cold` PASS (4:129–130); `imam-mid-surah-cold-qiyam` PASS (36:16–18). Hafiz Usama →27:15 was **not** re-measured. Clip class: `famous-short` follow. Not a physical-device claim.
+- **Ratchet:** units lock expected-tape classes (shared tail, short next, joined remainder+next, formula opening, CTC cousin الله≈اله, current-body stem is not next) plus follow hops `locate=false` with no `bestJoint03Match` while the tape explains. Finding `live-follow-late-skip` **closed**. Finding `live-follow-expected-tape` **closed**.
+- **Restore:** `npm ci` → `npm run setup` (or `setup -- --fixtures`) → `npm run ios`. Reload Metro after this follow change.
+- **Known fails:** floor **english-negative** (`floor-english-negative-20-1`). Handoff: hafiz-usama →**27:15** (`product-hafiz-usama-27-15`, stall after **1:7**, **2:1** cleared). Soft deferred: `soft-nas-to-2-1`, `soft-quraysh-to-2-1`. Still blocked: `imam-mid-ayah-pause`; Qunut@s9P 4:56. Deferred P2: masjid **25:69≠2:1**; ahzab **33:62≠33:60**; baqarah→imran **≠57:28**. Jump and live shared-tail stall remain **cleared**.
+- **Open tracks:** **P0** floor restore (`floor-english-negative-20-1`) **or** `product-hafiz-usama-27-15`. Phase C bakeoff only if a phone still misses follow latency. Then `npm run findings:report`. Do not swap Tilawa until `prompts/model-bakeoff.md`. Liturgy TTS `tts-fill/03-ruku.md`.
+
 
 ## For assistants / Grok bots — read first
 
@@ -107,7 +108,7 @@ Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that woul
 
 **Current open tracks**
 
-- **P0:** restore floor (jump + english-negative) **or** `prompts/real-imam/algo/04-hafiz-usama-1-2-vs-27-15.md` — each fix must lock a permanent test (`RATCHET.md`); then deferred false-lock 01→02→03
+- **P0:** floor restore english-negative (`floor-english-negative-20-1`) **or** `prompts/real-imam/algo/04-hafiz-usama-1-2-vs-27-15.md` — each fix must lock a permanent test (`RATCHET.md`). Live follow Phase A+B landed. Do not swap Tilawa until `prompts/model-bakeoff.md`.
 - Liturgy TTS after thana Mac-green — `prompts/salah-liturgy/tts-fill/03-ruku.md`
 
 
