@@ -27,7 +27,8 @@
     "test:coverage": "tsx scripts/coverage-sample.ts",
     "findings:report": "tsx scripts/findings-report.ts",
     "test:bakeoff": "tsx scripts/bakeoff.ts",
-    "benchmark": "tsx scripts/replay.ts"
+    "benchmark": "tsx scripts/replay.ts",
+    "pipeline:export": "node scripts/export-pipeline.mjs"
   },
   "dependencies": {
     "@tilawa/core": "0.1.0",

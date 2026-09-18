@@ -18,7 +18,8 @@ Binding obligation for **anyone continuing this repo** (friend + their Grok/Curs
 1. **`HANDOFF.md` Tip state — always.** What landed, tip SHA/PR, open tracks, gates, known fails, restore cmds if changed.
 2. **`VALIDATION.md`** — when Mac/Linux verify paths change or you record a new Mac-green result.
 3. **Active prompt / queue status** — mark done/held/next in the relevant `prompts/**/00-QUEUE.md` (or session prompt) if the overnight queue tracks it.
-4. Follow `prompts/_SHARED-HANDOFF.md` **exactly**.
+4. **`zikrist_pipeline_export.txt`** — after any `src/core/` or `src/services/` change, run `npm run pipeline:export` in the same change set.
+5. Follow `prompts/_SHARED-HANDOFF.md` **exactly**.
 
 **Your session is incomplete without a `HANDOFF.md` tip bump.** CI already requires `HANDOFF.md` in the PR diff (`.github/workflows/handoff-required.yml`).
 
@@ -36,7 +37,7 @@ Skip overnight queues unless picking next work. Dictation above is what to **wri
 
 ## Tip state (update every PR)
 
-- **This PR:** Local Mac Agent — **`prompts/follow-surah-handoff.md`**. Follow hops never call `lockFromTranscript(..., true)` / `bestJoint03Match` (no ~2s Match spike at surah end). Last-ayah leftover uses the salah-prior pool; ayah-1 openings of last-20 / Juz 30 (Fil `ألم تر كيف`, Kawthar `إنا أعطيناك`) commit at ≥0.65 instead of snapping to that surah’s last ayah. `shouldReplaceHeldVerse` always replaces on a new surah; `Listening.receive()` applies `verse_match` before `word_progress` and clears stale `wordProgress`. ContinuationGate paints a voiced last-ayah / salah-pool surah change immediately (mushaf-next Basmala still waits; 2:109 still needs extra evidence).
+- **This PR:** Local Mac Agent — **`prompts/follow-surah-handoff.md`**. Follow hops never call `lockFromTranscript(..., true)` / `bestJoint03Match` (no ~2s Match spike at surah end). Last-ayah leftover uses the salah-prior pool; ayah-1 openings of last-20 / Juz 30 (Fil `ألم تر كيف`, Kawthar `إنا أعطيناك`) commit at ≥0.65 instead of snapping to that surah’s last ayah. `shouldReplaceHeldVerse` always replaces on a new surah; `Listening.receive()` applies `verse_match` before `word_progress` and clears stale `wordProgress`. ContinuationGate paints a voiced last-ayah / salah-pool surah change immediately (mushaf-next Basmala still waits; 2:109 still needs extra evidence). Pipeline dump: `zikrist_pipeline_export.txt` is regenerated after `src/core/` / `src/services/` edits via `npm run pipeline:export`.
 - **Prior tip:** Follow no-global-freeze (`prompts/follow-no-global-freeze.md`). Debug-hud Buf/Mode/Misses in the listening column (`DEBUG_HUD_OVERLAYS_ARABIC = false`). Arabic-verse-stage still hides the painted translation pane.
 - **Gate (floor):** `npm test` **272/272** + typecheck. Mac `npm run test:replay -- all` = **13/14 FAIL** (`english-negative:verse_lock_20:1`). Do not claim 14/14.
 - **Product bar:** famous-short ordered advance — ikhlas **112:1@2s–4**, fatiha **1:2@9s–1:7@34s**, nas **114:1–6**. Jump Kawthar→Ikhlas **112:1@16.5s–4**. Ready imam mid-surah-cold **4:129@11s→4:130@19.5s** PASS; qiyam **36:16–18** PASS. Live Simulator 109:6 freeze not re-measured.

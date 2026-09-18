@@ -25,6 +25,7 @@ Write obligation (do not paste it here): follow **Dictation for successor bots**
 - Update `VALIDATION.md` when Mac/Linux verify paths change or you record a new Mac-green result.
 - Update queue status (`prompts/**/00-QUEUE.md`) when that overnight track moves.
 - Recognition fixes: permanent **ratchet lock** same PR (unit and/or ready expect) per `prompts/real-imam/algo/RATCHET.md`.
+- After any change under `src/core/` or `src/services/`, regenerate `zikrist_pipeline_export.txt` with `npm run pipeline:export` in the **same change set**. Do not leave that dump stale.
 
 ## Hard limits
 

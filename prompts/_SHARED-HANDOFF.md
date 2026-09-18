@@ -29,6 +29,7 @@ Bots: Tip → `AGENTS.md` → the one prompt Tip names (HANDOFF **Bot start prot
 |---|---|
 | **`VALIDATION.md`** | Mac/Linux verify paths change, or a new Mac-green result is recorded |
 | **Queue status** | Overnight or fill queue moves (e.g. `prompts/salah-liturgy/tts-fill/00-QUEUE.md`, `prompts/real-imam/label-fill/00-QUEUE.md`, pack `00-OVERNIGHT-QUEUE.md`) — mark done / held / next |
+| **`zikrist_pipeline_export.txt`** | Any change under `src/core/` or `src/services/` — run `npm run pipeline:export` in the same change set |
 
 ## Forbidden
 
