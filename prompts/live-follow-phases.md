@@ -14,7 +14,7 @@ Phase A landed. **This session implements Phase B** (expected tape). Do not swap
 
 ## Phases
 
-### Phase A (this PR) — same model, live feel
+### Phase A (landed) — same model, live feel
 
 1. First lock keeps `KEEP_AFTER_LOCK_SEC` (1.0 s) of the current ayah. Advancing keeps `KEEP_AFTER_COMMIT_SEC` (~0.25 s) so the previous tail does not dominate.
 2. Processing backlog drops oldest pending packets and **keeps the lock**. Do not `discontinuity` / reset the follower.
