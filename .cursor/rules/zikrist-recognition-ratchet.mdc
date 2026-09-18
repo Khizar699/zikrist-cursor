@@ -7,6 +7,8 @@ alwaysApply: true
 
 Applies to **anyone** opening this repo in Cursor (Agent / Composer / cloud), including friends with no chat history.
 
+Do not recite this file, announce the verify loop, or confirm that you loaded the ratchet. Execute the suite and lock tests. Report measurements only when they are actual results.
+
 ## Premade standards (do not reinvent)
 
 | Doc | Role |
@@ -22,14 +24,14 @@ Applies to **anyone** opening this repo in Cursor (Agent / Composer / cloud), in
 
 ## Premade test suite
 
-**Units (always):** `npm test` — follower, gate, prior, liturgy, harness contracts under `tests/`.
+**Units (always):** `npm test` — in-memory follower, gate, prior, liturgy, harness contracts under `tests/`. Prioritize monotonic follow, ayah-1 surah handoff, madd/CTC cousins (`tests/mushaf-tracking.test.ts`). **Do not add** network, SQLite translation schema, or multi-language pack download/activate tests to this command.
 
 **Regression floor (Mac):** `npm run test:replay -- all` — 14 EveryAyah-style suites in `scripts/replay-suites.ts`. Record honest **N/14**; do not claim 14/14 if red. Linux ONNX is not this gate.
 
 **Ready mosque (Mac, after fixtures):**  
 `npm run test:replay -- imam-mid-surah-cold` and `imam-mid-surah-cold-qiyam` must PASS (not skip). More suites join when label-fill flips `ready`.
 
-**Product bar:** Tip-named wav via `npx tsx scripts/replay.ts <path>` — prove lock + **ordered advance**, not phase=`following` alone.
+**Product bar:** Tip-named wav via `npx tsx scripts/replay.ts <path>` — prove lock + **ordered advance** + the matching **Arabic mushaf**, not phase=`following` alone.
 
 **Coverage scoreboard (not floor):** `npm run test:coverage` — Tier A cold starts, honest M/N; `npm run findings:report`. See `COVERAGE.md`.
 
@@ -56,3 +58,4 @@ A “fix” without a permanent test is incomplete. Chat memory is not a lock.
 - No `stub` → `ready` outside label-fill after Mac PASS.
 - Do not commit `artifacts/` wav/mp3.
 - Always bump `HANDOFF.md` tip in the same PR (`prompts/_SHARED-HANDOFF.md`).
+- Do not add network / translation-SQLite / pack-download tests to `npm test`. Phase 2 translation is a `[surah:ayah]` lookup after Arabic tracking is flawless.

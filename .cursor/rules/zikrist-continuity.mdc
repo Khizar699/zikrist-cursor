@@ -5,19 +5,21 @@ alwaysApply: true
 
 # Zikrist continuity (local Cursor)
 
-Applies to this whole repo when opened in Cursor (Agent / Composer), not only Grok Bot. Do not wait for a pasted prompt.
+Applies to this whole repo when opened in Cursor (Agent / Composer / Cloud Agent), not only Grok Bot. Do not wait for a pasted prompt.
 
-## Start of every coding session
+**Execution style:** Jump straight to execution. Do not announce a plan, echo a mantra, recite docs, or use canned confirmation phrases (e.g. never say "I'll read Tip state and product docs..."). Tip / `AGENTS.md` / these rules are silent internal reads. First user-visible action is a code edit, file write, test run, or terminal command.
 
-1. Read `HANDOFF.md` **Tip state** only first.
-2. Then `AGENTS.md`.
-3. Then **only** the open-track prompt named in Tip.
-4. If Tip is recognition / algo / follower / replay: also obey `.cursor/rules/zikrist-recognition-ratchet.mdc` and skim `prompts/real-imam/algo/PRODUCT-BAR.md` + `RATCHET.md` (do not load every `prompts/**` file).
+## Start of every coding session (silent)
+
+1. Silently read `HANDOFF.md` **Tip state** only first. Do not recite it in chat.
+2. Then `AGENTS.md` (silent).
+3. Then **only** the open-track prompt named in Tip (silent).
+4. If Tip is recognition / algo / follower / replay: also obey `.cursor/rules/zikrist-recognition-ratchet.mdc` and skim `prompts/real-imam/algo/PRODUCT-BAR.md` + `RATCHET.md` (do not load every `prompts/**` file; do not announce this skim).
 5. Restore fixtures if missing: `npm run fixtures:recitation` then `npm run fixtures:imam`.
 
 Skip overnight queues unless picking next work.
 
-Write obligation (do not paste it here): follow **Dictation for successor bots** in `HANDOFF.md` and `prompts/_SHARED-HANDOFF.md` exactly.
+Write obligation (do not paste it here, do not recite it): follow **Dictation for successor bots** in `HANDOFF.md` and `prompts/_SHARED-HANDOFF.md` exactly.
 
 ## Before finishing any change set / PR
 
@@ -30,9 +32,10 @@ Write obligation (do not paste it here): follow **Dictation for successor bots**
 ## Hard limits
 
 - `npm run test:replay -- all` stays **14/14** Quran when claiming floor-green (record honest N/14 if red). Linux ONNX is not that gate.
-- Algo/follower Tip work also needs the **product bar** in `prompts/real-imam/algo/PRODUCT-BAR.md` (lock + ordered advance on the Tip clip). 14/14 alone ≠ done.
+- Algo/follower Tip work also needs the **product bar** in `prompts/real-imam/algo/PRODUCT-BAR.md` (lock + ordered advance + correct Arabic mushaf on the Tip clip). 14/14 alone ≠ done.
 - **After any recognition/follower/Tilawa-patch change on Mac:** the editing agent runs the Agent verify loop in `PRODUCT-BAR.md` and reports findings in-chat + tip. Do not defer acoustic verify to founder iOS vibe-testing.
 - **Ratchet:** `prompts/real-imam/algo/RATCHET.md` — fix → Mac measure → permanent unit/ready lock in the same PR. Do not weaken expects. Known fails only shrink when locked. Corpus only grows.
 - Never invent ayah labels.
 - Do not flip real-imam `stub` → `ready` except in a label-fill session after Mac `test:replay -- <suite>` PASS. Mid-surah-cold false-lock is already Mac-green (#17).
 - Do not commit `artifacts/` audio (wav/mp3).
+- Do not add network / translation-SQLite / pack-download tests to default `npm test`.

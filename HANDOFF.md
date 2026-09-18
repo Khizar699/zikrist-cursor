@@ -25,7 +25,7 @@ Binding obligation for **anyone continuing this repo** (friend + their Grok/Curs
 
 ## Bot start protocol
 
-Cheap read order (do not load every `prompts/**` file up front):
+Cheap read order — **silent**. Do not recite this list, announce a plan, or say that you are reading Tip / `AGENTS.md` / continuity rules. First user-visible action is a code edit, file write, test run, or terminal command. Do not load every `prompts/**` file up front:
 
 1. **Tip state** only first (next section).
 2. Then `AGENTS.md`.
@@ -37,14 +37,14 @@ Skip overnight queues unless picking next work. Dictation above is what to **wri
 
 ## Tip state (update every PR)
 
-- **This PR:** Local Mac Agent — continuation-gate last-ayah test now paints salah-prior **[105:1]** / **[108:1]** from `verse_match` alone (no `word_progress`). Imam fixture helper tests moved to `scripts/fixtures/download-imam-fixtures.test.ts` and are no longer in `npm test`; run `npm run test:fixtures` when touching the restore script. `npm test` stays `tsx --test tests/*.test.ts` (in-memory follower/gate only).
-- **Prior tip:** focused mushaf unit lock in `tests/mushaf-tracking.test.ts` (no translation/SQLite). Sequential Fatiha **1:2→1:3**; Kafirun **109:6** leftover `ألم تر كيف فعل ربك` commits **[105:1]** and refuses **4:142** / **105:5**.
-- **Gate (floor):** `npm test` **287/287** + typecheck. Fixture restore helpers are `npm run test:fixtures` (not in the default suite). Mac `npm run test:replay -- all` not re-run (units only). Last recorded floor remains **12/14 FAIL** (`english-negative:verse_lock_20:1`, `stall-after-lock:no_matches`). Do not claim 14/14.
-- **Product bar:** nas **114:1@4s–6** with **no 4:142**; jump Kawthar→Ikhlas **112:1@16.5s–4**; back-to-back Asr then **106:1@22.25s–4**; asr **103:1–3** (no 92:1). Ready imam mid-surah-cold **4:129@11s→4:130@19.5s** PASS. qiyam **FAIL** first lock **2:1@5.5s** (want **36:16**). Live Simulator recitation not re-measured.
-- **Ratchet:** continuation-gate **109:6→[105:1]/[108:1]** without `word_progress`. `tests/mushaf-tracking.test.ts` — sequential Fatiha **1:2→1:3** no Global Search; **109:6→[105:1]** pool `ayah<=2` refuse **4:142**/**105:5**; madd+pause sticky **1:7**. Prior units — refuse **4:142** / **112:4** / **113:5** handoffs; 1-token refuse; Fil **105:1** 3-miss breakout; Nas leftover `الناس` must not lock **4:1**; garbled `قر قريش` still **106:1**; lone `قريش` must not; acquire locate flags stay `[false]`; cold **112:2** via throttled JS search; Ya-Sin **36:16** lookback must not steal **2:1**. Do not weaken no-global-freeze / sticky-lock / sim-test-2 expects.
-- **Restore:** `npm ci` → `npm run setup` (or `setup -- --fixtures`) → `npm run ios`.
-- **Known fails:** Floor **english-negative** (`floor-english-negative-20-1`) and **stall-after-lock** `no_matches` (112:2 clip never verse_match without Tilawa locate). Ready qiyam **36:16** false-lock **2:1** this session. Handoff: hafiz-usama →**27:15** (`product-hafiz-usama-27-15`, stall after **1:7**, **2:1** cleared). Soft deferred: `soft-quraysh-to-2-1`. Nas trail **4:142** **cleared** on Mac nas suite (locked). Still blocked: `imam-mid-ayah-pause`; Qunut@s9P 4:56. Deferred P2: masjid **25:69≠2:1**; ahzab **33:62≠33:60**; baqarah→imran **≠57:28**. Live Ikhlas 112:2 stall **cleared** (locked). Jump, live shared-tail, and 109:6 carousel freeze remain **cleared**. Simulator 1:7→114:1 gate hold **cleared** in units (live recitation not re-measured). Phase C streaming swap **not taken**.
-- **Open tracks:** **P0** floor restore (`floor-english-negative-20-1` **and** stall-after-lock) **or** `product-hafiz-usama-27-15`. Ready qiyam **2:1** false-lock. Remaining chrome in `prompts/live-passage-chrome.md`. Then `npm run findings:report`. Liturgy TTS `tts-fill/03-ruku.md`.
+- **This PR:** Local Mac Agent — **silent start for Cloud/headless agents.** `AGENTS.md` Workflow now forbids conversational preamble / meta-announcements / doc-reading recitations; Tip + continuity reads are **silent**; first user-visible action is a code edit, test, or command. `.cursor/rules/zikrist-continuity.mdc` and `zikrist-recognition-ratchet.mdc` instruct jump-straight-to-execution (no plan/mantra/recitation). HANDOFF Bot start protocol same silence. Phase 1 mushaf-first law, dual bar, and ratchet **unchanged**. Docs-only; `npm test` / Mac `test:replay -- all` not re-run. Last recorded floor remains **12/14 FAIL**. Last recorded units **291/291**.
+- **Prior tip:** Phase 1 engineering law. `AGENTS.md` / README / VALIDATION / product bar name the acoustic-to-mushaf engine as the only active work: neighborhood `[current − 1, current + 2]`, monotonic follow, madd/CTC must not Global Search, surah handoff enters ayah 1 (ayah 2 after Basmala), bounded capture. Translation is **Phase 2**: a static `[surah:ayah]` lookup after Arabic tracking is flawless. Default `npm test` must not grow network / translation-SQLite / pack-download tests.
+- **Gate (floor):** Last recorded `npm test` **291/291** + typecheck. Mac `npm run test:replay -- all` not re-run. Last recorded floor remains **12/14 FAIL** (`english-negative:verse_lock_20:1`, `stall-after-lock:no_matches`). Do not claim 14/14.
+- **Product bar:** mushaf lock + monotonic advance + correct Arabic. nas **114:1@4s–6** with **no 4:142**; jump Kawthar→Ikhlas **112:1@16.5s–4**; back-to-back Asr then **106:1@22.25s–4**; asr **103:1–3** (no 92:1). Ready imam mid-surah-cold **4:129@11s→4:130@19.5s** PASS. qiyam **FAIL** first lock **2:1@5.5s** (want **36:16**). Live Simulator recitation not re-measured. Match-to-display p95 < 50 ms is an evaluation target, not a claimed Mac result. Translation display is **not** the bar.
+- **Ratchet:** Phase 1 unit order = monotonic follow, ayah-1 handoff, madd/CTC cousins (`tests/mushaf-tracking.test.ts`). `MUSHAF_ONLY_MVP` + empty-translation mushaf display. Continuation-gate **109:6→[105:1]/[108:1]** without `word_progress`. Prior units — refuse **4:142** / **112:4** / **113:5** handoffs; 1-token refuse; Fil **105:1** 3-miss breakout; Nas leftover `الناس` must not lock **4:1**; garbled `قر قريش` still **106:1**; lone `قريش` must not; acquire locate flags stay `[false]`; cold **112:2** via throttled JS search; Ya-Sin **36:16** lookback must not steal **2:1**. Do not weaken no-global-freeze / sticky-lock / sim-test-2 expects.
+- **Restore:** `npm ci` → `npm run setup` (or `setup -- --fixtures`) → `npm run ios`. No first-launch translation download.
+- **Known fails:** Floor **english-negative** (`floor-english-negative-20-1`) and **stall-after-lock** `no_matches` (112:2 clip never verse_match without Tilawa locate). Ready qiyam **36:16** false-lock **2:1**. Handoff: hafiz-usama →**27:15** (`product-hafiz-usama-27-15`, stall after **1:7**, **2:1** cleared). Soft deferred: `soft-quraysh-to-2-1`. Nas trail **4:142** **cleared** on Mac nas suite (locked). Still blocked: `imam-mid-ayah-pause`; Qunut@s9P 4:56. Deferred P2: masjid **25:69≠2:1**; ahzab **33:62≠33:60**; baqarah→imran **≠57:28**. Live Ikhlas 112:2 stall **cleared** (locked). Jump, live shared-tail, and 109:6 carousel freeze remain **cleared**. Simulator 1:7→114:1 gate hold **cleared** in units (live recitation not re-measured). Phase C streaming swap **not taken**.
+- **Open tracks:** **P0** mushaf follow: floor restore (`floor-english-negative-20-1` **and** stall-after-lock) **or** `product-hafiz-usama-27-15`. Ready qiyam **2:1** false-lock. Then Arabic chrome in `prompts/live-passage-chrome.md`. Translation-first prompts stay parked (Phase 2). Then `npm run findings:report`. Liturgy TTS `tts-fill/03-ruku.md` is not P0.
 
 
 ## For assistants / Grok bots — read first
@@ -54,11 +54,11 @@ You have no prior thread. Do not invent product history, ayah numbers, or Mac re
 | | |
 |---|---|
 | Repo | https://github.com/Khizar699/zikrist-cursor |
-| Product | **Zikrist** — offline Expo ayah locator + salah liturgy (Android/iPhone, including mid-range). Algorithm and recognition correctness beat visual design this MVP. **No Figma** for the MVP. |
+| Product | **Zikrist** — offline Expo **mushaf follower** (Android/iPhone, including mid-range). Phase 1: listen → lock `[surah:ayah]` → paint canonical Arabic → follow monotonically. **Phase 2 translation** is a static `[surah:ayah]` lookup after Arabic tracking is flawless — not current work. Algorithm beats visual design. **No Figma** for the MVP. |
 | Cursor always-on | `.cursor/rules/zikrist-continuity.mdc` + `.cursor/rules/zikrist-recognition-ratchet.mdc` |
 | Premade test + ratchet | `prompts/real-imam/algo/PRODUCT-BAR.md`, `RATCHET.md`, `COVERAGE.md`, findings `prompts/real-imam/findings/`, pack index `algo/README.md` — Agent runs Mac verify; every fix locks a permanent test; corpus grows; Tier A coverage is honest M/N scoreboard |
 | Regression floor | `npm run test:replay -- all` must stay **14/14** Quran when claiming green (honest N/14 if red). Linux ONNX is not that gate. |
-| Product bar | Algo/follower sessions: Tip clip must show **correct lock + ordered advance** while audio continues. 14/14 alone ≠ done. Famous-short EveryAyah green ≠ all-surah / prayer-follow ready. |
+| Product bar | Algo/follower sessions: Tip clip must show **correct lock + monotonic ordered advance + matching Arabic mushaf** while audio continues (neighborhood `[current − 1, current + 2]`; surah handoff enters ayah 1). 14/14 alone ≠ done. Translation is not this bar. |
 | Labels | Ground truth: `prompts/real-imam/LABELS.md` + `prompts/real-imam/labels.json` (Khizar, 2026-09-16). **Not** `probes/hypothesized-locks.txt`. Never invent ayah labels. |
 | Suites | `imam-mid-surah-cold` is **`ready`** (Subayyal **4:129–130**). Sibling `imam-mid-surah-cold-qiyam` is **`ready`** (Qiyam **36:16–18**). Other `prompts/real-imam/manifest.stub.json` rows stay **`stub`**. Restoring wavs is not a `ready` flip. Short ready sequences ≠ Fatiha→body handoff. |
 
@@ -109,9 +109,9 @@ Examples: `liturgy-takbeer`, `liturgy-thana`. Never invent silent WAVs that woul
 
 **Current open tracks**
 
-- **P0:** floor restore english-negative (`floor-english-negative-20-1`) **and** stall-after-lock, **or** `prompts/real-imam/algo/04-hafiz-usama-1-2-vs-27-15.md`. Mushaf units + continuation-gate salah-prior ayah-1 paint landed this session. Each recognition fix must lock a permanent test (`RATCHET.md`). Live follow Phase A+B+C landed. Default stays Tilawa (`npm run test:bakeoff`).
-- P1 live chrome: `prompts/live-passage-chrome.md` (Arabic-only stage landed in `prompts/arabic-verse-stage.md`; island/gear still open).
-- Liturgy TTS after thana Mac-green — `prompts/salah-liturgy/tts-fill/03-ruku.md`
+- **P0:** mushaf follow — floor restore english-negative (`floor-english-negative-20-1`) **and** stall-after-lock, **or** `prompts/real-imam/algo/04-hafiz-usama-1-2-vs-27-15.md`. Phase 1 law: neighborhood follow, madd/CTC sticky lock, ayah-1 handoff. Translation is Phase 2 (`[surah:ayah]` lookup). Each recognition fix must lock a permanent test (`RATCHET.md`). Default stays Tilawa (`npm run test:bakeoff`).
+- P1 Arabic chrome: `prompts/live-passage-chrome.md` (translation pane stays off).
+- Liturgy TTS after thana Mac-green — `prompts/salah-liturgy/tts-fill/03-ruku.md` (not P0).
 
 
 Read `AGENTS.md` before implementing.
