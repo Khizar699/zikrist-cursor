@@ -20,6 +20,10 @@ export type DebugHudSnapshot = {
   mode: DebugHudMode;
   misses: number;
   missThreshold: number;
+  candidateMargin: number | null;
+  locationConfidence?: number | null;
+  trackConfidence?: number | null;
+  unsupportedVoicedMs?: number;
 };
 
 export function emptyDebugHud(): DebugHudSnapshot {
@@ -36,6 +40,7 @@ export function emptyDebugHud(): DebugHudSnapshot {
     mode: 'ACQUIRING',
     misses: 0,
     missThreshold: DEBUG_HUD_MISS_THRESHOLD,
+    candidateMargin: null,
   };
 }
 
@@ -86,7 +91,9 @@ export function formatDebugHudLines(snapshot: DebugHudSnapshot): string[] {
   return [
     `Inf ${Math.round(snapshot.inferenceMs)}ms  Match ${Math.round(snapshot.matchMs)}ms  Buf ${Math.round(snapshot.bufferMs)}ms`,
     `Lock ${formatAyahRef(snapshot.lock)}  Cand ${formatAyahRef(snapshot.candidate)}  Mode [${mode}]`,
-    `Score ${formatMatchScore(snapshot.matchScore)}  Misses [${snapshot.misses}/${threshold}]`,
+    `Score ${formatMatchScore(snapshot.matchScore)}  Misses [${snapshot.misses}/${threshold}]`
+      + (snapshot.candidateMargin != null ? `  Mgn ${snapshot.candidateMargin.toFixed(2)}` : '')
+      + (snapshot.trackConfidence != null ? `  Trk ${snapshot.trackConfidence.toFixed(2)}` : ''),
     `Space ${snapshot.searchSpace}`,
     `ASR: ${truncateAsr(snapshot.partialAsr) || '—'}`,
   ];

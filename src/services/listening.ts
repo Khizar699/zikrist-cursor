@@ -9,10 +9,11 @@ import { Timeline } from '../core/timeline';
 import { ContinuationGate } from '../core/continuation-gate';
 import { RecitationFollower } from '../core/follower';
 import { shouldReplaceHeldVerse } from '../core/display-hold';
+import { resolveListeningPhase } from '../core/listening-phase';
 import { samePassage } from '../core/passage';
 import { isCaptureGap, isLongPause, isSpeech } from '../core/capture-policy';
 import { nextSequentialRef, approachingSurahEnd, shouldRevealSequentialNext } from '../core/sequential';
-import type { DisplayVerse, RecognitionMessage, VerseRef, WordProgress } from '../core/types';
+import type { DisplayVerse, RecognitionMessage, VerseRef, WordProgress, ZikristVerseMatch } from '../core/types';
 import { MUSHAF_ONLY_MVP } from '../core/mvp';
 import { content } from './content';
 import { loadModel } from './model';
@@ -126,6 +127,7 @@ class Listening {
           const quran = await this.follower!.feed(packet.samples, {
             queueWaitMs: packet.queueWaitMs ?? 0,
             stallMs: packet.stallMs ?? 0,
+            voicedMs: packet.voicedMs ?? 0,
           });
           const liturgy = this.liturgy.observe({
             tokens: this.follower!.lastHeardTokens,
@@ -138,11 +140,14 @@ class Listening {
         result: (result, packet) => {
           const quran = this.applyLiturgy(result.quran, result.liturgy);
           this.receive(this.gate!.accept(quran, packet.voicedMs ?? 0, packet.voiced === true), packet.endMs);
-          if (this.gate!.isAmbiguousOpening || (this.follower?.phase === 'reacquiring' && this.state.current)) {
-            this.update({ phase: 'searching' });
-          } else if (this.follower?.phase === 'following' && this.state.current) {
-            this.update({ phase: 'following' });
-          }
+          const uiPhase = this.follower
+            ? resolveListeningPhase({
+              followerPhase: this.follower.phase,
+              hasDisplayedVerse: Boolean(this.state.current),
+              isAmbiguousOpening: this.gate!.isAmbiguousOpening,
+            })
+            : null;
+          if (uiPhase) this.update({ phase: uiPhase });
         },
         reset: () => {
           this.session!.reset();
@@ -246,6 +251,9 @@ class Listening {
         if (!same) this.update({ draftWords: message.words });
         continue;
       }
+      if (message.type === 'verse_match' && !this.engineConfirmsPaint(message)) {
+        continue;
+      }
       const occurrence = this.timeline.accept(message, offset);
       if (message.type === 'word_progress') {
         this.onWordProgress(message.surah, message.ayah, message.word_index, message.total_words);
@@ -298,8 +306,23 @@ class Listening {
       }
     }
   }
+  private engineConfirmsPaint(message: ZikristVerseMatch): boolean {
+    const lock = this.follower?.lockedRef ?? null;
+    if (this.follower?.phase === 'reacquiring' && !lock) return false;
+    if (!lock) {
+      if (this.state.current && this.state.current.surah !== message.surah) {
+        return message.locationCommit === true;
+      }
+      return true;
+    }
+    if (lock.surah === message.surah) return message.ayah <= lock.ayah;
+    return false;
+  }
+
   private onWordProgress(surah: number, ayah: number, wordIndex: number, totalWords: number): void {
     if (this.state.liturgy) return;
+    const lock = this.follower?.lockedRef;
+    if (lock && (lock.surah !== surah || lock.ayah !== ayah)) return;
     if (this.pendingDisplay && (this.pendingDisplay.surah !== surah || this.pendingDisplay.ayah !== ayah)) {
       return;
     }

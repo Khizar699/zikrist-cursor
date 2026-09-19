@@ -1,16 +1,10 @@
-# Real-imam fixtures (harness pointer)
-
-Do **not** treat this folder as a second prompt pack. Naming, suite ids, and the overnight queue live in `prompts/real-imam/` (Prompt Smith). Friend restore steps: `HANDOFF.md`.
+# Real-imam fixtures
 
 | Piece | Path |
 |-------|------|
-| Friend restore | `npm run fixtures:imam` (GitHub Release zip, not git LFS) |
-| Founder drop | `~/Desktop/zikrist-imam-clips/` |
-| Founder labels (ground truth, git) | `prompts/real-imam/LABELS.md`, `labels.json` |
-| Manifest / stubs | `prompts/real-imam/manifest.stub.json` (`imam-mid-surah-cold` and `imam-mid-surah-cold-qiyam` ready; others stub; see `MANIFEST-NOTE.md`) |
-| Audio staging (gitignored) | `artifacts/recitation/imam/<suite-id>/<qari-or-source>/` |
-| Layout contract | `prompts/real-imam/01-fixture-scaffold.md`, `FIXTURES.md` |
+| Restore | `npm run fixtures:imam` |
+| Labels | `prompts/real-imam/LABELS.md`, `labels.json` |
+| Manifest | `prompts/real-imam/manifest.stub.json` |
+| Audio (gitignored) | `artifacts/recitation/imam/<suite-id>/<qari-or-source>/` |
 
-Friend path: clone → `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam` → continue. Liturgy TTS wavs are regenerated with `npm run liturgy:tts -- <id> --engine say` (gitignored).
-
-`npm run test:replay -- real-imam` scores `imam-mid-surah-cold` and `imam-mid-surah-cold-qiyam` when the WAVs are restored (`npm run fixtures:imam`) and **skips** remaining stub suites with `missing_fixture` (not a PASS). Default `all` stays the original 14.
+Clone → `npm i` → `npm run fixtures:recitation` → `npm run fixtures:imam`. See [SETUP.md](../../SETUP.md).

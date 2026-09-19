@@ -191,7 +191,7 @@ export function nextSteps(tag: string): string[] {
     '  npm run liturgy:tts -- liturgy-takbeer --engine say',
     '  npm run test:replay -- all',
     '  npm run test:replay -- real-imam',
-    'Liturgy TTS wavs are gitignored. See HANDOFF.md.',
+    'Liturgy TTS wavs are gitignored. See SETUP.md.',
   ];
 }
 

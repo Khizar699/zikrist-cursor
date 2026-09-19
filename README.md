@@ -2,13 +2,9 @@
 
 An offline Quran **mushaf follower** for iOS and Android: listen, lock the recited ayah, display its Arabic, and follow. This is a technical evaluation build, not a finished production application.
 
-**Current MVP (Phase 1):** rock-solid, low-latency Arabic **mushaf tracking** during live salah. Lock `[surah:ayah]`, paint canonical Arabic, follow monotonically. **Phase 2 translation** is a static `[surah:ayah]` lookup after Arabic alignment is flawless — not current engineering (`AGENTS.md`, `prompts/mushaf-first-mvp.md`).
+**Current MVP:** hear recitation, lock `[surah:ayah]`, paint that ayah’s Arabic, and follow. Translation is a later `[surah:ayah]` lookup — not current work.
 
-## Continuing from GitHub / Cursor
-
-Friends and new bots: [HANDOFF.md](HANDOFF.md) **Tip state**, then **Bot start protocol** (`AGENTS.md` → the one prompt Tip names).
-
-**Terminal commands in order:** see **[SETUP.md](SETUP.md)** (copy-paste checklist).
+**Terminal commands in order:** see **[SETUP.md](SETUP.md)**.
 
 **First clone (app on simulator):**
 
@@ -18,20 +14,12 @@ npm run setup   # downloads ~104 MB gitignored ONNX model + verifies
 npm run ios     # Expo prebuild + native build (not Expo Go)
 ```
 
-**Recognition / overnight bots** also need evaluation audio (gitignored, not LFS):
+Evaluation audio (gitignored, not LFS):
 
 ```sh
 npm run setup -- --fixtures
 # same as: fixtures:recitation + fixtures:imam
 ```
-
-**Open this folder in Cursor** — Agent/Composer always loads:
-
-- [AGENTS.md](AGENTS.md) (via handoff protocol)
-- [.cursor/rules/zikrist-continuity.mdc](.cursor/rules/zikrist-continuity.mdc)
-- [.cursor/rules/zikrist-recognition-ratchet.mdc](.cursor/rules/zikrist-recognition-ratchet.mdc) — premade test suite, dual bar, **growing** regression corpus
-
-Still bump `HANDOFF.md` every PR. Recognition work: run the Mac **Agent verify loop** yourself ([prompts/real-imam/algo/PRODUCT-BAR.md](prompts/real-imam/algo/PRODUCT-BAR.md)); lock every fix into permanent tests ([prompts/real-imam/algo/RATCHET.md](prompts/real-imam/algo/RATCHET.md)). Founder iOS preview is optional smoke — not the gate. Pack index: [prompts/real-imam/algo/README.md](prompts/real-imam/algo/README.md).
 
 The app is a single **mushaf listening** screen: microphone capture, on-device Tilawa / ONNX recognition, and an Arabic-only passage (`SHOW_TRANSLATION_PANE = false`). After the first lock, surrounding ayahs are already on screen; the focused ayah is full opacity and neighbors stay dim. It does not show a Quran translation, language picker, session history, accounts, cloud sync, analytics, training uploads, stories, chat, or local audio saving. Listening does **not** wait on an English/Urdu pack download (`MUSHAF_ONLY_MVP`).
 
@@ -69,7 +57,7 @@ npm run ios
 
 `npm run setup` downloads the pinned recognition model (~104 MB, gitignored), verifies checksums, and fails early if a leftover `ios/` tree is missing the microphone privacy string or looks like a stock `org.name.Zikrist` template (fix: `npx expo prebuild --platform ios --clean`). Add `--fixtures` when you need Mac replay audio.
 
-Friends restoring **evaluation audio** only: `npm run fixtures:recitation` then `npm run fixtures:imam`. Liturgy TTS wavs: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say` (Mac Majed). New agents: the top of `HANDOFF.md` is the no-history briefing.
+Friends restoring **evaluation audio** only: `npm run fixtures:recitation` then `npm run fixtures:imam`. Liturgy TTS wavs: ffmpeg on `PATH` then `npm run liturgy:tts -- <id> --engine say` (Mac Majed).
 
 The model and recognition tables are approximately 104 MB on disk, before native runtime and application overhead. They are excluded from Git and restored from pinned URLs with SHA-256 verification. The application bundles these assets. **This mushaf-first MVP does not auto-download a translation pack.** Internet is needed for development-server loading; a release build performs recognition without a server.
 
@@ -114,17 +102,13 @@ npm run typecheck
 npm run test:replay -- all                    # floor: 14 EveryAyah-style suites; record honest N/14
 npm run test:replay -- imam-mid-surah-cold    # ready mosque; must PASS
 npm run test:replay -- imam-mid-surah-cold-qiyam
-npm run test:coverage -- --list               # Tier A sample (scoreboard)
-npm run test:coverage -- --dry-run            # fixture presence only
-npm run findings:report                       # open finding_ids for Tip
-# Tip / product-bar clip example (current handoff concern):
+npm run test:coverage -- --list
+npm run test:coverage -- --dry-run
 npx tsx scripts/replay.ts \
   artifacts/recitation/imam/imam-multi-qari/qari-a/imam-multi-qari__hafiz-usama__001-027-015__raw.wav
 ```
 
-**Standards:** [PRODUCT-BAR.md](prompts/real-imam/algo/PRODUCT-BAR.md) · [RATCHET.md](prompts/real-imam/algo/RATCHET.md) · [COVERAGE.md](prompts/real-imam/algo/COVERAGE.md) · findings [`prompts/real-imam/findings/`](prompts/real-imam/findings/) · tip known-fails in [HANDOFF.md](HANDOFF.md). `all` green ≠ prayer-follow or all-surah coverage. Linux ONNX is not the Mac floor gate.
-
-To add a liturgy phrase later: append a row in `assets/content/salah-liturgy.json` with the eight required fields; set `arabic_recognition_normalized` via `normalizeLiturgyArabic`; set `sha256` to SHA-256 of `id`, `category`, `arabic_uthmani`, `arabic_recognition_normalized`, `english`, `source_note`, and `license_status` joined by newlines; then run `npm run liturgy:verify`. Do not put contested qunoot in the live list. Liturgy replay: generate takbeer/thana WAV on Mac with `npm run liturgy:tts -- liturgy-takbeer` or `npm run liturgy:tts -- liturgy-thana --engine say` (founder Mac: edge-tts 403; `say` Majed `ar_001`; ffmpeg on PATH e.g. `/tmp/ffmpeg-static`; same dest as clip_path), then `npm run test:replay -- liturgy-takbeer` / `liturgy-thana` (ready path; not skip). Other liturgy suites still skip until filled; see `prompts/salah-liturgy/04-replay-suites.md`.
+To add a liturgy phrase later: append a row in `assets/content/salah-liturgy.json` with the eight required fields; set `arabic_recognition_normalized` via `normalizeLiturgyArabic`; set `sha256` to SHA-256 of `id`, `category`, `arabic_uthmani`, `arabic_recognition_normalized`, `english`, `source_note`, and `license_status` joined by newlines; then run `npm run liturgy:verify`. Do not put contested qunoot in the live list. Liturgy replay: generate takbeer/thana WAV on Mac with `npm run liturgy:tts -- liturgy-takbeer` or `npm run liturgy:tts -- liturgy-thana --engine say` (founder Mac: edge-tts 403; `say` Majed `ar_001`; ffmpeg on PATH e.g. `/tmp/ffmpeg-static`; same dest as clip_path), then `npm run test:replay -- liturgy-takbeer` / `liturgy-thana` (ready path; not skip). Other liturgy suites still skip until filled.
 
 The tests cover serialized/bounded capture processing, acquire/follow/reacquire verse tracking (monotonic same-surah advance, Fatiha→body and last-ayah→ayah-1 handoffs, madd/CTC letter runs that must not Global Search, phonetic cousins that keep the lock, Al-Fatihah locking from 1:2, Falaq after 1:7, An-Nas staying off a long unrelated ayah, Al-Fatihah not locking Ibrahim 14:39/14:40 from shared Alhamdulillah, Kawthar then a later short surah, leftover Quraysh 106:1 after Asr 103:3, leftover Basmala after that last ayah not locking mushaf-next, a salah prior that cannot override a clearer acoustic match, Ikhlas not first-locking a long `قُلْ` lookalike such as 10:16, An-Nisa 4:129 not first-locking Fussilat 41:34 from a shared `ول-/تست-` prefix, and Ya-Sin 36:16 not first-locking short An-Naba 78:4 from a shared `علم` root), salah liturgy token locks versus Quran-like negatives, live first-match display versus silence-flush/jump guards, sequential helpers, held-verse display, and confirmed-match ordering. Default `npm test` does not open a translation SQLite or download a language pack. A separate in-memory pack-eviction policy unit exists for parked Phase 2; do not grow it into network/SQLite pack tests. Tilawa's patched search stays equivalent to the original algorithm, including a cap so short queries do not score all 6,236 verses.
 
@@ -156,7 +140,7 @@ Exact packages are locked in `package-lock.json`. The Tilawa 0.1.0 package uses 
 
 The code license, model weights, Arabic text, translations, fonts, and evaluation audio have separate terms. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [Zikrist-research.md](Zikrist-research.md). Translation-edition redistribution approval and model training/weight provenance review remain public-release requirements. This repo does not assert that all commercial rights are cleared.
 
-Read [AGENTS.md](AGENTS.md) before extending the implementation. The focused cleanup for this listening-only pass is in [prompts/strip-to-listening-workflow.md](prompts/strip-to-listening-workflow.md).
+Read [AGENTS.md](AGENTS.md) for the product goal.
 
 ## Acoustic replay (Sim QA)
 
@@ -166,7 +150,7 @@ Restore EveryAyah/Alafasy 16 kHz mono WAV fixtures (gitignored under `artifacts/
 
 ```bash
 npm run fixtures:recitation
-npm run fixtures:imam              # GitHub Release zip → artifacts/recitation/imam/ (see HANDOFF.md)
+npm run fixtures:imam              # GitHub Release zip → artifacts/recitation/imam/ (see SETUP.md)
 npm run test:replay -- --check-fixtures
 ```
 
@@ -207,7 +191,7 @@ npm run test:replay -- --engine tilawa     # same engine id; other ids exit bloc
 
 Each suite writes `artifacts/qa-runs/replay-<suite>.json` with `matches[{surah,ayah,audioSeconds,score}]`, `firstLockSeconds`, `clocks`, `bakeoff` (five clocks + skip rate), `skips`, `failureMode`, `wrongSurahRate`, `wrongSurahCount`, and `firstLockWrongSurah`. `english-negative` PASSes only when no verse commits. `basmala-hold` PASSes only when `001001` alone locks neither 1:1 nor any other verse. Honest `failureMode` strings are expected when the current follower misses a suite — this harness does not retune acquire/follow.
 
-Default `npm run test:replay -- all` is the original **14** EveryAyah suites and remains the Quran **regression floor** (record honest N/14; do not claim 14/14 if red). Ready mosque suites and Tip product-bar clips are additional mandatory verify when recognition changes — see [PRODUCT-BAR.md](prompts/real-imam/algo/PRODUCT-BAR.md). Every claimed fix must add a permanent lock so the suite **grows** ([RATCHET.md](prompts/real-imam/algo/RATCHET.md)). The real-imam pack uses Prompt Smith docs in `prompts/real-imam/` (queue, FIXTURES, LIVE-FEEL, suite prompts, `manifest.stub.json`). Founder-verified ayah + timestamp labels are in `prompts/real-imam/LABELS.md` and `labels.json` (ground truth; ignore hypothesized probe locks). **`imam-mid-surah-cold` is `status: ready`** (Dr Subayyal An-Nisa **4:129–130**, clip `imam-mid-surah-cold__dr-subayyal__004-129-130__raw.wav`). **`imam-mid-surah-cold-qiyam` is `status: ready`** (Qiyam-ul-Lail Faisal Ya-Sin **36:16–18**, clip `imam-mid-surah-cold__qiyam-faisal__036-016-018__raw.wav` under the sibling folder). Other real-imam suites stay `stub`. PR **#17** Mac-green on merge cleared the prior false locks (Subayyal 4:129≠41:34, Qiyam 36:16≠78:4); this fill PR does not claim a new Mac acoustic score — Bot/Sim QA / local Mac Agent runs `npm run test:replay -- imam-mid-surah-cold-qiyam` and confirms Subayyal still PASS. Friends restore clips with `npm run fixtures:imam` from GitHub Release tag `imam-fixtures-v1` (not git LFS; see [HANDOFF.md](HANDOFF.md); restore also copies Qiyam into `imam-mid-surah-cold-qiyam/qari-a/`). Founder drop path: `~/Desktop/zikrist-imam-clips/`. Staging (gitignored): `artifacts/recitation/imam/<suite-id>/<qari-or-source>/`. `npm run test:replay -- real-imam` scores the ready suites when the WAVs exist and **skips** remaining stubs with `missing_fixture` — it does not PASS those stubs.
+Default `npm run test:replay -- all` runs the original **14** EveryAyah suites. Ready mosque suites: **`imam-mid-surah-cold`** (Dr Subayyal An-Nisa **4:129–130**) and **`imam-mid-surah-cold-qiyam`** (Qiyam-ul-Lail Faisal Ya-Sin **36:16–18**). Other real-imam suites stay `stub`. Founder-verified labels: `prompts/real-imam/LABELS.md` and `labels.json`. Restore clips with `npm run fixtures:imam` from GitHub Release tag `imam-fixtures-v1` (not git LFS; see [SETUP.md](SETUP.md)). Staging (gitignored): `artifacts/recitation/imam/<suite-id>/<qari-or-source>/`. `npm run test:replay -- real-imam` scores ready suites when the WAVs exist and **skips** remaining stubs with `missing_fixture`.
 
 Salah liturgy replay (`prompts/salah-liturgy/manifest.stub.json`): staging (gitignored) `artifacts/recitation/liturgy/<suite-id>/`. **`liturgy-takbeer` and `liturgy-thana` are `status: ready`** with clips `liturgy-takbeer/liturgy-takbeer__edge-tts__ar-SA-HamedNeural.wav` and `liturgy-thana/liturgy-thana__edge-tts__ar-SA-HamedNeural.wav`. Mac generates those 16 kHz mono PCM16 WAVs from pack `arabic_uthmani`. Founder Mac: edge-tts HTTP 403; working thana command is `export PATH="/tmp/ffmpeg-static:$PATH"` then `npm run liturgy:tts -- liturgy-thana --engine say` (`say` Majed `ar_001`, same dest as clip_path). Then `npm run test:replay -- liturgy-takbeer` and `liturgy-thana` must PASS (not skip). Default `all` stays the original **14** Quran names. Other liturgy suites remain stubs and **skip** with `missing_fixture` — not PASS. No liturgy evaluation audio is committed; do not drop silent fake WAVs. Mixed suites may reuse EveryAyah Fatiha WAVs only for the Quran half after `npm run fixtures:recitation`. Scoring uses PCM through `RecitationFollower.lastHeardTokens` + `SalahLiturgyMatcher` (same as live listening). Sample skip JSON (still-stub ruku): `fixtures/salah-liturgy/sample-skip.json`.
 

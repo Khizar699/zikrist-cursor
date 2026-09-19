@@ -9,6 +9,8 @@ export type RecognitionCycleTimings = {
   queueWaitMs: number;
   stallMs: number;
   phase: FollowerPhase;
+  decisionMs?: number;
+  candidateMargin?: number | null;
 };
 
 const MAX_CYCLES = 32;

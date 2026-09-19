@@ -17,7 +17,7 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-test('real-imam harness reads Prompt Smith stub manifest, not a duplicate pack', () => {
+test('real-imam harness reads the stub manifest, not a duplicate pack', () => {
   const manifestPath = path.join(root, REAL_IMAM_MANIFEST);
   assert.equal(fs.existsSync(manifestPath), true);
   const manifest = loadRealImamStubManifest();
@@ -35,7 +35,6 @@ test('real-imam harness reads Prompt Smith stub manifest, not a duplicate pack',
       .every((row) => row.status === 'stub'),
     true,
   );
-  assert.equal(fs.existsSync(path.join(root, 'prompts/real-imam/00-OVERNIGHT-QUEUE.md')), true);
   assert.equal(fs.existsSync(path.join(root, 'prompts/real-imam/FIXTURES.md')), true);
 });
 

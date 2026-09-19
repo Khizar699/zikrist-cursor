@@ -50,11 +50,35 @@ test('joined tokens consume remainder then hear mushaf-next in one stream', () =
   assert.equal(tape.nextHits, 2);
 });
 
+test('fully aligned short mushaf-next counts as nextHeard even when formula-only', () => {
+  const tape = scoreExpectedTape(
+    ['alrahman', 'alrahim'],
+    [],
+    ['alrahman', 'alrahim'],
+    ['alhamdu', 'lillahi', 'rabbi', 'alalamin'],
+  );
+  assert.equal(tape.nextHeard, true);
+  assert.equal(tape.nextHits, 2);
+});
+
 test('a formula next opening still needs a unique later token', () => {
   const shared = scoreExpectedTape(['allahu'], [], ['allahu', 'alsamad'], ['ahad', 'allahu']);
   assert.equal(shared.nextHeard, false);
   const unique = scoreExpectedTape(['allahu', 'alsamad'], [], ['allahu', 'alsamad'], ['ahad', 'allahu']);
   assert.equal(unique.nextHeard, true);
+});
+
+test('a partial prefix of the next opening counts as nextInProgress', () => {
+  const tape = scoreExpectedTape(
+    ['الرح'],
+    [],
+    ['الرحمن', 'الرحيم'],
+    ['الحمد', 'لله', 'رب', 'العلمين'],
+  );
+  assert.equal(tape.nextInProgress, true);
+  assert.equal(tape.nextHeard, false);
+  assert.equal(tape.holdsLock, true);
+  assert.equal(tape.nextHits, 1);
 });
 
 test('a short CTC cousin of the next opening still hears next', () => {

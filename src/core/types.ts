@@ -1,4 +1,7 @@
-import type { WorkerOutbound } from '@tilawa/core';
+import type { VerseMatchMessage, WorkerOutbound } from '@tilawa/core';
+
+/** Follower-owned display commit flag. False = tentative jump; gate holds pending. */
+export type ZikristVerseMatch = VerseMatchMessage & { locationCommit?: boolean };
 
 export type Language = 'en' | 'ur';
 export type FollowerPhase = 'acquiring' | 'following' | 'reacquiring';

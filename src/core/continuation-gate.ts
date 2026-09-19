@@ -1,7 +1,11 @@
 import type { VerseMatchMessage, WordProgressMessage } from '@tilawa/core';
 import { isFatihaBasmala, openingBasmalaWordCount } from './basmala';
 import { salahPrior } from './salah-prior';
-import { refKey, type RecognitionMessage, type VerseRef } from './types';
+import { refKey, type RecognitionMessage, type VerseRef, type ZikristVerseMatch } from './types';
+
+function isLocationCommit(message: VerseMatchMessage): boolean {
+  return (message as ZikristVerseMatch).locationCommit === true;
+}
 
 function isSalahPoolSurah(surah: number): boolean {
   return surah === salahPrior.fatiha
@@ -47,19 +51,13 @@ export class ContinuationGate {
         );
         if (expected && !holdNextSurahBasmala) {
           this.current = message; this.pending = null; accepted.push(message);
-        } else if (salahPoolAyah1) {
-          // Ayah-1 of a salah-prior surah must paint immediately (1:7 → 114:1).
-          // Do not stash in pending waiting for word_progress / voiced packets.
-          this.current = message; this.pending = null; accepted.push(message);
         } else if (
-          voiced
-          && this.current
+          this.current
           && message.surah !== this.current.surah
-          && !holdNextSurahBasmala
-          && (atSurahEnd || isSalahPoolSurah(message.surah))
+          && isLocationCommit(message)
+          && (salahPoolAyah1 || (voiced && (atSurahEnd || isSalahPoolSurah(message.surah))))
         ) {
-          // Last-ayah or short-surah handoff must paint immediately.
-          // Do not park the carousel on the finished surah as a discarded jump.
+          // Cross-surah handoff only when upstream already confirmed (locationCommit).
           this.current = message; this.pending = null; accepted.push(message);
         } else if (!this.current && this.pending && isFatihaBasmala(this.pending.message) && message.surah === 1 && message.ayah === 2) {
           accepted.push(this.pending.message, message);

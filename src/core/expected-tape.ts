@@ -19,6 +19,8 @@ export type TapeScore = {
   leftover: string[];
   unexplainedDistinctive: string[];
   nextHeard: boolean;
+  /** Partial prefix or opening cousin of mushaf-next before full nextHeard. */
+  nextInProgress: boolean;
   holdsLock: boolean;
   remainderCoverage: number;
   nextCoverage: number;
@@ -135,11 +137,25 @@ function alignRemainder(recognized: string[], remainder: string[]): { verse: num
   return matched;
 }
 
+function matchesNextOpening(heard: string, expected: string): boolean {
+  const h = normalizeToken(heard);
+  const e = normalizeToken(expected);
+  if (!h || !e) return false;
+  if (openingCousin(h, e) || wordsMatch(h, e) || softTokenMatch(h, e)) return true;
+  if (h.length >= 3 && e.length >= h.length && (e.startsWith(h) || h.startsWith(e.slice(0, h.length)))) {
+    return true;
+  }
+  const strip = (word: string) => word.replace(/^ال/, '').replace(/^[وف]/, '');
+  const a = strip(h);
+  const b = strip(e);
+  return a.length >= 2 && b.length >= a.length && b.startsWith(a);
+}
+
 function alignNextFromOpening(recognized: string[], next: string[]): { indices: number[]; start: number } {
   if (!recognized.length || !next.length) return { indices: [], start: -1 };
   let start = -1;
   for (let index = 0; index < recognized.length; index++) {
-    if (openingCousin(recognized[index]!, next[0]!)) {
+    if (matchesNextOpening(recognized[index]!, next[0]!)) {
       start = index;
       break;
     }
@@ -174,6 +190,21 @@ function distinctiveUnexplained(tokens: string[], currentBody: string[], next: s
   });
 }
 
+function nextFullyAligned(next: string[], matched: number[]): boolean {
+  if (!next.length || matched.length < next.length) return false;
+  const covered = new Set(matched);
+  for (let index = 0; index < next.length; index++) {
+    if (!covered.has(index)) return false;
+  }
+  return true;
+}
+
+/** Short mushaf-next bodies that are entirely formula/shared (e.g. Fatiha 1:3). */
+function sequentialFormulaNextHeard(next: string[], matched: number[]): boolean {
+  if (!nextFullyAligned(next, matched)) return false;
+  return next.length > 0 && next.length <= 4;
+}
+
 function nextHasUniqueEvidence(next: string[], matched: number[], currentBody: string[]): boolean {
   if (!matched.length || !next.length) return false;
   const unique = matched.filter((index) => !tokenExplainedBy(next[index]!, currentBody));
@@ -202,10 +233,13 @@ export function scoreExpectedTape(
     ? leftover.slice(nextAligned.start + nextAligned.indices.length)
     : leftover;
   const unexplainedDistinctive = distinctiveUnexplained(leftoverAfterNext, currentBody, next);
-  const nextHeard = nextHasUniqueEvidence(next, nextAligned.indices, currentBody);
+  const nextHits = nextAligned.indices.length;
+  const nextHeardCandidate = nextHasUniqueEvidence(next, nextAligned.indices, currentBody)
+    || sequentialFormulaNextHeard(next, nextAligned.indices);
+  const nextHeard = nextHeardCandidate && unexplainedDistinctive.length === 0;
+  const nextInProgress = nextAligned.start >= 0 && nextHits > 0 && !nextHeard;
   const remainderTotal = remainder.length;
   const remainderHits = remainderAligned.length;
-  const nextHits = nextAligned.indices.length;
 
   return {
     remainderHits,
@@ -216,6 +250,7 @@ export function scoreExpectedTape(
     leftover: leftoverAfterNext,
     unexplainedDistinctive,
     nextHeard,
+    nextInProgress,
     holdsLock: unexplainedDistinctive.length === 0,
     remainderCoverage: remainderTotal === 0 ? 0 : remainderHits / remainderTotal,
     nextCoverage: next.length ? nextHits / next.length : 0,

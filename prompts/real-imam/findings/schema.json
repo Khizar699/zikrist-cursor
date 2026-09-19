@@ -18,7 +18,7 @@
     "finding_id": {
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9._-]{2,80}$",
-      "description": "Stable id referenced from HANDOFF Tip Open tracks."
+      "description": "Stable id for a recorded recognition miss."
     },
     "status": { "type": "string", "enum": ["open", "closed", "deferred"] },
     "class": {

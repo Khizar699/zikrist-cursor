@@ -31,6 +31,7 @@ test('debug HUD formats buf, mode, misses, and ASR last without percent certaint
     mode: 'TRACKING',
     misses: 0,
     missThreshold: 3,
+    candidateMargin: null,
   });
   assert.deepEqual(lines, [
     'Inf 84ms  Match 12ms  Buf 1200ms',
