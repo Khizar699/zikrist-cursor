@@ -17,6 +17,10 @@ if (!existsSync(modelPath)) {
 }
 
 const env = { ...process.env };
+// Simulator reaches Metro on the host loopback; LAN IP in exp+ openurl often times out (simctl code 60).
+if (platform === 'ios' && !env.REACT_NATIVE_PACKAGER_HOSTNAME) {
+  env.REACT_NATIVE_PACKAGER_HOSTNAME = '127.0.0.1';
+}
 // This workspace may have a project-local CocoaPods installation. Do not
 // change the user's shell configuration or require it on other machines.
 if (platform === 'ios' && existsSync(path.join(root, '.tooling/bin/pod'))) {

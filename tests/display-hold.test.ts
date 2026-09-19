@@ -15,6 +15,14 @@ test('a confirmed jump can replace a held verse after evidence, without showing 
   assert.equal(shouldReplaceHeldVerse({ surah: 2, ayah: 2 }, { surah: 112, ayah: 2 }), true);
 });
 
+test('a new surah always replaces the held verse, including last-ayah handoff', () => {
+  assert.equal(shouldReplaceHeldVerse({ surah: 109, ayah: 6 }, { surah: 105, ayah: 1 }), true);
+  assert.equal(shouldReplaceHeldVerse({ surah: 109, ayah: 6 }, { surah: 105, ayah: 5 }), true);
+  assert.equal(shouldReplaceHeldVerse({ surah: 105, ayah: 1 }, { surah: 108, ayah: 1 }, {
+    displayedWasConfirmed: true,
+  }), true);
+});
+
 test('a late match for the ayah already left visually does not pull the passage back', () => {
   assert.equal(shouldReplaceHeldVerse({ surah: 112, ayah: 2 }, { surah: 112, ayah: 1 }, {
     displayedWasConfirmed: false,

@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { VerseMatchMessage, WordProgressMessage } from '@tilawa/core';
+import type { WordProgressMessage } from '@tilawa/core';
 import { ContinuationGate } from '../src/core/continuation-gate';
+import type { ZikristVerseMatch } from '../src/core/types';
 
-const match = (surah: number, ayah: number): VerseMatchMessage => ({ type: 'verse_match', surah, ayah, confidence: 0.9, verse_text: '', surah_name: '', surrounding_verses: [] });
+const match = (surah: number, ayah: number, locationCommit?: boolean): ZikristVerseMatch => ({
+  type: 'verse_match', surah, ayah, confidence: 0.9, verse_text: '', surah_name: '', surrounding_verses: [],
+  ...(locationCommit === true ? { locationCommit: true } : {}),
+});
 const progress = (surah: number, ayah: number, matched = [0, 1], total = 4): WordProgressMessage => ({ type: 'word_progress', surah, ayah, word_index: matched.at(-1)! + 1, matched_indices: matched, total_words: total });
 const make = () => new ContinuationGate((ref) => ({ surah: ref.surah, ayah: ref.ayah + 1 }));
 
@@ -58,8 +62,7 @@ test('silence and old word progress cannot confirm an unrelated verse', () => {
 test('a real jump can recover after new voiced evidence and matching progress', () => {
   const gate = make();
   gate.accept([match(2, 2)], 2000, true);
-  gate.accept([match(112, 2)], 3000, true);
-  assert.deepEqual(gate.accept([progress(112, 2)], 3600, true), [match(112, 2), progress(112, 2)]);
+  assert.deepEqual(gate.accept([match(112, 2, true)], 3000, true), [match(112, 2, true)]);
   assert.equal(gate.isCheckingJump, false);
 });
 
@@ -87,9 +90,19 @@ test('a jump from the last ayah can confirm with voiced unique words', () => {
     ref.surah === 114 && ref.ayah === 6 ? undefined : { surah: ref.surah, ayah: ref.ayah + 1 }
   ));
   gate.accept([match(114, 6)], 2000, true);
-  assert.deepEqual(gate.accept([match(1, 2)], 3000, true), []);
-  assert.equal(gate.isCheckingJump, true);
-  assert.deepEqual(gate.accept([progress(1, 2)], 3100, true), [match(1, 2), progress(1, 2)]);
+  assert.deepEqual(gate.accept([match(1, 2, true)], 3000, true), [match(1, 2, true)]);
+  assert.equal(gate.isCheckingJump, false);
+});
+
+test('last ayah of a short surah paints the next surah immediately', () => {
+  const gate = new ContinuationGate((ref) => (
+    ref.surah === 109 && ref.ayah === 6 ? { surah: 110, ayah: 1 } : { surah: ref.surah, ayah: ref.ayah + 1 }
+  ));
+  gate.accept([match(109, 6)], 2000, true);
+  // Salah-prior ayah 1 (Fil / Kawthar) must paint from verse_match alone.
+  assert.deepEqual(gate.accept([match(105, 1, true)], 3000, true), [match(105, 1, true)]);
+  assert.equal(gate.isCheckingJump, false);
+  assert.deepEqual(gate.accept([match(108, 1, true)], 4000, true), [match(108, 1, true)]);
 });
 
 test('two matched words cannot confirm a long unrelated jump', () => {
@@ -110,15 +123,24 @@ test('a long jump cannot confirm from mid-verse word hits without the opening', 
   assert.ok(gate.isCheckingJump);
 });
 
-test('mushaf-next surah still waits for words after the shared Basmala', () => {
+test('mushaf-next salah-prior ayah 1 paints immediately without word_progress', () => {
   const gate = new ContinuationGate((ref) => (
     ref.surah === 112 && ref.ayah === 4 ? { surah: 113, ayah: 1 } : { surah: ref.surah, ayah: ref.ayah + 1 }
   ));
   gate.accept([match(112, 4)], 2000, true);
-  assert.deepEqual(gate.accept([match(113, 1)], 3000, true), []);
+  assert.deepEqual(gate.accept([match(113, 1, true)], 3000, true), [match(113, 1, true)]);
+  assert.equal(gate.isCheckingJump, false);
+});
+
+test('mushaf-next Baqarah after Fatiha still waits for words after the shared Basmala', () => {
+  const gate = new ContinuationGate((ref) => (
+    ref.surah === 1 && ref.ayah === 7 ? { surah: 2, ayah: 1 } : { surah: ref.surah, ayah: ref.ayah + 1 }
+  ));
+  gate.accept([match(1, 7)], 2000, true);
+  assert.deepEqual(gate.accept([match(2, 1)], 3000, true), []);
   assert.ok(gate.isCheckingJump);
-  const unique = progress(113, 1, [4, 5], 8);
-  assert.deepEqual(gate.accept([unique], 3600, true), [match(113, 1), unique]);
+  const unique = progress(2, 1, [4], 5);
+  assert.deepEqual(gate.accept([unique], 3600, true), [match(2, 1), unique]);
 });
 
 test('heard words still surface while a first ayah-1 match is held', () => {
@@ -162,4 +184,19 @@ test('pending ayah-1 then same-surah ayah-2 displays both in order', () => {
   const gate = make();
   assert.deepEqual(gate.accept([match(2, 1)], 1000, true), []);
   assert.deepEqual(gate.accept([match(2, 2)], 2500, true), [match(2, 1), match(2, 2)]);
+});
+
+test('Fatiha last ayah paints An-Nas ayah-1 immediately even without word_progress', () => {
+  const gate = new ContinuationGate((ref) => (
+    ref.surah === 1 && ref.ayah === 7 ? { surah: 2, ayah: 1 } : { surah: ref.surah, ayah: ref.ayah + 1 }
+  ));
+  gate.accept([match(1, 7)], 2000, true);
+  assert.deepEqual(gate.accept([match(114, 1, true)], 3000, false), [match(114, 1, true)]);
+  assert.equal(gate.isCheckingJump, false);
+});
+
+test('Ikhlas cold-start ayah-1 still waits for a unique word after Basmala', () => {
+  const gate = make();
+  assert.deepEqual(gate.accept([match(112, 1)], 1000, true), []);
+  assert.ok(gate.isCheckingJump);
 });

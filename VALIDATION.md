@@ -1,16 +1,18 @@
 # MVP validation
 
-Status: implementation and integration validation in progress. No physical phone or mosque test has been completed.
+Historical measurement log. Not a work queue. Product goal: [AGENTS.md](AGENTS.md).
+
+No physical phone or mosque test has been completed. `MUSHAF_ONLY_MVP` means listening does not download a translation pack. Default `npm test` is offline and in-memory. Mac `test:replay` is acoustic replay, not `npm test`.
 
 ## Completed checks
 
 - TypeScript compilation and ESLint passed.
-- Automated regression tests covering queue ordering/backpressure/cancellation, acquire/follow/reacquire tracking (including An-Nas then Al-Fatihah, Basmala after An-Nas not locking 1:1, Al-Fatihah locking from 1:2 rather than 1:4, 1:2 advancing to 1:3 including live Arabic الرحمن/الحمد, 1:5 advancing to 1:6 from its opening even when the 1:5 tail is still in the 1.2 s window, 1:6 not advancing to 1:7 from the shared sirat word, Al-Falaq taking over after 1:7 while An-Nas stays a close rival, An-Nas ayah 3 not jumping to a long unrelated ayah, Al-Fatihah 1:2 not becoming Ibrahim 14:39/14:40 from shared `الحمد لله` or leftover `رب العلمين`, a wrong 14:40 lock yielding to unique 1:5 words, Kawthar then a later short surah without a second global search, leftover Quraysh 106:1 after finished Asr 103:3 while the last-ayah tail remains in the follow window, leftover Basmala after that last ayah not locking mushaf-next Humazah, a last-10 prior that cannot hide a clearer acoustic match, a one-word ayah-1 body after Basmala confirming on that unique word, a short next/final ayah advancing from unused tail tokens or a garbled unique opening, an Asr-like opening not first-locking a distant lookalike, An-Nisa 4:129 not first-locking Fussilat 41:34 from a shared `ول-/تست-` prefix, Ya-Sin 36:16 not first-locking short An-Naba 78:4 from a shared `علم` root, local recognition clocks, coverage not revealing the next ayah, a shared `قل` opening pairing heard words without naming an ayah, and Ikhlas audio not first-locking Yunus 10:16), live first-match display, silence-flush and unexpected-jump guards, sequential next-ayah helpers, passage window, held-verse replacement, confirmed-match order, pack eviction, the Tilawa memory patch, and a candidate cap so short queries do not score all 6,236 verses.
+- Automated regression tests covering queue ordering/backpressure/cancellation, acquire/follow/reacquire tracking (including An-Nas then Al-Fatihah, Basmala after An-Nas not locking 1:1, Al-Fatihah locking from 1:2 rather than 1:4, 1:2 advancing to 1:3 including live Arabic الرحمن/الحمد, 1:5 advancing to 1:6 from its opening even when the 1:5 tail is still in the 1.2 s window, 1:6 not advancing to 1:7 from the shared sirat word, Al-Falaq taking over after 1:7 while An-Nas stays a close rival, An-Nas ayah 3 not jumping to a long unrelated ayah, Al-Fatihah 1:2 not becoming Ibrahim 14:39/14:40 from shared `الحمد لله` or leftover `رب العلمين`, a wrong 14:40 lock yielding to unique 1:5 words, Kawthar then a later short surah without a second global search, leftover Quraysh 106:1 after finished Asr 103:3 while the last-ayah tail remains in the follow window, leftover Basmala after that last ayah not locking mushaf-next Humazah, a last-10 prior that cannot hide a clearer acoustic match, a one-word ayah-1 body after Basmala confirming on that unique word, a short next/final ayah advancing from unused tail tokens or a garbled unique opening, an Asr-like opening not first-locking a distant lookalike, An-Nisa 4:129 not first-locking Fussilat 41:34 from a shared `ول-/تست-` prefix, Ya-Sin 36:16 not first-locking short An-Naba 78:4 from a shared `علم` root, local recognition clocks, optional Debug HUD formatters plus a 112:1 lock snapshot (raw ASR last, inference/match/buffer ms, mode TRACKING, candidate, neighborhood search space, misses 0/3; two weak hops report 2/3), same-surah coverage focusing the sequential next ayah (history still verse_match only), a shared `قل` opening pairing heard words without naming an ayah, shared `الحمد لله` pairing heard words without naming 14:39, Ikhlas audio not first-locking Yunus 10:16, and after a 1:2 lock the rest of Al-Fatihah already listed in the passage), live first-match display, silence-flush and unexpected-jump guards, sequential next-ayah helpers, passage window, held-verse replacement, confirmed-match order, pack eviction, the Tilawa memory patch, and a candidate cap so short queries do not score all 6,236 verses.
 - Both iOS and Android JavaScript/native-asset exports succeeded.
 - SHA-256 verification passed for the model and its companion assets.
 - All 6,236 canonical Arabic display verses match the downloaded Tanzil text exactly.
 - All 6,236 recognition token round trips passed.
-- Both development copies of the English and Urdu databases passed hash, verse-count, unique-reference, text and footnote checks. These files are not bundled in the app.
+- Both development copies of the English and Urdu databases passed hash, verse-count, unique-reference, text and footnote checks. These files are **not** bundled, **not** a listen gate, and **not** part of default `npm test`. They are parked Phase 2 lookup assets.
 - `npm audit` reported zero vulnerabilities after scoped overrides.
 
 ## Actual acoustic replay
@@ -30,9 +32,9 @@ One guarded replay observed (previous conservative profile: 2 s discovery trigge
 | Median native inference call | ~85 ms |
 | Peak desktop process RSS | ~667 MB |
 
-Live listening uses a Zikrist acquire / follow / reacquire loop on Tilawa transcription and the Quran index. It does not use Tilawa's streaming tracker for microphone following. Acquire locates on about a second of voiced audio and prefers the earliest lockable ayah in a span (Al-Fatihah from 1:2, not 1:3 or 1:4 already in the same window). A shared opening such as `قل` is shown as heard words only; a later shared `الله` must not skip distinctive words and name a long lookalike such as 10:16. Shared `الحمد لله` is not enough to name 1:2 or Ibrahim 14:39; 1:2 waits for `رب`, and leftover `رب العلمين` must not commit 14:40 (`العلمين` is not `اجعلني`). A window that only matches that shared formula does not keep an Ibrahim neighborhood high enough to block reacquire. After lock, a 1.2 s follow window on a 0.4 s hop scores the current ayah, the previous ayah, and unique post-Basmala words of the mushaf-next ayah; Bismillah after Al-Fatihah does not keep Al-Baqarah as the neighborhood. When mushaf-next is the last ayah of the current surah and is short (≤ 4 body words), that follow window grows to about 5 s and the penultimate tail is dropped once the current ayah is complete, so a stretched last ayah such as An-Nas 114:6 is not decoded from 1.2 s crumbs. After the last ayah of a surah, leftover tokens that do not explain the current body are a new recitation even if that last ayah locked before 82% word coverage: a bounded next-surah pool (Al-Fatihah and remaining later short surahs, then famous openings) runs on that leftover before a full-Quran locate, leftover last-ayah audio does not keep the neighborhood high enough to stall, and leftover that cannot lock yet leaves follow so the next hops use the 4 s acquire window on kept audio. A salah prior file may break close ties; it cannot become the translation. A global locate runs if that neighborhood or pool stops explaining the audio. Short ayahs are scored as present in the window so a mix of An-Nas 2–3 cannot lose to a long ayah such as 2:109. Completing An-Nas has no following surah; the next recitation, including Al-Fatihah, is a fresh locate on new audio rather than a blocked jump. Shared Basmala after a finished surah does not lock Al-Fatihah 1:1 or mushaf-next. Completing the last ayah of a surah does not display the next surah from coverage or Basmala; unique words after Basmala are still required. If the neighborhood fails mid-surah, reacquire keeps the current window so the new opening is not discarded. Silent microphone frames are not inferred. After lock, the current surah and the next surah are preloaded into memory; each pane lists only the previous ayah, the current ayah, and the next ayah in the same surah. The focused ayah is full opacity; neighbors stay at 10% opacity. The focused translation does not move from coverage; it waits for an accepted `verse_match`. A pause of a few seconds keeps the last verse on screen. A stop of about ten seconds searches again without joining that silence to later audio, and keeps the last confirmed verse as the continuation prior. The shared opening Basmala (1:1, and ayah 1 of other surahs) is held until unique words arrive. Unexpected jumps still need later voiced progress. The earlier 4.0 s figure is not the current target; a 1–3 s first location is an evaluation goal for *unique* verses and has not been re-measured on a physical phone. Device reports of late Fatiha/Nas locks, a missed Falaq jump, Al-Fatihah freezing on 1:2 after Alhamdulillah, Al-Fatihah freezing on 1:5 after a faster lock, and Al-Fatihah displaying Ibrahim 14:40 from the first verse were used to add these guards; they are not a new physical-device accuracy measurement. After a 1:2 lock, 1:3 is committed from its own words; الرحمن is not treated as الحمد, and Basmala 1:1 does not keep the 1:2 neighborhood. After a 1:5 lock, unique 1:6 opening words commit 1:6 even when the overlapping follow window still contains the 1:5 tail; a mixed-window similarity score must not keep 1:5 on screen.
+Live listening uses a Zikrist acquire / follow / reacquire loop on Tilawa transcription and the Quran index. It does not use Tilawa's streaming tracker for microphone following. Acquire locates on about a second of voiced audio and prefers the earliest lockable ayah in a span (Al-Fatihah from 1:2, not 1:3 or 1:4 already in the same window). A shared opening such as `قل` is shown as heard words only; a later shared `الله` must not skip distinctive words and name a long lookalike such as 10:16. Shared `الحمد لله` is not enough to name 1:2 or Ibrahim 14:39; 1:2 waits for `رب`, and leftover `رب العلمين` must not commit 14:40 (`العلمين` is not `اجعلني`). A window that only matches that shared formula does not keep an Ibrahim neighborhood high enough to block reacquire. After lock, a 1.2 s follow window on a 0.4 s hop (commit keeps ~0.25 s splice, not a full previous ayah) transcribes without locating the mushaf and scores the token stream against current remainder + mushaf-next; Bismillah after Al-Fatihah does not keep Al-Baqarah as the neighborhood. When mushaf-next is the last ayah of the current surah and is short (≤ 4 body words), that follow window grows to about 5 s and the penultimate tail is dropped once the current ayah is complete, so a stretched last ayah such as An-Nas 114:6 is not decoded from 1.2 s crumbs. After the last ayah of a surah, leftover tokens that do not explain the current body are a new recitation even if that last ayah locked before 82% word coverage: a bounded next-surah pool (Al-Fatihah and remaining later short surahs, then famous openings) runs on that leftover before a full-Quran locate, leftover last-ayah audio does not keep the neighborhood high enough to stall, and leftover that cannot lock yet leaves follow so the next hops use the 4 s acquire window on kept audio. A salah prior file may break close ties; it cannot become the translation. A global locate runs if that neighborhood or pool stops explaining the audio. Short ayahs are scored as present in the window so a mix of An-Nas 2–3 cannot lose to a long ayah such as 2:109. Completing An-Nas has no following surah; the next recitation, including Al-Fatihah, is a fresh locate on new audio rather than a blocked jump. Shared Basmala after a finished surah does not lock Al-Fatihah 1:1 or mushaf-next. Completing the last ayah of a surah does not display the next surah from coverage or Basmala; unique words after Basmala are still required. If the neighborhood fails mid-surah, reacquire keeps the current window so the new opening is not discarded. Silent microphone frames are not inferred. After lock, the current surah and the next surah are preloaded into memory; each pane lists the previous ayah, the focused ayah, and upcoming ayahs of the same surah (capped at seven, so Al-Fatihah after 1:2 can show 1:3–1:7; Al-Baqarah does not dump the rest of the surah). The focused ayah is full opacity; neighbors stay at about one-third opacity. Arabic words highlight from `word_progress`. Same-surah sequential focus may move when coverage reaches 0.82; history still waits for an accepted `verse_match`. Next-surah and jumps still need unique evidence. Processing backlog drops oldest pending audio and keeps the lock. A pause of a few seconds keeps the last verse on screen. A stop of about ten seconds searches again without joining that silence to later audio, and keeps the last confirmed verse as the continuation prior. The shared opening Basmala (1:1, and ayah 1 of other surahs) is held until unique words arrive. Unexpected jumps still need later voiced progress. The earlier 4.0 s figure is not the current target; a 1–3 s first location is an evaluation goal for *unique* verses and has not been re-measured on a physical phone. Device reports of late Fatiha/Nas locks, a missed Falaq jump, Al-Fatihah freezing on 1:2 after Alhamdulillah, Al-Fatihah freezing on 1:5 after a faster lock, and Al-Fatihah displaying Ibrahim 14:40 from the first verse were used to add these guards; they are not a new physical-device accuracy measurement. After a 1:2 lock, 1:3 is committed from its own words; الرحمن is not treated as الحمد, and Basmala 1:1 does not keep the 1:2 neighborhood. After a 1:5 lock, unique 1:6 opening words commit 1:6 even when the overlapping follow window still contains the 1:5 tail; a mixed-window similarity score must not keep 1:5 on screen.
 
-In-memory recognition clocks record window seconds, ONNX ms, CTC-decode ms, locate ms (0 when following without a global search), queue wait, a short JS-thread stall hint, and follower phase. They are not shown in the default UI and are not uploaded. Neighborhood CTC rescoring of current/previous/next ayahs was not wired: it would have pulled Tilawa tracker internals into the live path. ONNX stays on the CPU execution provider; Core ML / NNAPI / XNNPACK are unmeasured.
+In-memory recognition clocks record window seconds, ONNX ms, CTC-decode ms, locate ms (0 when following without a global search), queue wait, a short JS-thread stall hint, and follower phase. They are not uploaded. The default listening UI still hides them. An optional Debug HUD can show the last hop’s raw Tilawa text, inference ms, match ms, Tilawa buffer ms, mode (`TRACKING` / `ACQUIRING` / `GLOBAL`), lock vs candidate, similarity score, consecutive misses before drop (N/3), and search space. The card sits in the listening column above Arabic (`DEBUG_HUD_OVERLAYS_ARABIC = false`); it is off in release until enabled in Settings, on by default in `__DEV__`, and does not re-render the verse carousel on every hop. After lock, follow transcribes without a mushaf locate and scores remainder + mushaf-next against the CTC decode; raw logprob forced-align is not wired. Sticky follow uses 3 consecutive weak hops **and** 1.5 s before drop, mid-surah neighborhood `[current−1, current+2]`, and does not Global Search while `phase === following` (sticky follow). Tilawa global locate shortlists via inverted bi/trigram postings (cap 320) rather than scanning all 6,236 verses for n-gram overlap on every call. ONNX stays on the CPU execution provider; Core ML / NNAPI / XNNPACK are unmeasured.
 
 These are observations from one clean desktop replay, not accuracy rates, real-time microphone latency, phone speed, or battery estimates. The corpus already contains the reciter's style in its broader ecosystem; this is an integration smoke test, not an independent held-out accuracy study. Preventing this observed false jump does not establish general rejection of non-Quran speech.
 
@@ -42,9 +44,9 @@ A separate 7.16-second synthesized English conversation test produced no confirm
 
 Test at least a mid-range Android, a lower-memory supported iPhone, and a recent device, using release builds:
 
-- Fresh setup, English pack download, interrupted/failed download, offline relaunch.
+- Fresh setup, bundled Arabic mushaf, no translation pack required, offline relaunch.
 - Permission denial/revocation, phone-call interruption, microphone route changes, notification pause, explicit Stop while inference runs.
-- Live recitation from unseen speakers: arbitrary starts, joined ayahs, repeated refrains, repeated al-Fatihah, jumps and long pauses.
+- Live recitation from unseen speakers: monotonic ayah advance, madd/pause that must not drop the lock, surah handoff into ayah 1, arbitrary starts, joined ayahs, repeated refrains, repeated al-Fatihah, jumps and long pauses.
 - Silence, conversation, prayer phrases, playback echo, room reverberation and multiple voices. Record false commits and missed matches.
 - Confirm zero audio files are created.
 - Manual lock/unlock for a full prayer-length session on each platform. Confirm continuous capture, privacy indicators and interruption handling.
@@ -71,7 +73,7 @@ Shipped phrases and deferred rows are unchanged from the corpus pack. Quran `npm
 
 ## Salah liturgy on-screen display (`03-display`)
 
-When listening emits `kind: 'salah_liturgy'`, `src/core/salah-liturgy-display.ts` looks up the pack row by `phraseId` and the single listening screen shows `arabic_uthmani` plus the pack `english` gloss (`english_kind: liturgy_gloss`). A “Prayer / liturgy” label plus a short category (Takbeer / Opening thana / Ruku, …) keeps it off the Quran ayah dual-pane. The next accepted `verse_match` restores passage follow; a neighborhood refresh of a held ayah does not. Unknown ids show nothing. Scores are not rendered. Copy does not claim full madhhab coverage or imam-ready. Units: `tests/salah-liturgy-display.test.ts` (injected locks for takbeer, thana, ruku_tasbih). No iOS Simulator capture in this Linux workspace.
+When listening emits `kind: 'salah_liturgy'`, `src/core/salah-liturgy-display.ts` looks up the pack row by `phraseId` and the single listening screen shows `arabic_uthmani` (pack English gloss is not painted in the mushaf-first MVP). A “Prayer / liturgy” label plus a short category (Takbeer / Opening thana / Ruku, …) keeps it off the Quran ayah list. The next accepted `verse_match` restores mushaf passage follow; a neighborhood refresh of a held ayah does not. Unknown ids show nothing. Scores are not rendered. Copy does not claim full madhhab coverage or imam-ready. Units: `tests/salah-liturgy-display.test.ts` (injected locks for takbeer, thana, ruku_tasbih). No iOS Simulator capture in this Linux workspace.
 
 ## Headless replay harness (2026-09-15)
 
@@ -192,13 +194,13 @@ This workspace: `npm run typecheck` pass; `npx tsx --test tests/real-imam-pack.t
 
 ## Imam fixture handoff restore (GitHub Release zip)
 
-Friends clone without git LFS. Labels stay in git. Audio comes from public Release asset `zikrist-imam-fixtures-v1.zip` on tag `imam-fixtures-v1` via `npm run fixtures:imam`. Suites remain `stub`. Matcher/follower were not retuned. No wav/mp3 committed. Liturgy TTS remains `npm run liturgy:tts -- <id> --engine say`. See `HANDOFF.md`.
+Friends clone without git LFS. Labels stay in git. Audio comes from public Release asset `zikrist-imam-fixtures-v1.zip` on tag `imam-fixtures-v1` via `npm run fixtures:imam`. Suites remain `stub`. Matcher/follower were not retuned. No wav/mp3 committed. Liturgy TTS remains `npm run liturgy:tts -- <id> --engine say`. See `SETUP.md`.
 
 This workspace: `npm run typecheck` pass; `npx tsx --test tests/download-imam-fixtures.test.ts tests/real-imam-pack.test.ts` 8/8; missing-tag run prints HTTP 404 + Releases page (exit 1). `npx eslint` on the new script/test is clean. No wav/mp3 tracked.
 
 ## Salah liturgy replay suites (stub-first, 2026-09-15)
 
-Harness only. Registers the eight suite ids from `prompts/salah-liturgy/04-replay-suites.md` + `manifest.stub.json`. **No liturgy WAV or MP3 is committed.** Silent STUB audio was not invented. Follower and liturgy matcher thresholds were not retuned. Default 14 Quran suites still do not run the liturgy matcher.
+Harness only. Registers the eight suite ids from `prompts/salah-liturgy/manifest.stub.json`. **No liturgy WAV or MP3 is committed.** Silent STUB audio was not invented. Follower and liturgy matcher thresholds were not retuned. Default 14 Quran suites still do not run the liturgy matcher.
 
 - Manifest: `prompts/salah-liturgy/manifest.stub.json` (`status: stub`). Staging: `artifacts/recitation/liturgy/<suite-id>/` (gitignored).
 - `npm run test:replay -- all` still resolves to the original **14** Quran suite names (hard gate).
@@ -273,18 +275,7 @@ Ready suites with a missing clip error `missing_clip` instead of skipping. Clip 
 
 This workspace (Linux/x64): `npm test` **194/194**; `npm run typecheck` pass. `npx tsx scripts/replay.ts imam-mid-surah-cold-qiyam` errors `missing_clip` (WAV not restored here) instead of skipping — expected ready behavior. Acoustic scoring and Mac `all` 14/14 were **not** run here. Not a physical-device, mosque, or license-clearance claim.
 
-## Product bar vs regression floor (docs, 2026-09-16)
-
-Founder process change (Prompt Smith docs only; no matcher/follower retune in this entry).
-
-- **Regression floor:** Mac `npm run test:replay -- all` = **14/14** Quran remains mandatory before merge. It is mostly famous-short EveryAyah fixtures plus a few synthetic gates. Green here means “do not regress that corpus,” not “live prayer follows” or “all surahs cold-start.”
-- **Product bar:** `prompts/real-imam/algo/PRODUCT-BAR.md`. Algo/follower sessions must Mac-measure the Tip clip for (1) first correct lock, (2) ordered `verse_match` advance while audio continues, (3) stall/`failureMode` if any, (4) clip class. Claiming done on 14/14 or units alone is forbidden when Tip named a follow/handoff or coverage concern.
-- **Who runs verify:** the **editing agent** on Mac runs the Agent verify loop in `PRODUCT-BAR.md` after recognition patches. Founder iOS preview is optional smoke only — not the gate.
-- **Engine split:** Tilawa locate/patches ≠ Zikrist `RecitationFollower` + ContinuationGate follow path.
-- **Queue:** `prompts/real-imam/algo/00-QUEUE.md` — **P0** is Hafiz Usama Fatiha→**27:15**. False-first-lock prompts 01–03 are deferred P2.
-- **Ratchet:** `prompts/real-imam/algo/RATCHET.md` — daily/version launches must lock each fix into units and/or ready expects so the next day cannot repeat the same miss.
-
-### Mac baseline (same session, darwin/arm64, no follower code change)
+## Mac baseline (2026-09-16, darwin/arm64, no follower code change)
 
 | Check | Result |
 |---|---|
@@ -297,13 +288,247 @@ Founder process change (Prompt Smith docs only; no matcher/follower retune in th
 
 Do **not** claim floor 14/14 until jump + english-negative are re-green **and** locked so they stay green. Not a physical-device claim.
 
-## Cursor inheritance (docs, same process PR)
+## Mushaf coverage + findings ledger (harness, 2026-09-17)
 
-Any new Cursor opener gets always-on rules:
+Docs + tools only (no matcher/follower retune):
 
-- `.cursor/rules/zikrist-continuity.mdc`
-- `.cursor/rules/zikrist-recognition-ratchet.mdc` — premade verify commands, dual bar, **corpus only grows**
+- Failure taxonomy / tiers: `prompts/real-imam/algo/COVERAGE.md`
+- Opt-in training schema (design only): `prompts/real-imam/algo/TRAINING-DATA.md`
+- Ledger: `prompts/real-imam/findings/ledger.jsonl` + `schema.json` (seeded with tip known-fails as `finding_id`s)
+- Commands: `npm run test:coverage -- --list` | `--dry-run` | full Mac replay; `npm run findings:report`
+- Unit lock: `tests/findings-coverage.test.ts`
 
-Entry docs: root `README.md`, `AGENTS.md`, `HANDOFF.md`, `prompts/real-imam/README.md`, `prompts/real-imam/algo/README.md`. PR template checklist includes ratchet lock.
+This workspace verified list/dry-run/report + units; full Tier A ONNX M/N is a Mac scoreboard, not claimed here. Floor remains **12/14** until jump + english-negative are locked green.
+
+## Fatiha handoff pool (Mac, 2026-09-18)
+
+Follower change (not liturgy, no `ready` flip): famous handoff includes Naml; mushaf-next is scored; after a lock, `الم الي` / remembered `الم` / reacquire isolated `الم` must not display **2:1**; same-surah leftover beats the pool.
+
+| Check | Result |
+|---|---|
+| `npm test` | **207/207** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **12/14 FAIL** — `jump:stall_missing_112:1_after_3_matches`; `english-negative:verse_lock_20:1` |
+| Hafiz Usama custom wav | **1:2@2.75** then **1:3–1:7@19.25**; **no 2:1**; **no 27:15** — product-bar **FAIL** (stall after Fatiha) |
+| `imam-mid-surah-cold` | PASS 4:129→130 (also 131) |
+| `imam-mid-surah-cold-qiyam` | PASS 36:16→18 (also 19–20) |
+
+Clip class `fatiha-to-body`. Not physical mic / locked screen. Do not claim floor 14/14. Do not claim Usama **27:15**.
+
+## Stuck Ikhlas 1 then qul-surah jump (Mac, 2026-09-18)
+
+Follower change for live Fatiha → Ikhlas 1 stuck → Nas / Kafirun still showing 112:1. Mid-surah leftover now scans ayah-1 openings; last-ayah still uses the full window. Mid-surah refuses **2:1**.
+
+| Check | Result |
+|---|---|
+| `npm test` | **216/216** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **13/14 FAIL** — `jump` PASS 108:1–3 then **112:1@16.75–4**; `english-negative:verse_lock_20:1` |
+| Hafiz Usama custom wav | **1:2@2.75** then **1:3–1:7@19.25**; **no 2:1**; **no 27:15** — product-bar **FAIL** (stall after Fatiha) |
+| `imam-mid-surah-cold` | PASS 4:129→130 (also 131) |
+| `imam-mid-surah-cold-qiyam` | PASS 36:16→18 (also 19–20) |
+
+Finding `floor-jump-ikhlas` closed. Do **not** claim floor 14/14. Not a physical-device claim. Rebuild the native app before expecting the live mic path to pick this up.
+
+## Follow after lock (Mac, 2026-09-18)
+
+Live stall after a good first lock: 114:2 `ملك الناس` stayed on screen through 114:3–5; Fatiha stuck after 1:6/1:7; Ikhlas 112:1 located then did not follow. Real phonemes for 114:3 are `اله الناس` (latin tests had used `ilahi`). Live CTC often emits `الله الناس`. Follow leftover now starts at tokens the current ayah does not explain, so a window that still contains `الناس` / `صرط` / `احد` can still commit the next same-surah ayah. Shared `الناس` alone does not advance. Mid-surah unique leftover can still leave 112:1 for Nas/Kafirun.
+
+| Check | Result |
+|---|---|
+| `npm test` | **222/222** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **13/14 FAIL** — `english-negative:verse_lock_20:1`. `nas` 114:1–6; `fatiha` 1:2–7; `ikhlas` 112:1–4; `jump` 108:1–3 then 112:1@16.75–4 |
+| `imam-mid-surah-cold` | PASS 4:129→130 |
+| `imam-mid-surah-cold-qiyam` | PASS 36:16→18 |
+
+Hafiz Usama **27:15** was not re-measured. Not a physical-device claim. Reload the native app (Metro) before expecting the live mic path to pick this up.
+
+## Live follow Phase A (smoothness, 2026-09-18)
+
+Architecture, not a named-surah patch: after lock, display was waiting for `verse_match` on a window that still held ~1 s of the previous ayah; backlog then reset the lock. Phase A (same Tilawa model):
+
+- Commit splice `KEEP_AFTER_COMMIT_SEC = 0.25` (unit: next follow window is splice + hop, not a previous-ayah second).
+- Audio queue overflow drops oldest pending packets and keeps the in-flight result / lock (no `processing backlog` reset).
+- Same-surah sequential **focus** at 0.82 coverage; history still `verse_match` only; next-surah and jumps are not previews.
+- Arabic word highlight from `word_progress` (proportional if display word count ≠ phoneme count).
+- Timeline records same-surah skipped hops (114:2 then 114:4 misses 114:3).
+
+Default engine stays Tilawa. Model bakeoff is `prompts/model-bakeoff.md` (Phase C). Phase B (expected-tape / CTC align) landed this session.
+
+| Check | Result |
+|---|---|
+| `npm test` | **228/228** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **13/14 FAIL** — `english-negative:verse_lock_20:1`. `fatiha` 1:2–7; `nas` 114:1–6; `ikhlas` 112:1–4; `jump` 108:1–3 then 112:1@16.75–4 |
+| `imam-mid-surah-cold` | PASS 4:129→130 |
+| `imam-mid-surah-cold-qiyam` | PASS 36:16→18 |
+
+Not a physical-device latency claim. Reload Metro before live mic.
+
+## Live follow Phase B (expected tape, 2026-09-18)
+
+After lock, follow was still a 1.2 s blob that could Tilawa-locate the mushaf on mismatch hops. Phase B scores the CTC token stream against current remainder + mushaf-next (+1) and keeps `locate=false` on follow hops. Generic class tests (not verse-numbered patches): shared tail does not hear next; short next is heard from its own tokens; joined remainder+next consumes both; a formula opening still needs a unique later token; الله≈اله still hears next; a stem of the current body (صرط / alsirat) is not next. Leftover that is still the current ayah must not zero neighborhood (that stalled Fatiha 1:2). Same-surah commit still uses leftover `shouldAdvance`. Distinctive leftover may token-search after a mismatch hop. Raw CTC logprobs are not threaded (would copy Tilawa internals); expected phonemes are aligned to the decode string.
+
+| Check | Result |
+|---|---|
+| `npm test` | **238/238** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **13/14 FAIL** — `english-negative:verse_lock_20:1`. `fatiha` 1:2@9s then 1:3–7; `nas` 114:1–6; `ikhlas` 112:1–4; `jump` 108:1–3 then 112:1@16.75–4 |
+| `imam-mid-surah-cold` | PASS 4:129→130 |
+| `imam-mid-surah-cold-qiyam` | PASS 36:16→18 |
+
+Hafiz Usama **27:15** was not re-measured in Phase B. Not a physical-device claim. Reload Metro before live mic.
+
+## Live follow Phase C (model bakeoff, 2026-09-18)
+
+Phase C measures follow clocks behind `TranscribeFn` without swapping the shipping model (`prompts/model-bakeoff.md`). `npm run test:bakeoff` + replay `--engine`. Default remains Tilawa `fastconformer_full_mixed.onnx`. Muno459 `fastconformer-quran-streaming` is Quran-Lab NPL-1.1 (no profit); `--engine muno459-streaming` exits blocked. No streaming Quran-token ONNX was downloaded or committed.
+
+Tilawa control (headless Mac ONNX CPU, not phone):
+
+| Suite | First lock | Advance | tracking p50/p95 ms | skip rate |
+|---|---|---|---|---|
+| nas | 114:1@4s | 114:1–6 | 48 / 158 | 0 |
+| fatiha | 1:2@9s | 1:2–7 | 47 / 52 | 0 |
+| ikhlas | 112:1@2s | 112:1–4 | 46 / 47 | 0 |
+| jump | 108:1@5s | 108:1–3, 112:1@16.75–4 | 47 / 50 | 0 |
+| imam-mid-surah-cold | 4:129@11s | 4:129–130 | 46 / 49 | 0 |
+| imam-mid-surah-cold-qiyam | 36:16@4s | 36:16–18 | 46 / 52 | 0 |
+| Hafiz Usama | 1:2@2.75s | 1:2–7; no 27:15 | 46 / 49 | 0 |
+
+Cold ready ~1374 ms. Display clock is 0 in this harness (`ContinuationGate` is sync). Floor remains **13/14** (`english-negative:verse_lock_20:1`). Units: `tests/bakeoff.test.ts` (245/245). Decision: stay on Tilawa.
+
+| Check | Result |
+|---|---|
+| `npm test` | **245/245** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **13/14 FAIL** — `english-negative:verse_lock_20:1` |
+| `npm run test:bakeoff` | Tilawa control as table; Hafiz Usama known stall; default not swapped |
+
+## Live sim recitation (iPhone 17, 2026-09-18)
+
+Founder ReplayKit of the native Simulator app (~115 s, real recitation). **Not** Mac `test:replay` and **not** a physical-device claim. Mac EveryAyah `ikhlas` 112:1–4 / `fatiha` 1:2–7 / `nas` 114:1–6 stay as last Phase C table.
+
+Observed on screen:
+
+- Acquire heard-words OK (`الحمد لله`, `قل أعوذ`).
+- Nas **114:1–6** followed, including 114:6.
+- Ikhlas **twice** locked 112:1–2 and never focused **112:3–4** (first listen also omitted 112:3–4 lookahead). Finding `live-ikhlas-stall-112-3`.
+- Fatiha reached **1:7** then stayed there ~28 s; Arabic clipped after `عليهم غن`; English clipped after `incurred`.
+- Chrome: prior-ayah fragments under the island; waveform covering next translation; gear overlapping Basmala.
+
+Next implement landed as `prompts/live-short-surah-tail.md` (Mac units + EveryAyah; live recitation not re-measured). `prompts/arabic-verse-stage.md` hides the painted translation pane and puts Arabic in the HUD-to-mic band (translation still loads). Remaining P1 chrome: `prompts/live-passage-chrome.md`. Do not commit the recording.
+
+## Live short-surah tail (Mac, 2026-09-18)
+
+Follower + passage for the live Simulator stall: after a short ayah, leftover 3-letter body (`يلد`) and CTC `لم`/`لام` commit mushaf-next; compact surahs preload the rest of that surah on first `verse()` so lookahead is not a 1–2 ayah window; focused pane padding is ~8% height (not 38%) so 1:7 wrath/astray stays on screen. Formula leftover `قل الله` after Kawthar must not lock a long famous-body ayah that repeats `الله` (4:113); jump still takes Ikhlas from the full window including `هو`.
+
+| Check | Result |
+|---|---|
+| `npm test` | **253/253** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **13/14 FAIL** — `english-negative:verse_lock_20:1`. `fatiha` 1:2@9s–1:7@35s; `ikhlas` 112:1@2s, **112:3@6s**, 112:4@7s; `nas` 114:1–6 (soft 2:1 after expect); `jump` 108:1–3 then **112:1@16.75–4** |
+| `imam-mid-surah-cold` | PASS 4:129@11s → 4:130@31s |
+| `imam-mid-surah-cold-qiyam` | PASS 36:16–18 |
+
+Clip class `famous-short`. Finding `live-ikhlas-stall-112-3` closed with units. Live Simulator recitation was not re-measured. Not a physical-device claim. Reload Metro before live mic.
+
+## No full-mushaf locate while following (Mac, 2026-09-18)
+
+Follower + expected-tape. Prompt: `prompts/follow-no-global-freeze.md`. While `phase === following`, hops transcribe only and score neighborhood `[current−1, current+2]` then the salah-prior next-surah pool. Unconstrained `bestJoint03Match` waits for `startReacquire()`. CTC madd runs on Arabic letters collapse before leftover is unexplained, so `holdsLock` does not drop on `ييي` / `ااا`. Last-ayah short openings such as `قل هو الله احد` commit at ≥0.65 without 3+ long distinctive words. Grace is 3 consecutive weak hops **and** 1500 ms.
+
+| Check | Result |
+|---|---|
+| `npm test` | **269/269** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **13/14 FAIL** — `english-negative:verse_lock_20:1`. `fatiha` 1:2@9s–1:7@34s; `ikhlas` 112:1@2s–4 including 112:3@6s; `nas` 114:1–6; `jump` 108:1–3 then **112:1@16.5s–4** |
+| `imam-mid-surah-cold` | PASS 4:129@11s → 4:130@19.5s |
+| `imam-mid-surah-cold-qiyam` | PASS 36:16–18 |
+
+Clip class `famous-short` (ikhlas/fatiha/nas) plus jump handoff. Units lock: last-ayah leftover does not call `bestJoint03Match`; Fatiha leftover Ikhlas opening; madd keeps lock; one garbled hop stays following. Live Simulator recitation was not re-measured. Not a physical-device claim.
+
+## Last-ayah surah handoff without mushaf freeze (Mac, 2026-09-18)
+
+Follower + display-hold + ContinuationGate. Prompt: `prompts/follow-surah-handoff.md`. Simulator recitation stayed on **109:6** while the engine locked **105:5** then **108:3**, with a ~1986 ms Match spike from synchronous `bestJoint03Match` on the follow hop. Follow now tries the salah-prior ayah-1 pool first and only Global Searches after `startReacquire()`. Fil/Kawthar openings commit **105:1** / **108:1** at ≥0.65 instead of the last ayah. A voiced last-ayah / salah-pool surah change paints immediately; stale `wordProgress` is cleared.
+
+| Check | Result |
+|---|---|
+| `npm test` | **272/272** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **13/14 FAIL** — `english-negative:verse_lock_20:1`. `fatiha` 1:2@9s–1:7@34s; `ikhlas` 112:1@2s–4 including 112:3@6s; `nas` 114:1–6; `jump` 108:1–3 then **112:1@16.5s–4** |
+| `imam-mid-surah-cold` | PASS 4:129@11s → 4:130@19.5s |
+| `imam-mid-surah-cold-qiyam` | PASS 36:16–18 |
+
+Clip class `famous-short`. Finding `live-surah-handoff-freeze` closed with units. Live Simulator recitation was not re-measured. Not a physical-device claim.
+
+## Simulator test 2: Fatiha → An-Nas + cold-start pool (Mac, 2026-09-18)
+
+ContinuationGate + acquire + listening display. Prompt: `prompts/sim-test-2-surah-switch.md`. Simulator recitation stayed on **1:7** for ~30 s while An-Nas was spoken because **114:1** sat in `pending` waiting for `word_progress`. Salah-prior ayah-1 now paints immediately (even unvoiced); mushaf-next **2:1** Basmala still waits. Cold acquire transcribes without locate and commits unique salah-pool ayah-1 at ≥0.65; shared `قل اعوذ برب` does not lock Falaq or Nas. `Listening.receive()` clears the Fatiha passage on a surah switch and paints ayah 1 from cache or Arabic preview.
+
+| Check | Result |
+|---|---|
+| `npm test` | **280/280** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **13/14 FAIL** — `english-negative:verse_lock_20:1`. `fatiha` 1:2@9s–1:7@34s; `ikhlas` 112:1@1s–4 including 112:3@6s; `nas` 114:1@4s–6 (soft 4:142 after expect); `falaq` 113:1@3s–5; `jump` 108:1–3 then **112:1@16.5s–4** |
+| `imam-mid-surah-cold` | PASS 4:129@11s → 4:130@19.5s |
+| `imam-mid-surah-cold-qiyam` | PASS 36:16–18 |
+
+Clip class `famous-short` plus Fatiha→body handoff (units). Live Simulator recitation was not re-measured. Not a physical-device claim. Reload Metro before live mic.
+
+## Phantom surah jump / reacquire freeze (Mac, 2026-09-18)
+
+Follower. Prompt: `prompts/follow-phantom-surah-jump.md`. Prayer surah switches scan only ayah 1 (or 2 if Basmala); **4:142** / **112:4** / **113:5** cannot be handoff targets. New-surah lock needs opening ≥0.70 or two contiguous ayah-1 words. Acquire decodes with `locate: false`; salah-prior pool first; JS `bestJoint03Match` is hop-throttled. Three consecutive misses may leave a wrong lock for a salah-prior ayah-1 without the 1.5 s grace. Muqattaat lookback stays the 2:2 mixed-window case only.
+
+| Check | Result |
+|---|---|
+| `npm test` | **290/290** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **12/14 FAIL** — `english-negative:verse_lock_20:1`, `stall-after-lock:no_matches`. `fatiha` 1:2@9s–1:7@34s; `ikhlas` 112:1@2s–4; `nas` 114:1@4s–6 (**no 4:142**); `asr` 103:1–3; `quraysh` 106:1–4; `jump` 108:1–3 then **112:1@16.5s–4**; `back-to-back` 103:1–3 then **106:1@22.25s–4** |
+| `imam-mid-surah-cold` | PASS 4:129@11s → 4:130@19.5s |
+| `imam-mid-surah-cold-qiyam` | FAIL first lock **2:1@5.5s** (want **36:16**) |
+
+Clip class `famous-short` plus `mid-surah`. Nas trail 4:142 cleared on the EveryAyah nas suite. stall-after-lock 112:2 clip never emits `verse_match` without Tilawa locate. Live Simulator recitation was not re-measured. Not a physical-device claim.
+
+## Simulator test 3 surah handoff (Mac, 2026-09-18)
+
+Follower. Prompt: `prompts/sim-test-3-surah-handoff.md`. Shared `قل اعوذ برب` waits for `الناس` / `الفلق` and must not pool-scan **107:1**. Quraysh `لإيلاف` equals CTC `ايلاف` / `الاف` / `لايلاف` at ≥0.65 with no follow-hop `bestJoint03Match`. Cross-surah 1-word ayah-1 (`عم`) needs ayah 2 or two confirmed words. Mid-Fatiha current-ayah CTC must not famous-scan Yusuf **12:1**.
+
+| Check | Result |
+|---|---|
+| `npm test` | **300/300** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **12/14 FAIL** — `english-negative:verse_lock_20:1`, `stall-after-lock:no_matches`. `fatiha` 1:2@9s–1:7@34s (no 12:1); `nas` 114:1@4s–6; `quraysh` 106:1@2s–4; `falaq` 113:1@3s–5; `back-to-back` 103 then **106:1@22.25s–4**; `jump` 108:1–3 then **112:1@16.5s–4** |
+| `imam-mid-surah-cold` | PASS 4:129@11s → 4:130@19.5s |
+| `imam-mid-surah-cold-qiyam` | FAIL first lock **2:1@5.5s** (want **36:16**) |
+
+Clip class `famous-short`. Follow hops `locateMs` 0. Tracking p95 ~50–52 ms is ONNX, not Match-to-display. Live Simulator recitation was not re-measured. Not a physical-device claim.
+
+## 114-openings generalized handoff (Mac, 2026-09-18)
+
+Follower. Prompt: `prompts/openings-114-handoff.md`. Prayer transitions score a pre-indexed compact array of all 114 openings (ayah 1, or ayah 2 when ayah 1 is Basmala). Follow/handoff never runs synchronous `bestJoint03Match`. New-surah lock needs ≥2 aligned body words or ≥7 aligned characters; shared prefixes stay co-candidates until a divergent token; `stripProclitics` folds و/ف, ب/ل/ك, and ال. Last-ayah current-verse audio (`والذين امنوا` inside 103:3) must not become Ma'idah **5:1**.
+
+| Check | Result |
+|---|---|
+| `npm test` | **308/308** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **9/14 FAIL** — `asr`/`back-to-back` **103:2** not **103:1**; `jump` **3:1@16.5s** not **112:1**; `english-negative:verse_lock_20:1`; `stall-after-lock:no_matches`. `fatiha` 1:2@9s–1:7@34s; `ikhlas` 112:1@2s–4; `nas` 114:1@4s–6; `quraysh` 106:1@2s–4; `falaq` 113:1@3s–5; `back-to-back` then **106:1@22.25s–4** |
+| `imam-mid-surah-cold` | PASS 4:129@11s → 4:130@19.5s |
+| `imam-mid-surah-cold-qiyam` | PASS **36:16@4s–20** (was 2:1 false-lock) |
+
+Clip class `famous-short` plus `mid-surah`. Follow hops do not scan 6,236 ayahs. Live Simulator recitation was not re-measured. Not a physical-device claim.
+
+## Simulator Muqattaʿāt false-lock + Match freeze (Mac, 2026-09-18)
+
+Follower. Prompt: `prompts/sim-muqattaat-false-lock.md`. Live recording snapped Ikhlas to **3:1** / **14:1** and later **2:1** (`الم لم ي`), with Mode GLOBAL Match spikes after Fatiha. Ayah-2 confirm ignores weak tokens; muqattaʿāt need compact body or letter-name spelling; `bodyHeardTokens` keeps ayah-body `الله`; post-lock Global Search only for long mid-ayah windows.
+
+| Check | Result |
+|---|---|
+| `npm test` | **312/312** |
+| `npm run typecheck` | pass |
+| `npm run test:replay -- all` | **10/14 FAIL** — `asr`/`back-to-back` **103:2**; `english-negative:verse_lock_20:1`; `stall-after-lock:no_matches`. **jump** **112:1@16.5s–4** PASS (was 3:1). `fatiha` 1:2–7; `ikhlas` 112:1–4; `nas` 114:1–6; `quraysh` 106:1–4 |
+| `imam-mid-surah-cold` | PASS 4:129@11s → 4:130@19.5s |
+| `imam-mid-surah-cold-qiyam` | PASS **36:16@4s–20** |
+
+Clip class `famous-short` plus `jump`. Live Simulator recitation not re-measured. Not a physical-device claim.
 
 

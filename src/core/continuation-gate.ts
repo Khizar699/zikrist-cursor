@@ -1,6 +1,17 @@
 import type { VerseMatchMessage, WordProgressMessage } from '@tilawa/core';
 import { isFatihaBasmala, openingBasmalaWordCount } from './basmala';
-import { refKey, type RecognitionMessage, type VerseRef } from './types';
+import { salahPrior } from './salah-prior';
+import { refKey, type RecognitionMessage, type VerseRef, type ZikristVerseMatch } from './types';
+
+function isLocationCommit(message: VerseMatchMessage): boolean {
+  return (message as ZikristVerseMatch).locationCommit === true;
+}
+
+function isSalahPoolSurah(surah: number): boolean {
+  return surah === salahPrior.fatiha
+    || salahPrior.last20.includes(surah)
+    || salahPrior.juz30.includes(surah);
+}
 
 /** Extra guard around an upstream commit. Shared Basmala openings, unexpected
  * jumps and silence-flush first locations need subsequent unique evidence. */
@@ -29,7 +40,24 @@ export class ContinuationGate {
           && this.current.surah !== message.surah
           && openingBasmalaWordCount(message) > 0
         );
+        const atSurahEnd = Boolean(
+          this.current && (!next || next.surah !== this.current.surah)
+        );
+        const salahPoolAyah1 = Boolean(
+          this.current
+          && message.surah !== this.current.surah
+          && message.ayah === 1
+          && isSalahPoolSurah(message.surah)
+        );
         if (expected && !holdNextSurahBasmala) {
+          this.current = message; this.pending = null; accepted.push(message);
+        } else if (
+          this.current
+          && message.surah !== this.current.surah
+          && isLocationCommit(message)
+          && (salahPoolAyah1 || (voiced && (atSurahEnd || isSalahPoolSurah(message.surah))))
+        ) {
+          // Cross-surah handoff only when upstream already confirmed (locationCommit).
           this.current = message; this.pending = null; accepted.push(message);
         } else if (!this.current && this.pending && isFatihaBasmala(this.pending.message) && message.surah === 1 && message.ayah === 2) {
           accepted.push(this.pending.message, message);
@@ -79,7 +107,8 @@ export class ContinuationGate {
       return unique.some((index) => index > skip);
     }
     if (!unique.includes(0)) return false;
-    const lastAyah = this.current !== null && this.nextVerse(this.current) === undefined;
+    const next = this.current ? this.nextVerse(this.current) : undefined;
+    const lastAyah = this.current !== null && (next === undefined || next.surah !== this.current.surah);
     const needed = lastAyah
       ? Math.min(2, message.total_words)
       : Math.min(

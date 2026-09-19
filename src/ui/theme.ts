@@ -22,14 +22,17 @@ export const styles = StyleSheet.create({
   panes: { flex: 1 },
   pane: { flex: 1 },
   verseList: { flexGrow: 1 },
-  verseRow: { paddingHorizontal: 28, paddingVertical: 18, gap: 12 },
+  verseRow: { paddingHorizontal: 28, paddingVertical: 22, gap: 12 },
   arabic: {
     fontFamily: fonts.arabic,
-    fontSize: 40,
-    lineHeight: 62,
+    fontSize: 42,
+    lineHeight: 66,
     color: colors.arabic,
     textAlign: 'center',
     writingDirection: 'rtl',
+  },
+  arabicUnread: {
+    color: colors.muted,
   },
   translation: {
     fontFamily: fonts.translation,
@@ -56,5 +59,13 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
   },
   error: { color: colors.danger, fontSize: 13, lineHeight: 18, textAlign: 'center', paddingHorizontal: 28, paddingBottom: 10 },
-  footer: { alignItems: 'center', justifyContent: 'center', paddingTop: 8, paddingBottom: 10, minHeight: 96 },
+  footer: { alignItems: 'center', justifyContent: 'center', paddingTop: 8, paddingBottom: 10, minHeight: 118 },
+  settingsLink: {
+    fontFamily: fonts.translation,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.muted,
+    paddingTop: 8,
+    paddingBottom: 2,
+  },
 });

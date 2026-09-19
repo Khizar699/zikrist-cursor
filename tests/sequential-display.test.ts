@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   TRACKING_COMPLETION_COVERAGE, VISUAL_ADVANCE_COVERAGE,
+  approachingSurahEnd, ayahsRemainingInSurah, isCompactSurah,
   isSequentialSuccessor, neighborhoodSurahs, nextSequentialRef, previousSequentialRef, shouldRevealSequentialNext,
 } from '../src/core/sequential';
 import type { VerseRef } from '../src/core/types';
@@ -25,16 +26,21 @@ test('An-Nas has no following surah, and Al-Fatihah has no previous surah', () =
   assert.deepEqual(previousSequentialRef({ surah: 3, ayah: 1 }, hasVerse), { surah: 2, ayah: 286 });
   assert.deepEqual(previousSequentialRef({ surah: 112, ayah: 2 }, hasVerse), { surah: 112, ayah: 1 });
   assert.deepEqual(neighborhoodSurahs(114), [114]);
-  assert.deepEqual(neighborhoodSurahs(112), [112, 113]);
+  assert.deepEqual(neighborhoodSurahs(112), [112]);
+  assert.equal(ayahsRemainingInSurah({ surah: 112, ayah: 3 }, hasVerse), 1);
+  assert.equal(ayahsRemainingInSurah({ surah: 112, ayah: 4 }, hasVerse), 0);
+  assert.equal(approachingSurahEnd({ surah: 112, ayah: 3 }, hasVerse), true);
+  assert.equal(approachingSurahEnd({ surah: 112, ayah: 1 }, hasVerse), false);
 });
 
-test('coverage does not move the focused ayah before a confirmed match', () => {
+test('same-surah coverage may focus the sequential next ayah without writing history', () => {
   const displayed = { surah: 112, ayah: 1 };
   const prepared = { surah: 112, ayah: 2 };
   assert.equal(VISUAL_ADVANCE_COVERAGE, TRACKING_COMPLETION_COVERAGE);
   assert.equal(shouldRevealSequentialNext({ displayed, prepared, wordIndex: 4, totalWords: 10, hasVerse }), false);
-  assert.equal(shouldRevealSequentialNext({ displayed, prepared, wordIndex: 9, totalWords: 10, hasVerse }), false);
-  assert.equal(shouldRevealSequentialNext({ displayed, prepared, wordIndex: 3, totalWords: 3, hasVerse }), false);
+  assert.equal(shouldRevealSequentialNext({ displayed, prepared, wordIndex: 8, totalWords: 10, hasVerse }), false);
+  assert.equal(shouldRevealSequentialNext({ displayed, prepared, wordIndex: 9, totalWords: 10, hasVerse }), true);
+  assert.equal(shouldRevealSequentialNext({ displayed, prepared, wordIndex: 3, totalWords: 3, hasVerse }), true);
 });
 
 test('a jump or a skip ahead is not treated as sequential display', () => {
@@ -55,4 +61,16 @@ test('finishing the last ayah does not reveal the next surah', () => {
     totalWords: 5,
     hasVerse,
   }), false);
+});
+
+test('Ikhlas and Fatiha are compact; Al-Baqarah is not', () => {
+  const mushaf = (ref: VerseRef) => {
+    if (ref.surah === 1) return ref.ayah >= 1 && ref.ayah <= 7;
+    if (ref.surah === 2) return ref.ayah >= 1 && ref.ayah <= 286;
+    if (ref.surah === 112) return ref.ayah >= 1 && ref.ayah <= 4;
+    return keys.has(`${ref.surah}:${ref.ayah}`);
+  };
+  assert.equal(isCompactSurah(112, mushaf), true);
+  assert.equal(isCompactSurah(1, mushaf), true);
+  assert.equal(isCompactSurah(2, mushaf), false);
 });

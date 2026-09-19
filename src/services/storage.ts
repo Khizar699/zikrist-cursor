@@ -12,7 +12,10 @@ export class Storage {
   async settings(): Promise<Settings> {
     const row = await this.db.getFirstAsync<{ value: string }>('SELECT value FROM settings WHERE key = ?', 'preferences');
     const data = row ? JSON.parse(row.value) as Partial<Settings> : {};
-    return { language: data.language === 'en' || data.language === 'ur' ? data.language : null };
+    return {
+      language: data.language === 'en' || data.language === 'ur' ? data.language : null,
+      debugHud: typeof data.debugHud === 'boolean' ? data.debugHud : undefined,
+    };
   }
   async saveSettings(settings: Settings): Promise<void> {
     await this.db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', 'preferences', JSON.stringify(settings));

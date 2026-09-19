@@ -61,7 +61,6 @@ test('salah liturgy harness reads the committed stub manifest, not a duplicate p
       .every((row) => row.status === 'stub'),
     true,
   );
-  assert.equal(fs.existsSync(path.join(root, 'prompts/salah-liturgy/04-replay-suites.md')), true);
 });
 
 test('sample skip JSON is skipped/missing_fixture, not PASS', () => {

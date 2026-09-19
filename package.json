@@ -2,6 +2,10 @@
   "name": "zikrist",
   "version": "0.1.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Khizar699/zikrist-cursor.git"
+  },
   "main": "index.ts",
   "scripts": {
     "start": "expo start --dev-client",
@@ -10,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "tsx --test tests/*.test.ts",
+    "test:fixtures": "tsx --test scripts/fixtures/download-imam-fixtures.test.ts",
     "setup": "node scripts/setup.mjs",
     "assets:download": "node scripts/download-assets.mjs",
     "assets:verify": "node scripts/verify-assets.mjs",
@@ -24,7 +29,11 @@
     "liturgy:tts": "tsx scripts/gen-liturgy-tts.ts",
     "fixtures:recitation": "tsx scripts/download-recitation-fixtures.ts",
     "fixtures:imam": "tsx scripts/download-imam-fixtures.ts",
-    "benchmark": "tsx scripts/replay.ts"
+    "test:coverage": "tsx scripts/coverage-sample.ts",
+    "findings:report": "tsx scripts/findings-report.ts",
+    "test:bakeoff": "tsx scripts/bakeoff.ts",
+    "benchmark": "tsx scripts/replay.ts",
+    "pipeline:export": "node scripts/export-pipeline.mjs"
   },
   "dependencies": {
     "@tilawa/core": "0.1.0",

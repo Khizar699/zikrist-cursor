@@ -25,6 +25,19 @@ export function remainingAfter(surah: number): number[] {
   return out;
 }
 
+/** Handoff shortlist: salah bands plus mushaf-next as a scored candidate, never a default display. */
+export function handoffCandidateSurahs(fromSurah: number, mushafNext: number | null): number[] {
+  const seen = new Set<number>();
+  const out: number[] = [];
+  for (const surah of remainingAfter(fromSurah)) addUnique(out, seen, surah);
+  if (mushafNext != null && mushafNext !== fromSurah) addUnique(out, seen, mushafNext);
+  return out;
+}
+
+export function isFamousHandoffSurah(surah: number): boolean {
+  return data.famous.includes(surah);
+}
+
 export function surahBonus(surah: number, fromSurah: number | null = null): number {
   let bonus = 0;
   if (surah === data.fatiha) bonus = Math.max(bonus, data.bonuses.fatiha);

@@ -29,3 +29,25 @@ test('word coverage applies only to the current occurrence and never exceeds uni
   timeline.accept({ type: 'word_progress', surah: 1, ayah: 2, matched_indices: [0, 1, 2], total_words: 4, word_index: 2 }, 300);
   assert.equal(timeline.occurrences[0]!.matchedWords, 2);
 });
+
+test('a same-surah hop that skips an ayah is recorded without inventing that ayah', () => {
+  const timeline = new Timeline();
+  timeline.accept(match(114, 2), 100);
+  timeline.accept(match(114, 4), 400);
+  assert.deepEqual(timeline.occurrences.map((item) => item.ayah), [2, 4]);
+  assert.equal(timeline.skips.length, 1);
+  assert.deepEqual(timeline.skips[0], {
+    from: { surah: 114, ayah: 2 },
+    to: { surah: 114, ayah: 4 },
+    missed: 1,
+    segment: 0,
+  });
+});
+
+test('ordered next ayah and a jump to another surah are not skips', () => {
+  const timeline = new Timeline();
+  timeline.accept(match(112, 1), 100);
+  timeline.accept(match(112, 2), 200);
+  timeline.accept(match(108, 1), 300);
+  assert.equal(timeline.skips.length, 0);
+});

@@ -15,20 +15,28 @@
  *   npm run test:replay -- salah-liturgy
  *   npm run test:replay -- --include-pending
  *   npm run test:replay -- artifacts/recitation/112001.wav ...
+ *   npm run test:replay -- --engine tilawa
+ *   npm run test:bakeoff
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as ort from 'onnxruntime-node';
 import { createTilawaSession } from '@tilawa/core';
+import {
+  BAKEOFF_DEFAULT_ENGINE,
+  resolveBakeoffEngine,
+  summarizeBakeoffClocks,
+} from '../src/core/bakeoff';
 import { ContinuationGate } from '../src/core/continuation-gate';
 import { RecitationFollower } from '../src/core/follower';
 import {
-  recentRecognitionCycles,
-  resetRecognitionCycles,
+  beginRecognitionCapture,
+  takeRecognitionCapture,
 } from '../src/core/recognition-clocks';
 import { LIVE_STREAMING_CONFIG } from '../src/core/streaming';
+import { Timeline } from '../src/core/timeline';
 import {
   filterQuranMessagesForLiturgy,
   liturgyFollowContextBeforeFeed,
@@ -149,7 +157,13 @@ function fixtureStatus(names: string[]) {
   });
 }
 
-async function createSession() {
+function isMainModule(metaUrl: string): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  return metaUrl === pathToFileURL(path.resolve(entry)).href;
+}
+
+export async function createSession() {
   const modelPath = path.join(root, 'assets/model/fastconformer_full_mixed.onnx');
   if (!fs.existsSync(modelPath)) {
     throw new Error('missing_onnx: run npm run assets:download before test:replay');
@@ -189,18 +203,19 @@ async function createSession() {
   return { session, runtime };
 }
 
-type Engine = Awaited<ReturnType<typeof createSession>>;
+export type ReplayEngine = Awaited<ReturnType<typeof createSession>>;
 
 function createLiturgyMatcher(): SalahLiturgyMatcher {
   const data: unknown = JSON.parse(fs.readFileSync(path.join(root, 'assets/content/salah-liturgy.json'), 'utf8'));
   return matcherFromPack(packFromUnknown(data));
 }
 
-async function replaySuite(
+export async function replaySuite(
   suite: SuiteBlueprint,
   files: string[],
-  engine: Engine,
+  engine: ReplayEngine,
   loadMs: number,
+  engineId = BAKEOFF_DEFAULT_ENGINE,
 ) {
   for (const file of files) {
     if (!fs.existsSync(file)) throw new Error(`missing_clip:${path.basename(file)}`);
@@ -209,9 +224,10 @@ async function replaySuite(
   const padded = new Float32Array(audio.length + Math.round(SAMPLE_RATE * trailingSilenceSeconds));
   padded.set(audio);
 
-  resetRecognitionCycles();
+  beginRecognitionCapture();
   const follower = new RecitationFollower(engine.session.db, engine.session);
   const gate = new ContinuationGate((ref) => engine.session.db.getNextVerse(ref.surah, ref.ayah));
+  const timeline = new Timeline();
   // Default 14 Quran suites keep follower+gate only. Liturgy suites use the same
   // PCM → lastHeardTokens → SalahLiturgyMatcher path as live listening.
   const liturgyMatcher = suite.scoreLiturgy === true ? createLiturgyMatcher() : null;
@@ -260,9 +276,13 @@ async function replaySuite(
         quran = filterQuranMessagesForLiturgy(raw);
         follower.reset();
         gate.reset();
+        timeline.breakSegment();
       }
     }
     const accepted = gate.accept(quran, voicedMs, voiced);
+    for (const message of accepted) {
+      timeline.accept(message, audioSeconds * 1000);
+    }
     if (process.env.ZIKRIST_TRACE === '1' && (raw.length || accepted.length || phrases.length)) {
       console.log(JSON.stringify({
         t: end / SAMPLE_RATE,
@@ -289,11 +309,21 @@ async function replaySuite(
     }
   }
 
+  const captured = takeRecognitionCapture();
+  const bakeoff = summarizeBakeoffClocks({
+    engineId,
+    loadMs,
+    firstLockAudioSeconds: matches[0]?.audioSeconds ?? null,
+    cycles: captured,
+    skips: timeline.skips,
+    expect: suite.expect,
+  });
   const failureMode = evaluateFailure(matches, suite, phrases);
   const stats = wrongSurahStats(matches, suite.expect, suite.gate);
   const lastPhrase = phrases.at(-1);
   const report = {
     suite: suite.label,
+    engineId,
     gate: suite.gate,
     environment: `${process.platform}/${process.arch} onnxruntime-node ${ort.env.versions?.node ?? 'unknown'}; headless follower replay, not phone mic latency`,
     inputSeconds: audio.length / SAMPLE_RATE,
@@ -307,9 +337,11 @@ async function replaySuite(
     audioSeconds: lastPhrase?.audioSeconds ?? null,
     firstLockSeconds: matches[0]?.audioSeconds ?? null,
     clocks: {
-      recent: recentRecognitionCycles(),
+      recent: captured.slice(-32),
       peakRssMb: process.resourceUsage().maxRSS / 1024,
     },
+    bakeoff,
+    skips: timeline.skips,
     failureMode,
     wrongSurahCount: stats.wrongSurahCount,
     wrongSurahRate: stats.wrongSurahRate,
@@ -363,163 +395,194 @@ function recordMissingFixture(suite: SuiteBlueprint, missing: string[]): ResultR
   };
 }
 
-const cli = parseReplayCli(process.argv.slice(2));
-if (cli.help) {
-  console.log(suiteHelpText());
-  process.exit(0);
-}
-if (cli.list) {
-  console.log('Ready (default all, 14 suites):');
-  for (const name of ALL_SUITE_NAMES) {
-    const suite = suiteBlueprint(name);
-    console.log(`${name}\tready\t${suite.description}`);
+async function main(): Promise<void> {
+  const cli = parseReplayCli(process.argv.slice(2));
+  if (cli.help) {
+    console.log(suiteHelpText());
+    return;
   }
-  console.log('Real-imam (`npm run test:replay -- real-imam`; stubs skip missing_fixture; ready suites need restored WAV):');
-  for (const name of REAL_IMAM_SUITE_NAMES) {
-    const suite = suiteBlueprint(name);
-    const missing = missingClips(suite);
-    const status = missing.length
-      ? (suiteSkipsWhenClipMissing(suite) ? SKIPPED_PENDING : 'missing')
-      : 'ready';
-    console.log(`${name}\t${status}\t${suite.description}`);
-  }
-  console.log('Salah liturgy (`npm run test:replay -- liturgy`; stubs skip missing_fixture; ready suites need generated WAV):');
-  for (const name of LITURGY_SUITE_NAMES) {
-    const suite = suiteBlueprint(name);
-    const missing = missingClips(suite);
-    const status = missing.length
-      ? (suiteSkipsWhenClipMissing(suite) ? SKIPPED_PENDING : 'missing')
-      : 'ready';
-    console.log(`${name}\t${status}\t${suite.description}`);
-  }
-  process.exit(0);
-}
-
-const selectedSuites = cli.wavArgs.length && !cli.namedArgs.length
-  ? []
-  : parseSuiteSelection(cli.namedArgs, { includePending: cli.includePending });
-
-if (cli.checkFixtures) {
-  const names = selectedSuites.length ? selectedSuites : [...ALL_SUITE_NAMES];
-  const status = fixtureStatus(names);
-  const missing = [...new Set(status.flatMap((row) => row.missing))];
-  const pendingOnly = names.length > 0 && names.every((name) => suiteSkipsWhenClipMissing(suiteBlueprint(name)));
-  const liturgyOnly = names.length > 0 && names.every((name) => isLiturgySuiteName(name));
-  const imamOnly = names.length > 0 && names.every((name) => isRealImamSuiteName(name));
-  const restore = liturgyOnly
-    ? 'Ready: npm run liturgy:tts -- liturgy-takbeer or liturgy-thana --engine say (Mac; ffmpeg on PATH e.g. /tmp/ffmpeg-static; say Majed ar_001). Stubs skip missing_fixture until their fill session. Mixed suites reuse EveryAyah Fatiha WAVs from artifacts/recitation/ after npm run fixtures:recitation. Do not invent silent WAVs.'
-    : imamOnly
-      ? 'Ready: npm run fixtures:imam (tag imam-fixtures-v1). Stubs skip missing_fixture until their fill session. Do not invent silent WAVs.'
-      : 'npm run fixtures:recitation';
-  console.log(JSON.stringify({
-    recitationDir: path.relative(root, recitationDir),
-    uniqueClips: uniqueClipsForSuites(names),
-    missingClips: missing,
-    suites: status,
-    restore,
-  }, null, 2));
-  const blocking = status.filter((row) => row.missing.length && row.status !== SKIPPED_PENDING);
-  if (pendingOnly && missing.length) {
-    const pack = liturgyOnly ? 'salah-liturgy' : imamOnly ? 'real-imam' : 'pending';
-    console.error(`skip missing_fixture: ${missing.length} ${pack} clip(s) (not PASS).`);
-  } else if (blocking.length) {
-    const blockingClips = [...new Set(blocking.flatMap((row) => row.missing))];
-    console.error(`Missing ${blockingClips.length} fixture(s). Run npm run fixtures:recitation`);
-    process.exitCode = 1;
-  }
-  process.exit();
-}
-
-const results: ResultRow[] = [];
-const runnable: { suite: SuiteBlueprint; files: string[] }[] = [];
-
-for (const name of selectedSuites) {
-  const suite = suiteBlueprint(name);
-  const missing = missingClips(suite);
-  if (missing.length) {
-    if (suiteSkipsWhenClipMissing(suite)) {
-      results.push(recordMissingFixture(suite, missing));
-      continue;
+  if (cli.list) {
+    console.log('Ready (default all, 14 suites):');
+    for (const name of ALL_SUITE_NAMES) {
+      const suite = suiteBlueprint(name);
+      console.log(`${name}\tready\t${suite.description}`);
     }
-    const hint = suite.scoreLiturgy === true
-      ? `. Generate with: npm run liturgy:tts -- ${suite.label}`
-      : isRealImamSuiteName(suite.label)
-        ? '. Restore with: npm run fixtures:imam'
-        : '';
-    throw new Error(`missing_clip:${missing.map((clip) => path.basename(clip)).join(',')}${hint}`);
-  }
-  const missingQuran = missingQuranClips(suite);
-  if (missingQuran.length) {
-    throw new Error(`missing_clip:${missingQuran.map((clip) => path.basename(clip)).join(',')}`);
-  }
-  runnable.push({ suite, files: runnableFiles(suite) });
-}
-
-const needsEngine = cli.wavArgs.length > 0 || runnable.length > 0;
-let engine: Engine | undefined;
-let loadMs = 0;
-let firstLoadAssigned = false;
-
-try {
-  if (needsEngine) {
-    const loadStart = performance.now();
-    engine = await createSession();
-    loadMs = performance.now() - loadStart;
+    console.log('Real-imam (`npm run test:replay -- real-imam`; stubs skip missing_fixture; ready suites need restored WAV):');
+    for (const name of REAL_IMAM_SUITE_NAMES) {
+      const suite = suiteBlueprint(name);
+      const missing = missingClips(suite);
+      const status = missing.length
+        ? (suiteSkipsWhenClipMissing(suite) ? SKIPPED_PENDING : 'missing')
+        : 'ready';
+      console.log(`${name}\t${status}\t${suite.description}`);
+    }
+    console.log('Salah liturgy (`npm run test:replay -- liturgy`; stubs skip missing_fixture; ready suites need generated WAV):');
+    for (const name of LITURGY_SUITE_NAMES) {
+      const suite = suiteBlueprint(name);
+      const missing = missingClips(suite);
+      const status = missing.length
+        ? (suiteSkipsWhenClipMissing(suite) ? SKIPPED_PENDING : 'missing')
+        : 'ready';
+      console.log(`${name}\t${status}\t${suite.description}`);
+    }
+    return;
   }
 
-  for (const file of cli.wavArgs) {
-    if (!engine) throw new Error('missing_onnx');
-    const custom: SuiteBlueprint = {
-      label: 'custom',
-      clips: [path.basename(file)],
-      expect: [],
-      gate: 'ordered-sequence',
-      description: 'Ad-hoc WAV path',
-    };
-    const { report, outPath } = await replaySuite(custom, [path.resolve(file)], engine, firstLoadAssigned ? 0 : loadMs);
-    firstLoadAssigned = true;
-    results.push({
-      label: 'custom',
-      outPath,
-      failureMode: report.failureMode,
-      wrongSurahRate: report.wrongSurahRate,
-    });
+  const selectedSuites = cli.wavArgs.length && !cli.namedArgs.length
+    ? []
+    : parseSuiteSelection(cli.namedArgs, { includePending: cli.includePending });
+
+  if (cli.checkFixtures) {
+    const names = selectedSuites.length ? selectedSuites : [...ALL_SUITE_NAMES];
+    const status = fixtureStatus(names);
+    const missing = [...new Set(status.flatMap((row) => row.missing))];
+    const pendingOnly = names.length > 0 && names.every((name) => suiteSkipsWhenClipMissing(suiteBlueprint(name)));
+    const liturgyOnly = names.length > 0 && names.every((name) => isLiturgySuiteName(name));
+    const imamOnly = names.length > 0 && names.every((name) => isRealImamSuiteName(name));
+    const restore = liturgyOnly
+      ? 'Ready: npm run liturgy:tts -- liturgy-takbeer or liturgy-thana --engine say (Mac; ffmpeg on PATH e.g. /tmp/ffmpeg-static; say Majed ar_001). Stubs skip missing_fixture until their fill session. Mixed suites reuse EveryAyah Fatiha WAVs from artifacts/recitation/ after npm run fixtures:recitation. Do not invent silent WAVs.'
+      : imamOnly
+        ? 'Ready: npm run fixtures:imam (tag imam-fixtures-v1). Stubs skip missing_fixture until their fill session. Do not invent silent WAVs.'
+        : 'npm run fixtures:recitation';
+    console.log(JSON.stringify({
+      recitationDir: path.relative(root, recitationDir),
+      uniqueClips: uniqueClipsForSuites(names),
+      missingClips: missing,
+      suites: status,
+      restore,
+    }, null, 2));
+    const blocking = status.filter((row) => row.missing.length && row.status !== SKIPPED_PENDING);
+    if (pendingOnly && missing.length) {
+      const pack = liturgyOnly ? 'salah-liturgy' : imamOnly ? 'real-imam' : 'pending';
+      console.error(`skip missing_fixture: ${missing.length} ${pack} clip(s) (not PASS).`);
+    } else if (blocking.length) {
+      const blockingClips = [...new Set(blocking.flatMap((row) => row.missing))];
+      console.error(`Missing ${blockingClips.length} fixture(s). Run npm run fixtures:recitation`);
+      process.exitCode = 1;
+    }
+    return;
   }
 
-  for (const item of runnable) {
-    if (!engine) throw new Error('missing_onnx');
-    const trials = item.suite.clipRunMode === 'each-clip'
-      ? item.suite.clips.map((clip, index) => ({
-        suite: {
-          ...item.suite,
-          label: `${item.suite.label}:${path.basename(clip, path.extname(clip))}`,
-          clips: [clip],
-        },
-        files: [item.files[index]!],
-      }))
-      : [item];
-    for (const trial of trials) {
-      const { report, outPath } = await replaySuite(trial.suite, trial.files, engine, firstLoadAssigned ? 0 : loadMs);
+  const resolved = resolveBakeoffEngine(cli.engine);
+  if (resolved.status === 'blocked') {
+    console.error(JSON.stringify({
+      engine: cli.engine,
+      status: 'blocked',
+      reason: resolved.reason,
+      default: BAKEOFF_DEFAULT_ENGINE,
+    }, null, 2));
+    process.exitCode = 1;
+    return;
+  }
+  const engineId = resolved.engineId;
+
+  const results: ResultRow[] = [];
+  const runnable: { suite: SuiteBlueprint; files: string[] }[] = [];
+
+  for (const name of selectedSuites) {
+    const suite = suiteBlueprint(name);
+    const missing = missingClips(suite);
+    if (missing.length) {
+      if (suiteSkipsWhenClipMissing(suite)) {
+        results.push(recordMissingFixture(suite, missing));
+        continue;
+      }
+      const hint = suite.scoreLiturgy === true
+        ? `. Generate with: npm run liturgy:tts -- ${suite.label}`
+        : isRealImamSuiteName(suite.label)
+          ? '. Restore with: npm run fixtures:imam'
+          : '';
+      throw new Error(`missing_clip:${missing.map((clip) => path.basename(clip)).join(',')}${hint}`);
+    }
+    const missingQuran = missingQuranClips(suite);
+    if (missingQuran.length) {
+      throw new Error(`missing_clip:${missingQuran.map((clip) => path.basename(clip)).join(',')}`);
+    }
+    runnable.push({ suite, files: runnableFiles(suite) });
+  }
+
+  const needsEngine = cli.wavArgs.length > 0 || runnable.length > 0;
+  let engine: ReplayEngine | undefined;
+  let loadMs = 0;
+  let firstLoadAssigned = false;
+
+  try {
+    if (needsEngine) {
+      const loadStart = performance.now();
+      engine = await createSession();
+      loadMs = performance.now() - loadStart;
+    }
+
+    for (const file of cli.wavArgs) {
+      if (!engine) throw new Error('missing_onnx');
+      const custom: SuiteBlueprint = {
+        label: 'custom',
+        clips: [path.basename(file)],
+        expect: [],
+        gate: 'ordered-sequence',
+        description: 'Ad-hoc WAV path',
+      };
+      const { report, outPath } = await replaySuite(
+        custom,
+        [path.resolve(file)],
+        engine,
+        firstLoadAssigned ? 0 : loadMs,
+        engineId,
+      );
       firstLoadAssigned = true;
       results.push({
-        label: trial.suite.label,
+        label: 'custom',
         outPath,
         failureMode: report.failureMode,
         wrongSurahRate: report.wrongSurahRate,
       });
     }
+
+    for (const item of runnable) {
+      if (!engine) throw new Error('missing_onnx');
+      const trials = item.suite.clipRunMode === 'each-clip'
+        ? item.suite.clips.map((clip, index) => ({
+          suite: {
+            ...item.suite,
+            label: `${item.suite.label}:${path.basename(clip, path.extname(clip))}`,
+            clips: [clip],
+          },
+          files: [item.files[index]!],
+        }))
+        : [item];
+      for (const trial of trials) {
+        const { report, outPath } = await replaySuite(
+          trial.suite,
+          trial.files,
+          engine,
+          firstLoadAssigned ? 0 : loadMs,
+          engineId,
+        );
+        firstLoadAssigned = true;
+        results.push({
+          label: trial.suite.label,
+          outPath,
+          failureMode: report.failureMode,
+          wrongSurahRate: report.wrongSurahRate,
+        });
+      }
+    }
+  } finally {
+    await engine?.runtime.release();
   }
-} finally {
-  await engine?.runtime.release();
+
+  console.log(JSON.stringify({ results, engineId }, null, 2));
+  const skipped = results.filter((row) => row.status === SKIPPED_PENDING);
+  const failed = results.filter((row) => row.failureMode && row.status !== SKIPPED_PENDING);
+  if (skipped.length) {
+    console.error('Skipped pending (missing_fixture, not PASS):', skipped.map((row) => row.label).join(', '));
+  }
+  if (failed.length) {
+    console.error('Replay gate failed:', failed.map((row) => `${row.label}:${row.failureMode}`).join(', '));
+    process.exitCode = 1;
+  }
 }
 
-console.log(JSON.stringify({ results }, null, 2));
-const skipped = results.filter((row) => row.status === SKIPPED_PENDING);
-const failed = results.filter((row) => row.failureMode && row.status !== SKIPPED_PENDING);
-if (skipped.length) {
-  console.error('Skipped pending (missing_fixture, not PASS):', skipped.map((row) => row.label).join(', '));
-}
-if (failed.length) {
-  console.error('Replay gate failed:', failed.map((row) => `${row.label}:${row.failureMode}`).join(', '));
-  process.exitCode = 1;
+if (isMainModule(import.meta.url)) {
+  await main();
 }

@@ -1,5 +1,7 @@
 # Zikrist feasibility and architecture research
 
+> **Current product MVP (Phase 1):** live **mushaf follow** — microphone → correct `[surah:ayah]` → canonical Arabic on screen → monotonic ordered advance inside `[current − 1, current + 2]`. **Phase 2 translation** is a static `[surah:ayah]` lookup after that alignment is flawless. See `AGENTS.md`. The rest of this file remains research, including a later translation product; do not treat those paragraphs as the active first-build scope.
+
 Zikrist is technically plausible as an offline Quran recognition and translation-retrieval application. The recommended next investment is a narrowly scoped recognition prototype on physical Android and iPhone devices, including mid-range hardware. A dependable production release is not yet justified by the available model benchmarks. The largest uncertainties are live recognition in mosque acoustics, sustained mobile performance, content redistribution rights, and whether the live reading experience helps worshippers in practice.
 
 React Native with Expo is a reasonable application foundation. Tilawa is the leading initial recognition candidate for this stack, subject to measurement and an asset-provenance review. Supabase can support optional accounts and synchronization later. Neither authentication nor an internet connection should be required to start a listening session or review already downloaded content.

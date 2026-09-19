@@ -5,8 +5,10 @@ import catalog from '../../assets/content/languages.json';
 import canonical from '../../assets/content/quran-display.json';
 import { packsToEvict } from '../core/pack-policy';
 import { splitOpeningBasmala } from '../core/basmala';
-import { neighborhoodSurahs } from '../core/sequential';
+import { isCompactSurah, neighborhoodSurahs } from '../core/sequential';
+import { handoffCandidateSurahs } from '../core/salah-prior';
 import { passageWindow } from '../core/passage';
+import { mushafDisplayVerse } from '../core/mushaf-display';
 import { refKey, type DisplayVerse, type Language, type Translation, type VerseRef } from '../core/types';
 import { storage } from './storage';
 
@@ -24,6 +26,17 @@ export class Content {
   private preload: { key: string; promise: Promise<void> } | null = null;
   private preloadGeneration = 0;
   language: Language | null = null;
+  /** Bundled Arabic mushaf is ready; translation pack is not required. */
+  mushafReady = false;
+
+  /** Listen path for the mushaf-first MVP. Does not download a translation. */
+  async prepareMushaf(): Promise<void> {
+    this.cache.clear();
+    this.loadedSurahs.clear();
+    this.preload = null;
+    this.preloadGeneration += 1;
+    this.mushafReady = true;
+  }
 
   setMetadata(verses: VerseMetadata[]): void { this.metadata = new Map(verses.map((verse) => [refKey(verse), verse])); }
   installed(): Promise<PackRow[]> { return storage.db.getAllAsync<PackRow>('SELECT * FROM language_packs ORDER BY last_used_at DESC'); }
@@ -57,6 +70,7 @@ export class Content {
     } catch (error) { await next.closeAsync(); throw error; }
     this.db = next;
     this.language = language;
+    this.mushafReady = true;
     this.cache.clear();
     this.loadedSurahs.clear();
     this.preload = null;
@@ -96,20 +110,38 @@ export class Content {
   }
   hasVerse(ref: VerseRef): boolean { return Boolean(arabicText[refKey(ref)]); }
   peek(ref: VerseRef): DisplayVerse | undefined { return this.cache.get(refKey(ref)); }
+  /** Arabic + names from the bundled mushaf, no SQLite wait. Translation
+   * stays empty until a later MVP fills an approved pack row. */
+  previewArabic(ref: VerseRef): DisplayVerse | undefined {
+    const cached = this.peek(ref);
+    if (cached) return cached;
+    return mushafDisplayVerse(ref, arabicText[refKey(ref)], this.metadata.get(refKey(ref)));
+  }
   cachedNeighborhood(focus: DisplayVerse): DisplayVerse[] {
     return passageWindow(focus, (ref) => this.peek(ref), (ref) => this.hasVerse(ref));
   }
   async verse(ref: VerseRef): Promise<DisplayVerse> {
     const cached = this.peek(ref);
-    if (cached) return cached;
-    if (!this.db) throw new Error('Choose a translation language first.');
-    const row = await this.db.getFirstAsync<Translation>('SELECT translation, footnotes FROM translations WHERE sura = ? AND aya = ?', ref.surah, ref.ayah);
-    const verse = this.buildVerse(ref, row);
-    this.cache.set(refKey(ref), verse);
-    return verse;
+    if (!cached) {
+      if (!this.db) {
+        const arabic = this.previewArabic(ref);
+        if (!arabic) throw new Error(`Verse ${refKey(ref)} is unavailable in the mushaf.`);
+        this.cache.set(refKey(ref), arabic);
+      } else {
+        const row = await this.db.getFirstAsync<Translation>('SELECT translation, footnotes FROM translations WHERE sura = ? AND aya = ?', ref.surah, ref.ayah);
+        this.cache.set(refKey(ref), this.buildVerse(ref, row));
+      }
+    }
+    await this.ensureCompactSurah(ref);
+    return this.peek(ref) ?? cached!;
   }
-  /** Load this surah and the following surah. The passage lists read this
-   * cache; sequential scrolling must not query SQLite again. */
+
+  /** Short surahs must not paint 112:1–2 only while 112:3–4 are still in SQLite. */
+  private async ensureCompactSurah(ref: VerseRef): Promise<void> {
+    if (!isCompactSurah(ref.surah, (item) => this.hasVerse(item))) return;
+    await this.preloadNeighborhood(ref);
+  }
+  /** Load the recited surah in full. Mushaf-next is not dumped here. */
   async preloadNeighborhood(ref: VerseRef): Promise<void> {
     const surahs = neighborhoodSurahs(ref.surah);
     if (surahs.length === 0) return;
@@ -124,8 +156,37 @@ export class Content {
     return promise;
   }
 
+  /** Opening ayahs of the handoff pool so a body surah can display without
+   * keeping all of Al-Baqarah in RAM during Al-Fatihah. Merges into cache. */
+  async preloadHandoffOpenings(ref: VerseRef): Promise<void> {
+    const mushafNext = ref.surah < 114 ? ref.surah + 1 : null;
+    const surahs = handoffCandidateSurahs(ref.surah, mushafNext);
+    if (surahs.length === 0) return;
+    if (!this.db) {
+      for (const surah of surahs) {
+        for (const ayah of [1, 2]) {
+          const verseRef = { surah, ayah };
+          const verse = this.previewArabic(verseRef);
+          if (verse) this.cache.set(refKey(verseRef), verse);
+        }
+      }
+      return;
+    }
+    const rows = await this.db.getAllAsync<TranslationRow>(
+      `SELECT sura, aya, translation, footnotes FROM translations WHERE sura IN (${surahs.map(() => '?').join(', ')}) AND aya <= 2`,
+      ...surahs,
+    );
+    for (const row of rows) {
+      const verseRef = { surah: row.sura, ayah: row.aya };
+      this.cache.set(refKey(verseRef), this.buildVerse(verseRef, row));
+    }
+  }
+
   private async loadSurahs(surahs: number[], generation: number): Promise<void> {
-    if (!this.db) throw new Error('Choose a translation language first.');
+    if (!this.db) {
+      this.loadMushafSurahs(surahs, generation);
+      return;
+    }
     const placeholders = surahs.map(() => '?').join(', ');
     const rows = await this.db.getAllAsync<TranslationRow>(
       `SELECT sura, aya, translation, footnotes FROM translations WHERE sura IN (${placeholders})`,
@@ -137,6 +198,20 @@ export class Content {
       const ref = { surah: row.sura, ayah: row.aya };
       nextCache.set(refKey(ref), this.buildVerse(ref, row));
     }
+    this.cache = nextCache;
+    this.loadedSurahs = new Set(surahs);
+  }
+
+  private loadMushafSurahs(surahs: number[], generation: number): void {
+    const nextCache = new Map<string, DisplayVerse>();
+    for (const surah of surahs) {
+      for (let ayah = 1; this.hasVerse({ surah, ayah }); ayah++) {
+        const verseRef = { surah, ayah };
+        const verse = this.previewArabic(verseRef);
+        if (verse) nextCache.set(refKey(verseRef), verse);
+      }
+    }
+    if (generation !== this.preloadGeneration) return;
     this.cache = nextCache;
     this.loadedSurahs = new Set(surahs);
   }

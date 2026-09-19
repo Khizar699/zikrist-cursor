@@ -227,7 +227,7 @@ index fdabc83..bbcbebc 100644
      /** Return candidates for verses whose non-Bsm phoneme token IDs are short (≤ maxTokens). */
      getShortVerseCandidates(maxTokens?: number): QuranCandidate[];
 diff --git a/node_modules/@tilawa/core/dist/quran-db.js b/node_modules/@tilawa/core/dist/quran-db.js
-index e071b8a..fa01a5d 100644
+index e071b8a..85ab3af 100644
 --- a/node_modules/@tilawa/core/dist/quran-db.js
 +++ b/node_modules/@tilawa/core/dist/quran-db.js
 @@ -21,6 +21,17 @@ const JOINT_SHORT_OPENING_MAX_CHARS = 10;
@@ -248,7 +248,7 @@ index e071b8a..fa01a5d 100644
  export function partialRatio(short, long) {
      if (!short || !long)
          return 0.0;
-@@ -44,6 +55,10 @@ export class QuranDB {
+@@ -44,6 +55,14 @@ export class QuranDB {
      _bySurah = new Map();
      _jointPrefixSpans = null;
      _jointGlobalSpans = null;
@@ -256,24 +256,31 @@ index e071b8a..fa01a5d 100644
 +    _ngramCharIds = null;
 +    _ngramCharIdsBuilt = false;
 +    _verseNgrams = null;
++    /** Packed trigram key → verse indices (inverted index for candidate shortlist). */
++    _verseTrigramPostings = null;
++    /** Packed bigram key → verse indices. */
++    _verseBigramPostings = null;
      tokenEncoder;
      ctcTokenTable;
      constructor(data, tokenEncoder, ctcTokenTable) {
-@@ -133,6 +148,13 @@ export class QuranDB {
+@@ -133,6 +152,16 @@ export class QuranDB {
          }
          return undefined;
      }
 +    warmSearchIndexes() {
 +        const charIds = this._ngramCharTable();
-+        if (charIds)
++        if (charIds) {
 +            this._verseNgramTable(charIds);
++            this._verseBigramIndex(charIds);
++            this._verseTrigramIndex(charIds);
++        }
 +        this._jointPrefixSpanTable();
 +        this._jointGlobalSpanTable();
 +    }
      _startsWithArabicBismillah(words) {
          if (!words || words.length <= _BSM_ARABIC_WORDS.length)
              return false;
-@@ -472,14 +494,27 @@ export class QuranDB {
+@@ -472,14 +501,27 @@ export class QuranDB {
          const noSpaceText = phonemeText.replace(/ /g, "");
          if (noSpaceText.length < JOINT_GLOBAL_SPAN_MIN_CHARS)
              return [];
@@ -308,9 +315,12 @@ index e071b8a..fa01a5d 100644
          }
          rough.sort((a, b) => b[0] - a[0]);
          const out = [];
-@@ -546,23 +581,40 @@ export class QuranDB {
+@@ -544,25 +586,70 @@ export class QuranDB {
+         }
+         return best;
      }
-     _jointCandidateVerses(noSpaceText, maxCandidates = 950) {
+-    _jointCandidateVerses(noSpaceText, maxCandidates = 950) {
++    _jointCandidateVerses(noSpaceText, maxCandidates = 320) {
          if (noSpaceText.length < 4)
 -            return this.verses;
 -        const qb = QuranDB._jointNgrams(noSpaceText, 2);
@@ -333,15 +343,43 @@ index e071b8a..fa01a5d 100644
 +            const qt = QuranDB._packNgrams(noSpaceText, 3, charIds);
 +            if (qb.length === 0 && qt.length === 0)
 +                return [];
++            // Inverted n-gram postings gather candidates; exact packed intersection
++            // re-scores them so shortlist order matches the prior full-scan path.
++            const scores = new Float64Array(this.verses.length);
++            const touched = [];
++            const bigrams = this._verseBigramIndex(charIds);
++            const trigrams = this._verseTrigramIndex(charIds);
++            for (let i = 0; i < qb.length; i++) {
++                const posting = bigrams.get(qb[i]);
++                if (!posting)
++                    continue;
++                for (let j = 0; j < posting.length; j++) {
++                    const vi = posting[j];
++                    if (scores[vi] === 0)
++                        touched.push(vi);
++                    scores[vi] = 1;
++                }
++            }
++            for (let i = 0; i < qt.length; i++) {
++                const posting = trigrams.get(qt[i]);
++                if (!posting)
++                    continue;
++                for (let j = 0; j < posting.length; j++) {
++                    const vi = posting[j];
++                    if (scores[vi] === 0)
++                        touched.push(vi);
++                    scores[vi] = 1;
++                }
++            }
 +            const ngrams = this._verseNgramTable(charIds);
-+            for (let i = 0; i < ngrams.length; i++) {
-+                const row = ngrams[i];
++            for (const vi of touched) {
++                const row = ngrams[vi];
 +                if (row.bigrams.length === 0)
 +                    continue;
 +                const ov = QuranDB._intersectionSizePacked(qb, row.bigrams) +
 +                    0.48 * QuranDB._intersectionSizePacked(qt, row.trigrams);
 +                if (ov > 0)
-+                    scored.push([ov, i]);
++                    scored.push([ov, vi]);
 +            }
 +        }
 +        else {
@@ -364,7 +402,7 @@ index e071b8a..fa01a5d 100644
          scored.sort((a, b) => b[0] - a[0]);
          return scored.slice(0, maxCandidates).map(([, index]) => this.verses[index]);
      }
-@@ -591,9 +643,18 @@ export class QuranDB {
+@@ -591,9 +678,18 @@ export class QuranDB {
          this._jointPrefixSpans = spans;
          return spans;
      }
@@ -383,7 +421,7 @@ index e071b8a..fa01a5d 100644
          const spans = [];
          for (const [surahNum, verses] of this._bySurah.entries()) {
              for (let i = 0; i < verses.length; i++) {
-@@ -608,8 +669,10 @@ export class QuranDB {
+@@ -608,8 +704,10 @@ export class QuranDB {
                          ayah_end: chunk[chunk.length - 1].ayah,
                          phonemes,
                          phonemesNs,
@@ -396,7 +434,7 @@ index e071b8a..fa01a5d 100644
                      });
                  }
              }
-@@ -759,8 +822,115 @@ export class QuranDB {
+@@ -759,8 +857,148 @@ export class QuranDB {
          }
          return count;
      }
@@ -507,6 +545,39 @@ index e071b8a..fa01a5d 100644
 +            };
 +        });
 +        return this._verseNgrams;
++    }
++    _buildNgramPostings(charIds, kind) {
++        const lists = new Map();
++        const ngrams = this._verseNgramTable(charIds);
++        for (let vi = 0; vi < ngrams.length; vi++) {
++            const keys = ngrams[vi][kind];
++            for (let i = 0; i < keys.length; i++) {
++                const key = keys[i];
++                let list = lists.get(key);
++                if (!list) {
++                    list = [];
++                    lists.set(key, list);
++                }
++                list.push(vi);
++            }
++        }
++        const out = new Map();
++        for (const [key, list] of lists) {
++            out.set(key, Int32Array.from(list));
++        }
++        return out;
++    }
++    _verseTrigramIndex(charIds) {
++        if (this._verseTrigramPostings)
++            return this._verseTrigramPostings;
++        this._verseTrigramPostings = this._buildNgramPostings(charIds, "trigrams");
++        return this._verseTrigramPostings;
++    }
++    _verseBigramIndex(charIds) {
++        if (this._verseBigramPostings)
++            return this._verseBigramPostings;
++        this._verseBigramPostings = this._buildNgramPostings(charIds, "bigrams");
++        return this._verseBigramPostings;
 +    }
      static _round4(value) {
          return Math.round(value * 10000) / 10000;
@@ -841,7 +912,7 @@ index 9377a54..c1b25ed 100644
 +  return query.length ? Math.max(0, 1 - semiGlobalDistance(query, ref) / query.length) : 1;
  }
 diff --git a/node_modules/@tilawa/core/src/quran-db.ts b/node_modules/@tilawa/core/src/quran-db.ts
-index 84facfa..ef3556d 100644
+index 84facfa..c3b385d 100644
 --- a/node_modules/@tilawa/core/src/quran-db.ts
 +++ b/node_modules/@tilawa/core/src/quran-db.ts
 @@ -82,14 +82,37 @@ const JOINT_SHORT_OPENING_MIN_QUERY_CHARS = 8;
@@ -884,7 +955,7 @@ index 84facfa..ef3556d 100644
  }
  
  export function partialRatio(short: string, long: string): number {
-@@ -113,6 +136,10 @@ export class QuranDB {
+@@ -113,6 +136,14 @@ export class QuranDB {
    private _bySurah: Map<number, QuranVerse[]> = new Map();
    private _jointPrefixSpans: QuranChampionMatch[] | null = null;
    private _jointGlobalSpans: GlobalSpanRow[] | null = null;
@@ -892,17 +963,25 @@ index 84facfa..ef3556d 100644
 +  private _ngramCharIds: Int32Array | null = null;
 +  private _ngramCharIdsBuilt = false;
 +  private _verseNgrams: PackedNgrams[] | null = null;
++  /** Packed trigram key → verse indices (inverted index for candidate shortlist). */
++  private _verseTrigramPostings: Map<number, Int32Array> | null = null;
++  /** Packed bigram key → verse indices. */
++  private _verseBigramPostings: Map<number, Int32Array> | null = null;
    private tokenEncoder?: QuranTokenEncoder;
    private ctcTokenTable?: QuranCtcTokenTable;
  
-@@ -222,6 +249,14 @@ export class QuranDB {
+@@ -222,6 +253,18 @@ export class QuranDB {
      return undefined;
    }
  
 +  /** Build n-gram and span tables at session load so the first long locate is not a hitch. */
 +  warmSearchIndexes(): void {
 +    const charIds = this._ngramCharTable();
-+    if (charIds) this._verseNgramTable(charIds);
++    if (charIds) {
++      this._verseNgramTable(charIds);
++      this._verseBigramIndex(charIds);
++      this._verseTrigramIndex(charIds);
++    }
 +    this._jointPrefixSpanTable();
 +    this._jointGlobalSpanTable();
 +  }
@@ -910,7 +989,7 @@ index 84facfa..ef3556d 100644
    private _startsWithArabicBismillah(words: readonly string[] | undefined): boolean {
      if (!words || words.length <= _BSM_ARABIC_WORDS.length) return false;
      return _BSM_ARABIC_WORDS.every((word, index) => words[index] === word);
-@@ -602,14 +637,26 @@ export class QuranDB {
+@@ -602,14 +645,26 @@ export class QuranDB {
      const noSpaceText = phonemeText.replace(/ /g, "");
      if (noSpaceText.length < JOINT_GLOBAL_SPAN_MIN_CHARS) return [];
  
@@ -944,15 +1023,17 @@ index 84facfa..ef3556d 100644
      }
      rough.sort((a, b) => b[0] - a[0]);
  
-@@ -685,24 +732,42 @@ export class QuranDB {
+@@ -684,25 +739,67 @@ export class QuranDB {
+     return best;
    }
  
-   private _jointCandidateVerses(noSpaceText: string, maxCandidates = 950): QuranVerse[] {
+-  private _jointCandidateVerses(noSpaceText: string, maxCandidates = 950): QuranVerse[] {
 -    if (noSpaceText.length < 4) return this.verses;
 -
 -    const qb = QuranDB._jointNgrams(noSpaceText, 2);
 -    const qt = QuranDB._jointNgrams(noSpaceText, 3);
 -    if (qb.size === 0 && qt.size === 0) return this.verses;
++  private _jointCandidateVerses(noSpaceText: string, maxCandidates = 320): QuranVerse[] {
 +    if (noSpaceText.length < 4) return [];
  
 +    const charIds = this._ngramCharTable();
@@ -972,14 +1053,38 @@ index 84facfa..ef3556d 100644
 +      const qt = QuranDB._packNgrams(noSpaceText, 3, charIds);
 +      if (qb.length === 0 && qt.length === 0) return [];
 +
++      // Inverted n-gram postings gather candidates; exact packed intersection
++      // re-scores them so shortlist order matches the prior full-scan path.
++      const scores = new Float64Array(this.verses.length);
++      const touched: number[] = [];
++      const bigrams = this._verseBigramIndex(charIds);
++      const trigrams = this._verseTrigramIndex(charIds);
++      for (let i = 0; i < qb.length; i++) {
++        const posting = bigrams.get(qb[i]!);
++        if (!posting) continue;
++        for (let j = 0; j < posting.length; j++) {
++          const vi = posting[j]!;
++          if (scores[vi] === 0) touched.push(vi);
++          scores[vi] = 1;
++        }
++      }
++      for (let i = 0; i < qt.length; i++) {
++        const posting = trigrams.get(qt[i]!);
++        if (!posting) continue;
++        for (let j = 0; j < posting.length; j++) {
++          const vi = posting[j]!;
++          if (scores[vi] === 0) touched.push(vi);
++          scores[vi] = 1;
++        }
++      }
 +      const ngrams = this._verseNgramTable(charIds);
-+      for (let i = 0; i < ngrams.length; i++) {
-+        const row = ngrams[i];
++      for (const vi of touched) {
++        const row = ngrams[vi]!;
 +        if (row.bigrams.length === 0) continue;
 +        const ov =
 +          QuranDB._intersectionSizePacked(qb, row.bigrams) +
 +          0.48 * QuranDB._intersectionSizePacked(qt, row.trigrams);
-+        if (ov > 0) scored.push([ov, i]);
++        if (ov > 0) scored.push([ov, vi]);
 +      }
 +    } else {
 +      const qb = QuranDB._jointNgrams(noSpaceText, 2);
@@ -1002,7 +1107,7 @@ index 84facfa..ef3556d 100644
    }
  
    private _jointPrefixSpanTable(): QuranChampionMatch[] {
-@@ -730,9 +795,18 @@ export class QuranDB {
+@@ -730,9 +827,18 @@ export class QuranDB {
      return spans;
    }
  
@@ -1021,7 +1126,7 @@ index 84facfa..ef3556d 100644
      const spans: GlobalSpanRow[] = [];
      for (const [surahNum, verses] of this._bySurah.entries()) {
        for (let i = 0; i < verses.length; i++) {
-@@ -747,8 +821,10 @@ export class QuranDB {
+@@ -747,8 +853,10 @@ export class QuranDB {
              ayah_end: chunk[chunk.length - 1].ayah,
              phonemes,
              phonemesNs,
@@ -1034,7 +1139,7 @@ index 84facfa..ef3556d 100644
            });
          }
        }
-@@ -930,6 +1006,114 @@ export class QuranDB {
+@@ -930,6 +1038,151 @@ export class QuranDB {
      return count;
    }
  
@@ -1144,6 +1249,43 @@ index 84facfa..ef3556d 100644
 +      };
 +    });
 +    return this._verseNgrams;
++  }
++
++  private _buildNgramPostings(
++    charIds: Int32Array,
++    kind: "bigrams" | "trigrams",
++  ): Map<number, Int32Array> {
++    const lists = new Map<number, number[]>();
++    const ngrams = this._verseNgramTable(charIds);
++    for (let vi = 0; vi < ngrams.length; vi++) {
++      const keys = ngrams[vi]![kind];
++      for (let i = 0; i < keys.length; i++) {
++        const key = keys[i]!;
++        let list = lists.get(key);
++        if (!list) {
++          list = [];
++          lists.set(key, list);
++        }
++        list.push(vi);
++      }
++    }
++    const out = new Map<number, Int32Array>();
++    for (const [key, list] of lists) {
++      out.set(key, Int32Array.from(list));
++    }
++    return out;
++  }
++
++  private _verseTrigramIndex(charIds: Int32Array): Map<number, Int32Array> {
++    if (this._verseTrigramPostings) return this._verseTrigramPostings;
++    this._verseTrigramPostings = this._buildNgramPostings(charIds, "trigrams");
++    return this._verseTrigramPostings;
++  }
++
++  private _verseBigramIndex(charIds: Int32Array): Map<number, Int32Array> {
++    if (this._verseBigramPostings) return this._verseBigramPostings;
++    this._verseBigramPostings = this._buildNgramPostings(charIds, "bigrams");
++    return this._verseBigramPostings;
 +  }
 +
    private static _round4(value: number): number {

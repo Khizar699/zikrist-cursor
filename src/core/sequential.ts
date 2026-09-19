@@ -1,6 +1,6 @@
 import type { VerseRef } from './types';
 
-/** Acoustic completion of the current ayah. Display still waits for a match. */
+/** Acoustic completion of the current ayah. Sequential focus may move; history still waits for a match. */
 export const TRACKING_COMPLETION_COVERAGE = 0.82;
 export const VISUAL_ADVANCE_COVERAGE = TRACKING_COMPLETION_COVERAGE;
 export const MAX_AYAH = 286;
@@ -27,9 +27,48 @@ export function previousSequentialRef(ref: VerseRef, hasVerse: (ref: VerseRef) =
   return null;
 }
 
+/** Cache the recited surah in full. Mushaf-next is not preloaded here — handoff
+ * openings are a separate, smaller fetch so Fatiha does not dump Al-Baqarah. */
 export function neighborhoodSurahs(surah: number): number[] {
   if (surah < 1 || surah > 114) return [];
-  return surah < 114 ? [surah, surah + 1] : [surah];
+  return [surah];
+}
+
+/** 0 = last ayah of this surah, 1 = second-last. Caps at `limit` so callers
+ * can arm a handoff pool near the end without walking the whole mushaf. */
+export function ayahsRemainingInSurah(
+  ref: VerseRef,
+  hasVerse: (next: VerseRef) => boolean,
+  limit = 3,
+): number {
+  let count = 0;
+  let cursor = ref;
+  while (count < limit) {
+    const next = nextSequentialRef(cursor, hasVerse);
+    if (!next || next.surah !== ref.surah) return count;
+    count += 1;
+    cursor = next;
+  }
+  return count;
+}
+
+export function approachingSurahEnd(
+  ref: VerseRef,
+  hasVerse: (next: VerseRef) => boolean,
+  within = 2,
+): boolean {
+  return ayahsRemainingInSurah(ref, hasVerse, within) < within;
+}
+
+/** Fatiha / last-10 style surahs whose remaining ayahs should be in cache
+ * before the first passage paint. Al-Baqarah is not compact. */
+export function isCompactSurah(
+  surah: number,
+  hasVerse: (ref: VerseRef) => boolean,
+  maxAyahs = 10,
+): boolean {
+  if (surah < 1 || surah > 114 || !hasVerse({ surah, ayah: 1 })) return false;
+  return ayahsRemainingInSurah({ surah, ayah: 1 }, hasVerse, maxAyahs) < maxAyahs;
 }
 
 export function isSequentialSuccessor(from: VerseRef, to: VerseRef, hasVerse: (ref: VerseRef) => boolean): boolean {
@@ -37,9 +76,10 @@ export function isSequentialSuccessor(from: VerseRef, to: VerseRef, hasVerse: (r
   return next !== null && next.surah === to.surah && next.ayah === to.ayah;
 }
 
-/** Focused translation follows an accepted verse_match only. Coverage, elapsed
- * time, and a preloaded neighbor must not preview the next ayah. */
-export function shouldRevealSequentialNext(_options: {
+/** Same-surah sequential focus when the displayed ayah is acoustically
+ * complete. History still waits for verse_match. Next-surah, jumps, and
+ * skipped-ahead neighbors are not previews. */
+export function shouldRevealSequentialNext(options: {
   displayed: VerseRef;
   prepared: VerseRef | null;
   wordIndex: number;
@@ -47,5 +87,11 @@ export function shouldRevealSequentialNext(_options: {
   hasVerse: (ref: VerseRef) => boolean;
   coverage?: number;
 }): boolean {
-  return false;
+  const prepared = options.prepared;
+  if (!prepared) return false;
+  if (prepared.surah !== options.displayed.surah) return false;
+  if (!isSequentialSuccessor(options.displayed, prepared, options.hasVerse)) return false;
+  if (options.totalWords <= 0 || options.wordIndex <= 0) return false;
+  const coverage = options.coverage ?? VISUAL_ADVANCE_COVERAGE;
+  return options.wordIndex / options.totalWords >= coverage;
 }

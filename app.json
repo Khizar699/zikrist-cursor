@@ -8,14 +8,14 @@
         "ITSAppUsesNonExemptEncryption": false,
         "UIFileSharingEnabled": false,
         "LSSupportsOpeningDocumentsInPlace": false,
-        "NSMicrophoneUsageDescription": "Zikrist listens to identify Quran verses and show their translation on your phone. Audio is processed on the device and is not saved."
+        "NSMicrophoneUsageDescription": "Zikrist listens to identify Quran verses and show them on your phone. Audio is processed on the device and is not saved."
       }
     },
     "android": { "package": "app.zikrist.mobile", "allowBackup": false },
     "plugins": [
       "expo-asset", "expo-font", "expo-sqlite",
       ["react-native-audio-api", {
-        "iosMicrophonePermission": "Zikrist listens to identify Quran verses and show their translation on your phone. Audio is processed on the device and is not saved.",
+        "iosMicrophonePermission": "Zikrist listens to identify Quran verses and show them on your phone. Audio is processed on the device and is not saved.",
         "iosBackgroundMode": true, "androidForegroundService": true,
         "androidFSTypes": ["microphone"],
         "androidPermissions": ["android.permission.RECORD_AUDIO", "android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_MICROPHONE", "android.permission.POST_NOTIFICATIONS"],

@@ -31,7 +31,7 @@ npm run setup
 
 This downloads the pinned model, verifies checksums, and checks that a leftover `ios/` tree is not broken.
 
-**Optional — recognition / overnight bots** (EveryAyah + imam evaluation wavs, also gitignored):
+**Optional — evaluation audio** (EveryAyah + imam wavs, gitignored):
 
 ```sh
 npm run setup -- --fixtures
@@ -102,6 +102,8 @@ Only re-run `npm run setup` after a fresh clone or if assets were deleted.
 npm test
 npm run typecheck
 npm run test:replay -- all
+npm run test:coverage -- --list
+npm run findings:report
 ```
 
-Continuity for agents: [HANDOFF.md](HANDOFF.md) Tip state → [AGENTS.md](AGENTS.md). Product bar / ratchet: [prompts/real-imam/algo/PRODUCT-BAR.md](prompts/real-imam/algo/PRODUCT-BAR.md).
+Product goal: [AGENTS.md](AGENTS.md).
